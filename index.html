@@ -130,9 +130,10 @@
             transform-style: preserve-3d;
         }
 
-        .flip-card:hover .flip-card-inner {
-            transform: rotateY(180deg);
-        }
+.flip-card.flipped .flip-card-inner {
+    transform: rotateY(180deg);
+}
+
 
         .flip-card-front, .flip-card-back {
             position: absolute;
@@ -272,7 +273,24 @@
         }
     </style>
 </head>
-<body>
+<script>
+    // Mobile-compatible flip: toggle "flipped" class on tap/click
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.flip-card').forEach(function (card) {
+            card.addEventListener('click', function () {
+                // Close other cards (optional)
+                document.querySelectorAll('.flip-card').forEach(c => {
+                    if (c !== card) c.classList.remove('flipped');
+                });
+
+                // Toggle current card
+                card.classList.toggle('flipped');
+            });
+        });
+    });
+</script>
+
+    <body>
 
 <header>
     <div class="logo-container">
