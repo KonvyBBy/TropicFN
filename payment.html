@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Instructions</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #101322;
+            color: white;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 36px;
+            margin-bottom: 20px;
+        }
+
+        p {
+            font-size: 24px;
+            margin: 10px 0;
+        }
+
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 30px;
+        }
+
+        .spinner {
+            margin: 20px auto;
+            width: 50px;
+            height: 50px;
+            border: 5px solid #00ffff;
+            border-top: 5px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .emoji {
+            font-size: 32px;
+        }
+    </style>
+</head>
+<body>
+
+    <div>
+        <h1>Payment Instructions</h1>
+        <p>Please send payment to:</p>
+        <p><strong>📧 acalvillopaypal@gmail.com</strong></p>
+        <p>As "Friends & Family" (REQUIRED) 💖</p>
+        
+        <div class="loading">
+            <div class="spinner"></div>
+            <p>Detecting Payment... 💸</p>
+        </div>
+    </div>
+
+</body>
+</html>

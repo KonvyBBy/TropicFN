@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>TropicFN | Fortnite Accounts for Sale</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        /* CSS Styles Here */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: linear-gradient(-45deg, #0d0f1a, #15172a, #1a1d3a, #0d0f1a);
+            background-size: 400% 400%;
+            animation: animatedBackground 15s ease infinite;
+            color: white;
+        }
+
+        @keyframes animatedBackground {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        header {
+            background: rgba(21, 23, 42, 0.9);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 999;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo-container img {
+            height: 50px;
+            margin-right: 12px;
+        }
+
+        .tropicfn-logo {
+            font-size: 32px;
+            font-weight: bold;
+            color: #00ffff;
+            text-shadow: 0 0 10px #0ff, 0 0 20px #ff00ff;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            margin-left: 25px;
+            font-size: 20px;
+        }
+
+        nav a:hover {
+            color: #ff4df3;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 100px 20px 60px;
+        }
+
+        .hero h1 {
+            font-size: 60px;
+            background: linear-gradient(90deg, #fff700, #ff4df3, #00ffff);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+
+        .hero p {
+            font-size: 24px;
+            color: #fff;
+            text-shadow: 0 0 10px #00ffff;
+        }
+
+        .cta-button {
+            margin-top: 25px;
+            background-color: #ff4df3;
+            color: white;
+            padding: 18px 36px;
+            font-size: 18px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 0 15px #ff4df3;
+        }
+
+        .cta-button:hover {
+            background-color: #e13ac0;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 42px;
+            margin: 60px 0 30px;
+            background: linear-gradient(90deg, #00f2ff, #ff4df3);
+            background-size: 200% auto;
+            color: transparent;
+            background-clip: text;
+            -webkit-background-clip: text;
+        }
+
+        .account-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            padding: 40px 20px;
+        }
+
+        .flip-card {
+            perspective: 1000px;
+            width: 100%;
+            height: 480px;
+        }
+
+        .flip-card-inner {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transition: transform 0.8s;
+            transform-style: preserve-3d;
+        }
+
+        .flip-card:hover .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .flip-card-front, .flip-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center; 
+            justify-content: space-between;
+            padding: 10px;
+        }
+
+        .flip-card-front {
+            background-color: #1c1e30;
+            border: 3px solid #272b44;
+        }
+
+        .flip-card-front img {
+            width: 100%;
+            height: 160px;
+            object-fit: cover;
+        }
+
+        .flip-card-front h3 {
+            font-size: 24px;
+            color: #ffdd00;
+            margin: 5px 0;
+            text-align: center;
+        }
+
+        .flip-card-front .details,
+        .flip-card-front .account-info,
+        .flip-card-front .rating {
+            font-size: 16px;
+            color: #ddd;
+            margin-top: 5px;
+            text-align: center;
+        }
+
+        .price-tag {
+            font-size: 24px;
+            font-weight: 900;
+            color: #00ffff;
+            margin-top: 10px;
+        }
+
+        .flip-card-back {
+            background-color: #1c1f30;
+            color: white;
+            transform: rotateY(180deg);
+            padding: 20px;
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .flip-card-back ul {
+            list-style: none;
+            padding: 0;
+            text-align: left;
+        }
+
+        .flip-card-back ul li {
+            margin: 6px 0;
+            font-size: 16px;
+        }
+
+        .buy-btn {
+            background-color: #00ffff;
+            color: #000;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 18px;
+            box-shadow: 0 0 10px #00ffff;
+            transition: background-color 0.3s ease;
+            margin-top: 15px;
+        }
+
+        .buy-btn:hover {
+            background-color: #00dada;
+            box-shadow: 0 0 15px #00dada;
+        }
+
+        .reviews {
+            padding: 60px 20px;
+            text-align: center;
+            background-color: #101322;
+        }
+
+        .reviews h2 {
+            font-size: 36px;
+            margin-bottom: 30px;
+            background: linear-gradient(90deg, #00ffcc, #ff00cc);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+
+        .review-container {
+            display: flex;
+            overflow-x: auto;
+            gap: 20px;
+            padding: 10px;
+            scroll-snap-type: x mandatory;
+        }
+
+        .review {
+            min-width: 300px;
+            background: #1a1d2f;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 0 10px #00ffff40;
+            scroll-snap-align: start;
+        }
+
+        .review h4 {
+            color: #ffdd00;
+            margin-bottom: 5px;
+        }
+
+        .review p {
+            font-size: 16px;
+            color: #ccc;
+        }
+
+        /* Gold color for stars */
+        .rating .fas.fa-star, .rating .fas.fa-star-half-alt {
+            color: gold;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo-container">
+        <img src="https://files.catbox.moe/6qcinh.png" alt="TropicFN Logo">
+        <span class="tropicfn-logo">TropicFN</span>
+    </div>
+    <nav>
+        <a href="#">Home</a>
+        <a href="#accounts">Accounts</a>
+        <a href="#reviews">Reviews</a>
+    </nav>
+</header>
+
+<section class="hero">
+    <h1>🔥 TropicFN Fortnite Accounts 🔥</h1>
+    <p>Rare Skins • Full Access • Safe & Instant Delivery</p>
+    <button class="cta-button" onclick="document.getElementById('accounts').scrollIntoView({ behavior: 'smooth' });">Browse Accounts</button>
+</section>
+
+<h2 class="section-title" id="accounts">Featured Accounts</h2>
+
+<section class="account-list">
+    <script>
+        const accounts = [
+            {
+                name: "Black Knight",
+                img: "https://files.catbox.moe/aalhqn.png",
+                price: "$29.99",
+                details: "OG Season 1 • Rare",
+                accountInfo: "Linkable to ALL platforms\nE-Mail Types: Gmail, Yahoo, iCloud"
+            },
+            {
+                name: "OG Aerial Assault",
+                img: "https://files.catbox.moe/xw4wkg.png",
+                price: "$39.99",
+                details: "Super Rare OG Skin",
+                accountInfo: "Linkable to ALL platforms\nE-Mail Types: Gmail, Yahoo, iCloud"
+            },
+            {
+                name: "Renegade Raider",
+                img: "https://files.catbox.moe/pzu0n6.png",
+                price: "$44.99",
+                details: "Season Shop Skin",
+                accountInfo: "Linkable to ALL platforms\nE-Mail Types: Gmail, Yahoo, iCloud"
+            },
+            {
+                name: "Galaxy Skin",
+                img: "https://files.catbox.moe/3wni17.png",
+                price: "$24.99",
+                details: "Samsung Promo Skin",
+                accountInfo: "Linkable to ALL platforms\nE-Mail Types: Gmail, Yahoo, iCloud"
+            },
+            {
+                name: "Travis Scott",
+                img: "https://files.catbox.moe/cgd0vv.png",
+                price: "$19.99",
+                details: "Icon Series Skin",
+                accountInfo: "Linkable to ALL platforms\nE-Mail Types: Gmail, Yahoo, iCloud"
+            },
+            {
+                name: "Wildcat Bundle",
+                img: "https://files.catbox.moe/gy0ymc.png",
+                price: "$49.99",
+                details: "Nintendo Exclusive",
+                accountInfo: "Linkable to ALL platforms\nE-Mail Types: Gmail, Yahoo, iCloud"
+            },
+            {
+                name: "Ikonik Skin",
+                img: "https://files.catbox.moe/7i3vhz.png",
+                price: "$34.99",
+                details: "Samsung Promotion",
+                accountInfo: "Linkable to ALL platforms\nE-Mail Types: Gmail, Yahoo, iCloud"
+            },
+            {
+                name: "Glow Skin",
+                img: "https://files.catbox.moe/l09vhi.png",
+                price: "$21.99",
+                details: "Another Promo Skin",
+                accountInfo: "Linkable to ALL platforms\nE-Mail Types: Gmail, Yahoo, iCloud"
+            },
+            {
+                name: "Minty Legends",
+                img: "https://files.catbox.moe/xs8j85.png",
+                price: "$17.99",
+                details: "Great Condition",
+                accountInfo: "Linkable to ALL platforms\nE-Mail Types: Gmail, Yahoo, iCloud"
+            },
+            {
+                name: "Neo Versa",
+                img: "https://files.catbox.moe/qvbw0z.png",
+                price: "$27.99",
+                details: "Playstation Skin",
+                accountInfo: "Linkable to ALL platforms\nE-Mail Types: Gmail, Yahoo, iCloud"
+            },
+            {
+                name: "Double Helix",
+                img: "https://files.catbox.moe/q0i2hs.png",
+                price: "$59.99",
+                details: "Nintendo Bundle",
+                accountInfo: "Linkable to ALL platforms\nE-Mail Types: Gmail, Yahoo, iCloud"
+            }
+        ];
+
+        accounts.forEach(acc => {
+            // Generate a random star rating between 4.5 and 5
+            const rating = (Math.random() * (5 - 4.5) + 4.5).toFixed(1);
+            const fullStars = Math.floor(rating);
+            const halfStar = rating % 1 >= 0.5 ? 1 : 0; // 0 for none, 1 for half
+
+            // Generate star icons based on rating
+            let stars = '';
+            for (let i = 0; i < fullStars; i++) {
+                stars += '<i class="fas fa-star"></i>';
+            }
+            
+            if (halfStar) {
+                stars += '<i class="fas fa-star-half-alt"></i>'; // Add a half star if applicable
+            }
+
+            document.write(`
+                <div class="flip-card">
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front">
+                            <img src="${acc.img}" alt="${acc.name}">
+                            <h3>${acc.name}</h3>
+                            <div class="details">${acc.details}</div>
+                            <div class="account-info">${acc.accountInfo}</div>
+                            <div class="rating">${stars}</div>
+                            <p class="price-tag">${acc.price}</p>
+                        </div>
+                        <div class="flip-card-back">
+                            <h4>Full Access Included</h4>
+                            <ul>
+                                <li>✔️ 150+ Skins</li>
+                                <li>📧 E-Mail Types: Gmail, Yahoo, iCloud</li>
+                                <li>🎮 Platforms: ALL (PC, PSN, XBOX)</li>
+                                <li>🔐 Full Access</li>
+                                <li>💎 OG & Exclusive Cosmetics</li>
+                            </ul>
+                            <button class="buy-btn" onclick="window.location.href='payment.html'">Purchase</button>
+                        </div>
+                    </div>
+                </div>
+            `);
+        });
+    </script>
+</section>
+
+<section class="reviews" id="reviews">
+    <h2>What Customers Are Saying</h2>
+    <div class="review-container">
+        <div class="review">
+            <h4>🔥 Legit Site 🔥</h4>
+            <p>Bought an OG account and got it instantly. Everything was as described. Definitely recommend!</p>
+        </div>
+        <div class="review">
+            <h4>Super Fast Delivery</h4>
+            <p>Received the Wildcat bundle in under 5 mins. Support was helpful too.</p>
+        </div>
+        <div class="review">
+            <h4>Trustworthy!</h4>
+            <p>I was skeptical at first, but TropicFN is 100% real. Will buy again.</p>
+        </div>
+        <div class="review">
+            <h4>🔥 Great Deals 🔥</h4>
+            <p>Prices are way better than other sites. Got Galaxy Skin for cheap and it’s fully working!</p>
+        </div>
+    </div>
+</section>
+
+</body>
+</html>
