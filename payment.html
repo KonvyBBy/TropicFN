@@ -1,45 +1,70 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Payment Instructions</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Payment Instructions | TropicFN</title>
   <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600&display=swap" rel="stylesheet">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     body {
       font-family: 'Rajdhani', sans-serif;
+      background: linear-gradient(to bottom right, #000000, #1a1a1a);
+      color: white;
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
-      background-color: #000;
-      color: white;
-      text-align: center;
       padding: 20px;
     }
 
     .container {
-      max-width: 500px;
+      background: #111;
+      padding: 30px 40px;
+      border-radius: 16px;
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.05);
+      max-width: 600px;
       width: 100%;
+      text-align: center;
+      animation: fadeIn 0.7s ease;
     }
 
     h1 {
-      font-size: 36px;
+      font-size: 34px;
       margin-bottom: 20px;
+      color: #00ffcc;
+      letter-spacing: 1px;
     }
 
-    p {
-      font-size: 20px;
+    .info-box {
+      background: #1d1d1d;
+      border: 1px solid #333;
+      padding: 15px 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      text-align: left;
+    }
+
+    .info-box p {
+      font-size: 18px;
       margin: 10px 0;
+    }
+
+    .highlight {
+      color: #00ffd5;
+      font-weight: bold;
     }
 
     input {
       padding: 12px;
       font-size: 18px;
       width: 100%;
-      border-radius: 6px;
+      border-radius: 8px;
       border: none;
       margin-top: 10px;
       margin-bottom: 20px;
@@ -48,15 +73,17 @@
     button {
       padding: 12px 30px;
       font-size: 18px;
-      background-color: white;
-      color: black;
+      background: #00ffd5;
+      color: #000;
       border: none;
-      border-radius: 6px;
+      border-radius: 8px;
       cursor: pointer;
+      font-weight: bold;
+      transition: background 0.3s ease;
     }
 
     button:hover {
-      background-color: #ccc;
+      background: #00c4aa;
     }
 
     .hidden {
@@ -64,58 +91,68 @@
     }
 
     .spinner {
-      margin: 20px auto;
-      width: 50px;
-      height: 50px;
-      border: 5px solid #fff;
-      border-top: 5px solid transparent;
+      margin: 30px auto;
+      width: 60px;
+      height: 60px;
+      border: 6px solid #00ffd5;
+      border-top: 6px solid transparent;
       border-radius: 50%;
       animation: spin 1s linear infinite;
     }
 
     @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .footer-note {
+      font-size: 14px;
+      margin-top: 30px;
+      color: #777;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Payment Instructions</h1>
+    <h1>🔐 Payment Instructions</h1>
 
     <div id="email-form">
-      <p>Enter your order email:</p>
+      <p style="margin-bottom: 10px;">Enter your email to begin your order:</p>
       <input type="email" id="orderEmail" placeholder="you@example.com" required>
-      <button onclick="submitEmail()">Submit</button>
+      <button onclick="submitEmail()">Continue</button>
     </div>
 
     <div id="payment-info" class="hidden">
-      <p><strong>Product:</strong> <span id="productName"></span></p>
-      <p><strong>Price:</strong> $<span id="productPrice"></span></p>
-      <p><strong>Delivery Email:</strong> <span id="displayEmail"></span></p>
-      <p><strong>Order Note:</strong> <span id="orderNote"></span></p>
+      <div class="info-box">
+        <p>🛍️ <strong>Product:</strong> <span class="highlight" id="productName"></span></p>
+        <p>💵 <strong>Price:</strong> <span class="highlight">$<span id="productPrice"></span></span></p>
+        <p>📩 <strong>Delivery Email:</strong> <span class="highlight" id="displayEmail"></span></p>
+        <p>📝 <strong>Order Note:</strong> <span class="highlight" id="orderNote"></span></p>
+      </div>
 
-      <hr style="margin: 20px 0; border: 1px solid #333;">
-
-      <p>Please send payment to:</p>
-      <p><strong>📧 acalvillopaypal@gmail.com</strong></p>
-      <p>As "Friends & Family" (REQUIRED) 💖</p>
+      <div class="info-box">
+        <p>Send payment to:</p>
+        <p class="highlight">📧 acalvillopaypal@gmail.com</p>
+        <p style="color: #ff69b4;">Use "Friends & Family" (REQUIRED) 💖</p>
+      </div>
 
       <div class="spinner"></div>
-      <p>Detecting Payment... 💸</p>
+      <p style="margin-top: 10px;">Detecting Payment... 💸</p>
     </div>
+
+    <div class="footer-note">Need help? Contact us on Discord @TropicFN</div>
   </div>
 
   <script>
-    // Get product name and price from URL parameters
     const urlParams = new URLSearchParams(window.location.search);
-    const product = urlParams.get('product') || 'Unknown';
+    const product = urlParams.get('product') || 'Unknown Product';
     const price = urlParams.get('price') || '0.00';
+    const orderNote = "TropicOrder" + Math.floor(Math.random() * 9000 + 1000);
 
-    // Generate random TropicOrder number
-    const orderNote = "TropicOrder" + Math.floor(Math.random() * 999999 + 2829);
-
-    // Fill placeholders
     document.getElementById('productName').textContent = decodeURIComponent(product);
     document.getElementById('productPrice').textContent = price;
     document.getElementById('orderNote').textContent = orderNote;
@@ -136,10 +173,10 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          content: `🛒 New Order\nProduct: ${decodeURIComponent(product)}\nPrice: $${price}\nEmail: ${email}\nNote: ${orderNote}`
+          content: `🛒 New TropicFN Order\nProduct: ${decodeURIComponent(product)}\nPrice: $${price}\nEmail: ${email}\nNote: ${orderNote}`
         })
       }).catch(error => {
-        console.error('Webhook error:', error);
+        console.error('Webhook Error:', error);
       });
     }
   </script>
