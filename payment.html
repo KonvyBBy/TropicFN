@@ -84,15 +84,19 @@
     <h1>Payment Instructions</h1>
 
     <div id="email-form">
-      <p>Product: <strong id="productName">Loading...</strong></p>
-      <p>Price: <strong id="productPrice">$0.00</strong></p>
-      <p>Order ID: <strong id="orderNote">Generating...</strong></p>
       <p>Enter your order email:</p>
       <input type="email" id="orderEmail" placeholder="you@example.com" required>
       <button onclick="submitEmail()">Submit</button>
     </div>
 
     <div id="payment-info" class="hidden">
+      <p><strong>Product:</strong> <span id="productName"></span></p>
+      <p><strong>Price:</strong> $<span id="productPrice"></span></p>
+      <p><strong>Delivery Email:</strong> <span id="displayEmail"></span></p>
+      <p><strong>Order Note:</strong> <span id="orderNote"></span></p>
+
+      <hr style="margin: 20px 0; border: 1px solid #333;">
+
       <p>Please send payment to:</p>
       <p><strong>📧 acalvillopaypal@gmail.com</strong></p>
       <p>As "Friends & Family" (REQUIRED) 💖</p>
@@ -103,16 +107,17 @@
   </div>
 
   <script>
-    // Get product and price from URL
-    const params = new URLSearchParams(window.location.search);
-    const product = params.get('product') || 'Unknown Product';
-    const price = params.get('price') || '0.00';
-    const orderId = Math.floor(Math.random() * 999999) + 2829;
-    const orderNote = `TropicOrder #${orderId}`;
+    // Get product name and price from URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const product = urlParams.get('product') || 'Unknown';
+    const price = urlParams.get('price') || '0.00';
 
-    // Display on page
-    document.getElementById('productName').textContent = product;
-    document.getElementById('productPrice').textContent = `$${price}`;
+    // Generate random TropicOrder number
+    const orderNote = "TropicOrder" + Math.floor(Math.random() * 999999 + 2829);
+
+    // Fill placeholders
+    document.getElementById('productName').textContent = decodeURIComponent(product);
+    document.getElementById('productPrice').textContent = price;
     document.getElementById('orderNote').textContent = orderNote;
 
     function submitEmail() {
@@ -122,26 +127,19 @@
         return;
       }
 
-      const message = `🛒 **New Order Submitted!**
-**Email:** ${email}
-**Product:** ${product}
-**Price:** $${price}
-**Order Note:** ${orderNote}`;
+      document.getElementById('displayEmail').textContent = email;
+      document.getElementById('email-form').classList.add('hidden');
+      document.getElementById('payment-info').classList.remove('hidden');
 
+      // Send to Discord webhook
       fetch('https://discord.com/api/webhooks/1331358908832550942/59hnpE_JgbFYuBRvKW-0OW-T7XzxPLqViHf_NLYpKEpA4iKYeFEHH6a6SFUQr9ruq7eC', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          content: message
+          content: `🛒 New Order\nProduct: ${decodeURIComponent(product)}\nPrice: $${price}\nEmail: ${email}\nNote: ${orderNote}`
         })
-      }).then(() => {
-        document.getElementById('email-form').classList.add('hidden');
-        document.getElementById('payment-info').classList.remove('hidden');
       }).catch(error => {
-        alert('Failed to send order info. Please try again.');
-        console.error('Webhook Error:', error);
+        console.error('Webhook error:', error);
       });
     }
   </script>
