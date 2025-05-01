@@ -84,6 +84,9 @@
     <h1>Payment Instructions</h1>
 
     <div id="email-form">
+      <p>Product: <strong id="productName">Loading...</strong></p>
+      <p>Price: <strong id="productPrice">$0.00</strong></p>
+      <p>Order ID: <strong id="orderNote">Generating...</strong></p>
       <p>Enter your order email:</p>
       <input type="email" id="orderEmail" placeholder="you@example.com" required>
       <button onclick="submitEmail()">Submit</button>
@@ -100,6 +103,18 @@
   </div>
 
   <script>
+    // Get product and price from URL
+    const params = new URLSearchParams(window.location.search);
+    const product = params.get('product') || 'Unknown Product';
+    const price = params.get('price') || '0.00';
+    const orderId = Math.floor(Math.random() * 999999) + 2829;
+    const orderNote = `TropicOrder #${orderId}`;
+
+    // Display on page
+    document.getElementById('productName').textContent = product;
+    document.getElementById('productPrice').textContent = `$${price}`;
+    document.getElementById('orderNote').textContent = orderNote;
+
     function submitEmail() {
       const email = document.getElementById('orderEmail').value;
       if (!email || !email.includes('@')) {
@@ -107,20 +122,25 @@
         return;
       }
 
-      // Send to Discord webhook
+      const message = `🛒 **New Order Submitted!**
+**Email:** ${email}
+**Product:** ${product}
+**Price:** $${price}
+**Order Note:** ${orderNote}`;
+
       fetch('https://discord.com/api/webhooks/1331358908832550942/59hnpE_JgbFYuBRvKW-0OW-T7XzxPLqViHf_NLYpKEpA4iKYeFEHH6a6SFUQr9ruq7eC', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          content: `New order email submitted: ${email}`
+          content: message
         })
       }).then(() => {
         document.getElementById('email-form').classList.add('hidden');
         document.getElementById('payment-info').classList.remove('hidden');
       }).catch(error => {
-        alert('Failed to send email. Please try again.');
+        alert('Failed to send order info. Please try again.');
         console.error('Webhook Error:', error);
       });
     }
