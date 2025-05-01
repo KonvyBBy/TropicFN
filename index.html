@@ -83,10 +83,11 @@
 
     .account-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      grid-template-columns: repeat(4, 1fr);
       gap: 20px;
       padding: 0 20px 80px;
-      justify-content: center;
+      max-width: 1800px;
+      margin: 0 auto;
     }
 
     .account-card {
@@ -94,28 +95,29 @@
       border: 1px solid #333;
       border-radius: 12px;
       overflow: hidden;
+      box-shadow: 0 0 10px #000;
       display: flex;
       flex-direction: column;
       height: 534px;
-      box-shadow: 0 0 10px #000;
     }
 
     .account-card img {
       width: 100%;
-      height: 50%;
-      object-fit: cover;
+      height: auto;
+      object-fit: contain;
+      max-height: 300px;
     }
 
     .account-details {
-      padding: 20px;
+      padding: 15px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      height: 50%;
+      flex-grow: 1;
     }
 
     .account-details h3 {
-      font-size: 22px;
+      font-size: 20px;
       margin-bottom: 5px;
     }
 
@@ -146,6 +148,24 @@
     .buy-button:hover {
       background-color: #ccc;
     }
+
+    @media screen and (max-width: 1400px) {
+      .account-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    @media screen and (max-width: 1024px) {
+      .account-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media screen and (max-width: 600px) {
+      .account-grid {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body>
@@ -174,10 +194,10 @@
       <h3>Black Knight</h3>
       <p>OG Season 2 Skin</p>
       <p>✔️ 150+ Skins</p>
-      <p>🎮 Linkable to PC, PSN, XBOX</p>
+      <p>🎮 Linkable to all platforms</p>
       <p>📧 Gmail, Yahoo, iCloud</p>
       <p class="price">$29.99</p>
-      <button class="buy-button" onclick="window.location.href='payment.html'">Purchase</button>
+      <button class="buy-button">Purchase</button>
     </div>
   </div>
 
@@ -190,12 +210,36 @@
       <p>🎮 Linkable to all platforms</p>
       <p>📧 Gmail, Yahoo, iCloud</p>
       <p class="price">$39.99</p>
-      <button class="buy-button" onclick="window.location.href='payment.html'">Purchase</button>
+      <button class="buy-button">Purchase</button>
     </div>
   </div>
 
-  <!-- Add more cards below the same way -->
+  <!-- Add 2 more cards here to fill the row -->
+  <div class="account-card">
+    <img src="/mnt/data/j.PNG" alt="Promo Image">
+    <div class="account-details">
+      <h3>Promo Display</h3>
+      <p>Marketing Banner</p>
+      <p>✔️ Fast Delivery</p>
+      <p>🎮 Trusted Sellers</p>
+      <p>📧 Secure Platform</p>
+      <p class="price">Featured</p>
+      <button class="buy-button">Learn More</button>
+    </div>
+  </div>
 
+  <div class="account-card">
+    <img src="https://files.catbox.moe/wy3suf.PNG" alt="Black Knight Copy">
+    <div class="account-details">
+      <h3>Black Knight (Alt)</h3>
+      <p>Same Bundle as Original</p>
+      <p>✔️ 150+ Skins</p>
+      <p>🎮 PC, PSN, Xbox</p>
+      <p>📧 Any Provider</p>
+      <p class="price">$29.99</p>
+      <button class="buy-button">Purchase</button>
+    </div>
+  </div>
 </section>
 
 </body>
