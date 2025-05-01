@@ -3,236 +3,201 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>TropicFN - Buy Fortnite Accounts</title>
-  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+  <title>TropicFN | Fortnite Accounts</title>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600&display=swap" rel="stylesheet">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
     body {
       font-family: 'Rajdhani', sans-serif;
-      background: #0a0a0a;
-      color: white;
-      line-height: 1.6;
+      background-color: #000;
+      color: #fff;
     }
+
     header {
+      background-color: #111;
+      padding: 20px 40px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: #111;
-      padding: 20px 40px;
-      position: sticky;
-      top: 0;
-      z-index: 1000;
-      border-bottom: 1px solid #333;
     }
-    .logo-container {
-      display: flex;
-      align-items: center;
-    }
-    .logo-container img {
-      height: 50px;
-      margin-right: 15px;
-    }
-    .tropicfn-logo {
+
+    .logo {
       font-size: 28px;
       font-weight: bold;
       color: white;
     }
+
     nav a {
       color: white;
+      margin-left: 20px;
       text-decoration: none;
-      margin-left: 25px;
       font-size: 18px;
     }
+
     nav a:hover {
-      color: #ccc;
+      text-decoration: underline;
     }
 
     .hero {
       text-align: center;
-      padding: 80px 20px 40px;
+      padding: 60px 20px 30px;
     }
+
     .hero h1 {
       font-size: 48px;
+      color: white;
     }
+
     .hero p {
-      font-size: 22px;
+      font-size: 20px;
       color: #aaa;
-      margin: 10px 0 25px;
     }
+
     .cta-button {
-      background: white;
-      color: black;
-      padding: 14px 30px;
+      margin-top: 20px;
+      padding: 12px 30px;
       font-size: 18px;
+      background-color: #fff;
+      color: #000;
       border: none;
-      border-radius: 50px;
+      border-radius: 30px;
       cursor: pointer;
+      transition: background 0.3s ease;
     }
+
     .cta-button:hover {
-      background: #ccc;
+      background-color: #ccc;
     }
 
     .section-title {
       text-align: center;
-      font-size: 38px;
-      margin-top: 50px;
-      color: white;
+      font-size: 36px;
+      margin-top: 60px;
+      margin-bottom: 30px;
     }
 
     .account-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 30px;
-      padding: 40px;
+      grid-template-columns: repeat(auto-fit, minmax(920px, 1fr));
+      gap: 40px;
+      padding: 0 20px 80px;
+      justify-content: center;
     }
 
-    .card {
-      background: #1a1a1a;
+    .account-card {
+      background-color: #111;
       border: 1px solid #333;
-      border-radius: 16px;
+      border-radius: 12px;
       overflow: hidden;
-      transition: transform 0.3s ease;
+      width: 900px;
+      height: 534px;
       display: flex;
-      flex-direction: column;
+      flex-direction: row;
+      box-shadow: 0 0 10px #000;
     }
 
-    .card:hover {
-      transform: scale(1.02);
-    }
-
-    .card img {
-      width: 100%;
-      height: 180px;
+    .account-card img {
+      width: 50%;
+      height: 100%;
       object-fit: cover;
-      filter: grayscale(100%);
     }
 
-    .card-body {
-      padding: 20px;
-      flex: 1;
+    .account-details {
+      padding: 30px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
+      width: 50%;
     }
 
-    .card h3 {
-      font-size: 22px;
-      margin-bottom: 8px;
+    .account-details h3 {
+      font-size: 32px;
+      margin-bottom: 10px;
     }
 
-    .card p {
+    .account-details p {
       font-size: 16px;
       color: #ccc;
-      margin-bottom: 6px;
+      margin: 5px 0;
     }
 
     .price {
-      font-size: 20px;
+      font-size: 24px;
       font-weight: bold;
-      margin-top: 10px;
-      color: white;
+      margin-top: 15px;
     }
 
-    .buy-btn {
-      margin-top: 20px;
-      background: white;
+    .buy-button {
+      margin-top: auto;
+      padding: 14px;
+      background-color: white;
       color: black;
-      padding: 12px;
       border: none;
-      border-radius: 50px;
-      font-weight: bold;
+      border-radius: 8px;
       font-size: 16px;
       cursor: pointer;
-      transition: background 0.2s ease;
+      transition: background 0.3s ease;
     }
 
-    .buy-btn:hover {
-      background: #ccc;
-    }
-
-    .footer {
-      text-align: center;
-      padding: 40px 20px;
-      background: #111;
-      color: #aaa;
-      font-size: 14px;
-    }
-
-    @media (max-width: 600px) {
-      .hero h1 {
-        font-size: 36px;
-      }
-      .hero p {
-        font-size: 18px;
-      }
+    .buy-button:hover {
+      background-color: #ccc;
     }
   </style>
 </head>
 <body>
 
-  <header>
-    <div class="logo-container">
-      <img src="https://i.imgur.com/YOUR_IMAGE.png" alt="Logo">
-      <div class="tropicfn-logo">TropicFN</div>
+<header>
+  <div class="logo">TropicFN</div>
+  <nav>
+    <a href="#">Home</a>
+    <a href="#accounts">Accounts</a>
+    <a href="#reviews">Reviews</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <h1>Fortnite OG Accounts for Sale</h1>
+  <p>100% Safe • Full Access • Instant Delivery</p>
+  <button class="cta-button" onclick="document.getElementById('accounts').scrollIntoView({behavior: 'smooth'});">Shop Now</button>
+</section>
+
+<h2 class="section-title" id="accounts">Featured Accounts</h2>
+
+<section class="account-grid">
+  <div class="account-card">
+    <img src="https://files.catbox.moe/ao7x8o.PNG" alt="Black Knight">
+    <div class="account-details">
+      <h3>Black Knight</h3>
+      <p>OG Season 2 Skin</p>
+      <p>✔️ 150+ Skins</p>
+      <p>🎮 Linkable to PC, PSN, XBOX</p>
+      <p>📧 Email Types: Gmail, Yahoo, iCloud</p>
+      <p class="price">$29.99</p>
+      <button class="buy-button" onclick="window.location.href='payment.html'">Purchase</button>
     </div>
-    <nav>
-      <a href="#accounts">Accounts</a>
-      <a href="#contact">Contact</a>
-    </nav>
-  </header>
+  </div>
 
-  <section class="hero">
-    <h1>Buy OG Fortnite Accounts</h1>
-    <p>Secure. Instant Delivery. Trusted by 1000+ Customers.</p>
-    <button class="cta-button">Browse Accounts</button>
-  </section>
-
-  <h2 class="section-title" id="accounts">Available Accounts</h2>
-  <section class="account-grid">
-
-    <!-- Product Card 1 -->
-    <div class="card">
-      <img src="https://i.imgur.com/ZxBz9gG.jpg" alt="Skull Trooper">
-      <div class="card-body">
-        <h3>OG Skull Trooper</h3>
-        <p>Includes Galaxy + Renegade Raider</p>
-        <p>Full Access • 250+ Skins</p>
-        <p class="price">$89.99</p>
-        <button class="buy-btn">Buy Now</button>
-      </div>
+  <div class="account-card">
+    <img src="https://files.catbox.moe/xw4wkg.png" alt="Aerial Assault Trooper">
+    <div class="account-details">
+      <h3>OG Aerial Assault</h3>
+      <p>Ultra Rare OG Skin</p>
+      <p>✔️ Full Access Included</p>
+      <p>🎮 Linkable to PC, PSN, XBOX</p>
+      <p>📧 Email Types: Gmail, Yahoo, iCloud</p>
+      <p class="price">$39.99</p>
+      <button class="buy-button" onclick="window.location.href='payment.html'">Purchase</button>
     </div>
+  </div>
 
-    <!-- Product Card 2 -->
-    <div class="card">
-      <img src="https://i.imgur.com/2yaf2wb.jpeg" alt="Renegade Raider">
-      <div class="card-body">
-        <h3>Renegade Raider Combo</h3>
-        <p>Renegade + Black Knight + Minty</p>
-        <p>Full Access • 300+ Skins</p>
-        <p class="price">$129.99</p>
-        <button class="buy-btn">Buy Now</button>
-      </div>
-    </div>
+  <!-- Add more cards here -->
 
-    <!-- Product Card 3 -->
-    <div class="card">
-      <img src="https://i.imgur.com/JHzAFd8.jpeg" alt="Galaxy Skin">
-      <div class="card-body">
-        <h3>Galaxy Skin Account</h3>
-        <p>Rare Skins + Battle Pass Maxed</p>
-        <p>Secure Delivery • Email Changeable</p>
-        <p class="price">$74.99</p>
-        <button class="buy-btn">Buy Now</button>
-      </div>
-    </div>
-
-    <!-- Add more cards as needed -->
-
-  </section>
-
-  <footer class="footer" id="contact">
-    &copy; 2025 TropicFN. All rights reserved.
-  </footer>
+</section>
 
 </body>
 </html>
