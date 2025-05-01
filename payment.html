@@ -1,74 +1,129 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payment Instructions</title>
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600&display=swap" rel="stylesheet">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Instructions</title>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        body {
-            font-family: 'Rajdhani', sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background-color: #101322;
-            color: white;
-            text-align: center;
-        }
+    body {
+      font-family: 'Rajdhani', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #000;
+      color: white;
+      text-align: center;
+      padding: 20px;
+    }
 
-        h1 {
-            font-size: 36px;
-            margin-bottom: 20px;
-        }
+    .container {
+      max-width: 500px;
+      width: 100%;
+    }
 
-        p {
-            font-size: 24px;
-            margin: 10px 0;
-        }
+    h1 {
+      font-size: 36px;
+      margin-bottom: 20px;
+    }
 
-        .loading {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-top: 30px;
-        }
+    p {
+      font-size: 20px;
+      margin: 10px 0;
+    }
 
-        .spinner {
-            margin: 20px auto;
-            width: 50px;
-            height: 50px;
-            border: 5px solid #00ffff;
-            border-top: 5px solid transparent;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
+    input {
+      padding: 12px;
+      font-size: 18px;
+      width: 100%;
+      border-radius: 6px;
+      border: none;
+      margin-top: 10px;
+      margin-bottom: 20px;
+    }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+    button {
+      padding: 12px 30px;
+      font-size: 18px;
+      background-color: white;
+      color: black;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
 
-        .emoji {
-            font-size: 32px;
-        }
-    </style>
+    button:hover {
+      background-color: #ccc;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .spinner {
+      margin: 20px auto;
+      width: 50px;
+      height: 50px;
+      border: 5px solid #fff;
+      border-top: 5px solid transparent;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
 </head>
 <body>
+  <div class="container">
+    <h1>Payment Instructions</h1>
 
-    <div>
-        <h1>Payment Instructions</h1>
-        <p>Please send payment to:</p>
-        <p><strong>📧 acalvillopaypal@gmail.com</strong></p>
-        <p>As "Friends & Family" (REQUIRED) 💖</p>
-        
-        <div class="loading">
-            <div class="spinner"></div>
-            <p>Detecting Payment... 💸</p>
-        </div>
+    <div id="email-form">
+      <p>Enter your order email:</p>
+      <input type="email" id="orderEmail" placeholder="you@example.com" required>
+      <button onclick="submitEmail()">Submit</button>
     </div>
 
+    <div id="payment-info" class="hidden">
+      <p>Please send payment to:</p>
+      <p><strong>📧 acalvillopaypal@gmail.com</strong></p>
+      <p>As "Friends & Family" (REQUIRED) 💖</p>
+
+      <div class="spinner"></div>
+      <p>Detecting Payment... 💸</p>
+    </div>
+  </div>
+
+  <script>
+    function submitEmail() {
+      const email = document.getElementById('orderEmail').value;
+      if (!email || !email.includes('@')) {
+        alert('Please enter a valid email address.');
+        return;
+      }
+
+      // Send to Discord webhook
+      fetch('https://discord.com/api/webhooks/1331358908832550942/59hnpE_JgbFYuBRvKW-0OW-T7XzxPLqViHf_NLYpKEpA4iKYeFEHH6a6SFUQr9ruq7eC', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          content: `New order email submitted: ${email}`
+        })
+      }).then(() => {
+        document.getElementById('email-form').classList.add('hidden');
+        document.getElementById('payment-info').classList.remove('hidden');
+      }).catch(error => {
+        alert('Failed to send email. Please try again.');
+        console.error('Webhook Error:', error);
+      });
+    }
+  </script>
 </body>
 </html>
