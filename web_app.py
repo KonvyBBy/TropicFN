@@ -17,6 +17,11 @@ from flask import (
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 
+# <<< ADD THIS BLOCK >>>
+DATA_DIR = "/opt/render/project/src/data"
+os.makedirs(DATA_DIR, exist_ok=True)
+# <<< END ADD >>>
+
 # ===================== CONFIG =====================
 
 # --- Marketplace / Fortnite API ---
@@ -54,16 +59,16 @@ MAX_ACCOUNTS = 50
 MAX_PAGES = 10
 
 # --- Redeemed orders tracking ---
-REDEEMED_FILE = "redeemed_orders.json"
+REDEEMED_FILE = os.path.join(DATA_DIR, "redeemed_orders.json")
 
 # --- Purchased accounts tracking ---
-PURCHASES_FILE = "purchased_accounts.json"
+PURCHASES_FILE = os.path.join(DATA_DIR, "purchased_accounts.json")
 
 # --- Pricing ---
 UPCHARGE_MULTIPLIER = 1.8  # same as bot
 
 # --- User storage ---
-USERS_FILE = "users.json"
+USERS_FILE = os.path.join(DATA_DIR, "users.json")
 
 # --- Balances (reuse your balances_file) ---
 from balances_file import get_balance, add_balance  # uses balances.json
@@ -2125,6 +2130,7 @@ if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
