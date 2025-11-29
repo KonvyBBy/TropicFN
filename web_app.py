@@ -790,7 +790,6 @@ INDEX_HTML = """
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         background: #000;
         background-image: radial-gradient(circle at top, #222 0, #000 55%);
-        background-attachment: fixed;
         color: #f6f6f6;
         min-height: 100vh;
         display: flex;
@@ -1127,13 +1126,434 @@ INDEX_HTML = """
         {% endif %}
       </div>
 
-      <!-- (rest of your HTML + JS stays the same, I only changed body + #snow-canvas CSS) -->
 
-    </div>
+      <!-- TAB: BUY ACCOUNT -->
+      <div id="tab-buy" class="tab-panel active">
+        <div class="row card">
+          <h2>Fortnite Search</h2>
+          <form id="search-form">
+            <label>Item(s)
+              <input name="item" placeholder="Black Knight, Orange Justice" required />
+            </label>
+            <label>Min days offline (0 = any)
+              <input name="days" type="number" value="0" />
+            </label>
+            <label>Min skins (0 = any)
+              <input name="skins" type="number" value="0" />
+            </label>
+            <button type="submit">Search</button>
+          </form>
+        </div>
+
+        <div class="card results-card">
+          <h2>Results</h2>
+          <p class="small" id="search-description">
+            Matching Fortnite accounts will show here after you search.
+          </p>
+          <div id="search-result"></div>
+        </div>
+      </div>  <!-- close #tab-buy -->
+
+      <!-- TAB: BALANCE / RELOAD -->
+      <div id="tab-balance" class="tab-panel">
+        <div class="row card">
+          <h2>Balance</h2>
+          <form id="balance-form">
+            <button type="submit">Check Balance</button>
+          </form>
+          <div id="balance-result"></div>
+        </div>
+
+        <div class="row card">
+          <h2>Top Up</h2>
+          <form id="topup-form">
+            <label>Amount in USD
+              <input name="amount" type="number" step="0.01" value="10" />
+            </label>
+            <button type="submit">Generate Shopify Link</button>
+          </form>
+          <div id="topup-result"></div>
+        </div>
+      </div>
+
+      <!-- TAB: MY ACCOUNT INFO -->
+      <div id="tab-my-accounts" class="tab-panel">
+        <div class="card">
+          <h2>My Accounts</h2>
+          <p class="small">Browse Fortnite accounts you've already purchased.</p>
+          <div id="my-accounts-view"></div>
+          <div style="margin-top:10px; display:flex; gap:8px;">
+            <button id="prev-account-btn" type="button">Previous</button>
+            <button id="next-account-btn" type="button">Next</button>
+          </div>
+          <div class="small" id="my-accounts-indicator" style="margin-top:6px;"></div>
+        </div>
+      </div>
+
+      <!-- TAB: REDEEM -->
+      <div id="tab-redeem" class="tab-panel">
+        <div class="row card">
+          <h2>Redeem Shopify Order</h2>
+          <form id="redeem-form">
+            <label>Order number (without #)
+              <input name="order_number" type="number" />
+            </label>
+            <button type="submit">Redeem</button>
+          </form>
+          <div id="redeem-result"></div>
+        </div>
+      </div>
+
+      {% if has_purchases %}
+      <!-- TAB: REVIEW -->
+      <div id="tab-review" class="tab-panel">
+        <div class="row card">
+          <h2>Rate Your Experience</h2>
+          <p class="small">Please click a star to leave a rating (1–5).</p>
+          <div class="star-row" id="star-rating">
+            <span class="star" data-value="1">★</span>
+            <span class="star" data-value="2">★</span>
+            <span class="star" data-value="3">★</span>
+            <span class="star" data-value="4">★</span>
+            <span class="star" data-value="5">★</span>
+          </div>
+          <button type="button" id="submit-review-btn">Submit Review</button>
+          <div class="small" id="star-result" style="margin-top:8px;"></div>
+        </div>
+      </div>
+      {% endif %}
+
+    </div> <!-- end .app-shell -->
 
     <script>
-      /* keep all your existing JS here, INCLUDING the snow animation,
-         but make sure the resize() looks like this: */
+      // Helper to post JSON
+      async function postJSON(url, data) {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        const json = await res.json();
+        if (!res.ok) {
+          throw new Error(json.error || 'Unknown error');
+        }
+        return json;
+      }
+
+      // =========== HELPERS TO EXTRACT LOGIN STRINGS ===========
+      function findRawForKey(obj, keyName) {
+        if (!obj || typeof obj !== 'object') return null;
+        if (Object.prototype.hasOwnProperty.call(obj, keyName)) {
+          const val = obj[keyName];
+          if (val && typeof val === 'object' && 'raw' in val) {
+            return val.raw;
+          }
+        }
+        for (const k in obj) {
+          if (!Object.prototype.hasOwnProperty.call(obj, k)) continue;
+          const child = obj[k];
+          if (child && typeof child === 'object') {
+            const found = findRawForKey(child, keyName);
+            if (found) return found;
+          }
+        }
+        return null;
+      }
+
+      function extractLoginStrings(purchaseResult) {
+        if (!purchaseResult || typeof purchaseResult !== 'object') {
+          return { epic: null, email: null };
+        }
+        const epic = findRawForKey(purchaseResult, 'loginData');
+        const email = findRawForKey(purchaseResult, 'emailLoginData');
+        return { epic, email };
+      }
+
+      function buildLoginDisplayText(purchaseResult) {
+        const { epic, email } = extractLoginStrings(purchaseResult);
+        if (!epic && !email) {
+          return 'No login details found in response.';
+        }
+        let s = '';
+        if (epic) s += 'Epic Games: ' + epic + '\\n';
+        if (email) s += 'Email Login: ' + email;
+        return s;
+      }
+
+      function buildLoginDisplayHTML(purchaseResult) {
+        const { epic, email } = extractLoginStrings(purchaseResult);
+        if (!epic && !email) {
+          return '<span class="small">No login details found in this purchase.</span>';
+        }
+        let html = '<div class="account-meta">';
+        if (epic) {
+          html += 'Epic Games:<br><code>' + escapeHtml(epic) + '</code><br><br>';
+        }
+        if (email) {
+          html += 'Email Login:<br><code>' + escapeHtml(email) + '</code>';
+        }
+        html += '</div>';
+        return html;
+      }
+
+      function escapeHtml(str) {
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      const searchForm = document.getElementById('search-form');
+      const searchResult = document.getElementById('search-result');
+
+      if (searchForm) {
+        searchForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          searchResult.innerHTML = 'Searching...';
+          const formData = new FormData(searchForm);
+
+          const item = formData.get('item');
+          const days = Number(formData.get('days') || 0);
+          const skins = Number(formData.get('skins') || 0);
+
+          let desc = `The following accounts have "${item}"`;
+          if (days > 0) desc += `, have been offline for at least ${days} days`;
+          if (skins > 0) desc += `, and have at least ${skins} skins`;
+          document.getElementById('search-description').textContent = desc + ":";
+
+          const payload = { item, days, skins };
+
+          try {
+            const data = await postJSON('/api/fortnite/search', payload);
+            if (!data.accounts || data.accounts.length === 0) {
+              searchResult.innerHTML = 'No accounts found.';
+              return;
+            }
+            searchResult.innerHTML = '';
+            data.accounts.forEach((acc) => {
+              const div = document.createElement('div');
+              div.className = 'card';
+              div.innerHTML = `
+                <div class="price">Price: $${acc.user_price.toFixed(2)}</div>
+                <div class="account-meta">
+                  Level: <span>${acc.level}</span> <br />
+                  Skins: <span>${acc.skins}</span>,
+                  Pickaxes: <span>${acc.pickaxes}</span>,
+                  Emotes: <span>${acc.emotes}</span>,
+                  Gliders: <span>${acc.gliders}</span><br />
+                  V-Bucks: <span>${acc.vbucks}</span><br />
+                  Last played: <span>${acc.last_played}</span>
+                </div>
+                <button data-item-id="${acc.item_id}" data-base-price="${acc.base_price}">Buy this account</button>
+                <div class="small account-small">Item ID: ${acc.item_id}</div>
+              `;
+              const btn = div.querySelector('button');
+              btn.addEventListener('click', async () => {
+                btn.disabled = true;
+                btn.textContent = 'Buying...';
+                try {
+                  const buyPayload = {
+                    item_id: Number(btn.dataset.itemId),
+                    base_price: Number(btn.dataset.basePrice)
+                  };
+                  const res = await postJSON('/api/fortnite/buy', buyPayload);
+                  const loginText = buildLoginDisplayText(res.purchase_result);
+                  alert(res.message + '\\n\\n' + loginText);
+                  await loadMyAccounts();
+                } catch (err) {
+                  alert('Buy error: ' + err.message);
+                }
+                btn.disabled = false;
+                btn.textContent = 'Buy this account';
+              });
+              searchResult.appendChild(div);
+            });
+          } catch (err) {
+            searchResult.innerHTML = 'Error: ' + err.message;
+          }
+        });
+      }
+
+      const balanceForm = document.getElementById('balance-form');
+      const balanceResult = document.getElementById('balance-result');
+      if (balanceForm) {
+        balanceForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          balanceResult.innerHTML = 'Loading...';
+          try {
+            const res = await postJSON('/api/balance', {});
+            balanceResult.innerHTML = 'Balance: $' + res.balance.toFixed(2);
+          } catch (err) {
+            balanceResult.innerHTML = 'Error: ' + err.message;
+          }
+        });
+      }
+
+      const topupForm = document.getElementById('topup-form');
+      const topupResult = document.getElementById('topup-result');
+      if (topupForm) {
+        topupForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          topupResult.innerHTML = 'Generating...';
+          const formData = new FormData(topupForm);
+          const amount = Number(formData.get('amount') || 0);
+          try {
+            const res = await postJSON('/api/topup', { amount });
+            topupResult.innerHTML = `
+              <div>Send payment here:</div>
+              <a href="${res.checkout_url}" target="_blank">${res.checkout_url}</a>
+              <div class="small">Order note will save your username automatically.</div>
+            `;
+          } catch (err) {
+            topupResult.innerHTML = 'Error: ' + err.message;
+          }
+        });
+      }
+
+      const redeemForm = document.getElementById('redeem-form');
+      const redeemResult = document.getElementById('redeem-result');
+      if (redeemForm) {
+        redeemForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          redeemResult.innerHTML = 'Redeeming...';
+          const formData = new FormData(redeemForm);
+          const order_number = Number(formData.get('order_number') || 0);
+          try {
+            const res = await postJSON('/api/redeem', { order_number });
+            redeemResult.innerHTML = res.message;
+          } catch (err) {
+            redeemResult.innerHTML = 'Error: ' + err.message;
+          }
+        });
+      }
+
+      // =================== MY ACCOUNTS VIEWER ===================
+      let myAccounts = [];
+      let myAccountsIndex = 0;
+
+      async function loadMyAccounts() {
+        try {
+          const res = await postJSON('/api/fortnite/my-accounts', {});
+          myAccounts = res.accounts || [];
+          myAccountsIndex = 0;
+          renderMyAccount();
+        } catch (err) {
+          console.error('Failed to load my accounts:', err);
+        }
+      }
+
+      function renderMyAccount() {
+        const view = document.getElementById('my-accounts-view');
+        const indicator = document.getElementById('my-accounts-indicator');
+        const prevBtn = document.getElementById('prev-account-btn');
+        const nextBtn = document.getElementById('next-account-btn');
+
+        if (!view || !indicator || !prevBtn || !nextBtn) return;
+
+        if (!myAccounts.length) {
+          view.innerHTML = '<span class="small">No purchased accounts yet.</span>';
+          indicator.textContent = '';
+          prevBtn.disabled = true;
+          nextBtn.disabled = true;
+          return;
+        }
+
+        if (myAccountsIndex < 0) myAccountsIndex = 0;
+        if (myAccountsIndex >= myAccounts.length) {
+          myAccountsIndex = myAccounts.length - 1;
+        }
+
+        const acc = myAccounts[myAccountsIndex];
+        const ts = acc.timestamp ? new Date(acc.timestamp * 1000) : null;
+        const when = ts ? ts.toLocaleString() : 'Unknown time';
+
+        const htmlLogins = buildLoginDisplayHTML(acc.purchase_result);
+
+        view.innerHTML = `
+          <div class="small">Purchased: ${escapeHtml(when)}</div>
+          ${htmlLogins}
+        `;
+
+        indicator.textContent = `Account ${myAccountsIndex + 1} of ${myAccounts.length}`;
+
+        prevBtn.disabled = myAccountsIndex === 0;
+        nextBtn.disabled = myAccountsIndex === myAccounts.length - 1;
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        const prevBtn = document.getElementById('prev-account-btn');
+        const nextBtn = document.getElementById('next-account-btn');
+        if (prevBtn && nextBtn) {
+          prevBtn.addEventListener('click', () => {
+            if (myAccountsIndex > 0) {
+              myAccountsIndex--;
+              renderMyAccount();
+            }
+          });
+          nextBtn.addEventListener('click', () => {
+            if (myAccountsIndex < myAccounts.length - 1) {
+              myAccountsIndex++;
+              renderMyAccount();
+            }
+          });
+        }
+
+        // Load accounts on page open
+        loadMyAccounts();
+
+        // TAB SWITCHING
+        const tabButtons = document.querySelectorAll('.tab-btn[data-tab-target]');
+        const tabPanels = document.querySelectorAll('.tab-panel');
+        tabButtons.forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const target = btn.getAttribute('data-tab-target');
+            tabButtons.forEach(b => b.classList.remove('active'));
+            tabPanels.forEach(p => p.classList.remove('active'));
+            btn.classList.add('active');
+            const panel = document.querySelector(target);
+            if (panel) panel.classList.add('active');
+          });
+        });
+
+        // STAR RATING (FAKE SUBMIT)
+        const starRow = document.getElementById('star-rating');
+        const starResult = document.getElementById('star-result');
+        const submitReviewBtn = document.getElementById('submit-review-btn');
+        let currentRating = 0;
+
+        if (starRow && starResult && submitReviewBtn) {
+          const stars = starRow.querySelectorAll('.star');
+
+          stars.forEach(star => {
+            star.addEventListener('click', () => {
+              const value = Number(star.dataset.value);
+              currentRating = value;
+
+              stars.forEach(s => {
+                const v = Number(s.dataset.value);
+                s.classList.toggle('active', v <= value);
+              });
+
+              starResult.textContent = `Selected: ${value} out of 5. Click "Submit Review" to send.`;
+            });
+          });
+
+          submitReviewBtn.addEventListener('click', () => {
+            if (!currentRating) {
+              starResult.textContent = 'Please select a star rating first.';
+              return;
+            }
+
+            submitReviewBtn.disabled = true;
+            submitReviewBtn.textContent = 'Submitted';
+            starResult.textContent = `Thanks for your review! You rated us ${currentRating} out of 5.`;
+          });
+        }
+      });
+
+      // =================== SNOW ANIMATION ===================
       (function () {
         const canvas = document.getElementById('snow-canvas');
         if (!canvas) return;
@@ -1194,264 +1614,6 @@ INDEX_HTML = """
 </html>
 """
 
-REGISTER_HTML = """
-<!doctype html>
-<html>
-  <head>
-    <title>Konvy Accounts – Register</title>
-    <style>
-      * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-      }
-
-      body {
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        background: #000;
-        background-image: radial-gradient(circle at top, #222 0, #000 55%);
-        background-attachment: fixed;
-        color: #f6f6f6;
-        min-height: 100vh;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 40px 16px;
-        position: relative;
-        overflow: hidden;
-      }
-
-      #snow-canvas {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: -1;
-        pointer-events: none;
-      }
-
-      .auth-shell {
-        width: 100%;
-        max-width: 420px;
-        padding: 26px 22px 24px;
-        border-radius: 18px;
-        background: rgba(0, 0, 0, 0.7);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        box-shadow:
-          0 24px 60px rgba(0, 0, 0, 0.9),
-          0 0 0 1px rgba(255, 255, 255, 0.03);
-        backdrop-filter: blur(18px);
-      }
-
-      .auth-title {
-        font-weight: 600;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-        font-size: 0.85rem;
-        color: #fdfdfd;
-        margin-bottom: 4px;
-      }
-
-      .auth-heading {
-        font-size: 1.35rem;
-        font-weight: 500;
-        margin-bottom: 4px;
-      }
-
-      .auth-sub {
-        font-size: 0.8rem;
-        color: #a3a3a3;
-        margin-bottom: 18px;
-      }
-
-      form {
-        margin-top: 8px;
-      }
-
-      label {
-        display: block;
-        margin-top: 12px;
-        font-size: 0.8rem;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: #bfbfbf;
-      }
-
-      input {
-        margin-top: 6px;
-        padding: 9px 12px;
-        width: 100%;
-        border-radius: 999px;
-        border: 1px solid rgba(255, 255, 255, 0.18);
-        background: rgba(0, 0, 0, 0.85);
-        color: #f9f9f9;
-        outline: none;
-        font-size: 0.9rem;
-        transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
-      }
-
-      input::placeholder {
-        color: #666;
-      }
-
-      input:focus {
-        border-color: #ffffff;
-        background: rgba(0, 0, 0, 0.96);
-        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.4);
-      }
-
-      button {
-        margin-top: 16px;
-        padding: 9px 20px;
-        width: 100%;
-        border-radius: 999px;
-        border: 1px solid #ffffff;
-        background: #ffffff;
-        color: #000000;
-        font-size: 0.8rem;
-        font-weight: 600;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        cursor: pointer;
-        transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
-      }
-
-      button:hover {
-        background: #000000;
-        color: #ffffff;
-        box-shadow: 0 0 0 1px #ffffff, 0 8px 18px rgba(0, 0, 0, 0.9);
-        transform: translateY(-1px);
-      }
-
-      button:active {
-        transform: translateY(0);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.8);
-      }
-
-      .auth-footer {
-        margin-top: 16px;
-        font-size: 0.8rem;
-        color: #b5b5b5;
-        text-align: center;
-      }
-
-      .auth-footer a {
-        color: #ffffff;
-        text-decoration: none;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.3);
-      }
-
-      .auth-footer a:hover {
-        border-color: #ffffff;
-      }
-
-      .error {
-        margin-top: 10px;
-        padding: 8px 10px;
-        border-radius: 10px;
-        font-size: 0.8rem;
-        background: rgba(255, 77, 77, 0.1);
-        border: 1px solid rgba(255, 77, 77, 0.5);
-        color: #ffb3b3;
-      }
-
-      @media (max-width: 480px) {
-        .auth-shell {
-          padding: 22px 18px 20px;
-          border-radius: 14px;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <canvas id="snow-canvas"></canvas>
-
-    <div class="auth-shell">
-      <div class="auth-title">Konvy Accounts</div>
-      <div class="auth-heading">Create account</div>
-      <div class="auth-sub">Register to start buying Fortnite accounts.</div>
-
-      {% if error %}
-      <div class="error">{{ error }}</div>
-      {% endif %}
-
-      <form method="post">
-        <label>Username
-          <input name="username" placeholder="yourname" value="{{ username_prefill or '' }}">
-        </label>
-        <label>Password
-          <input name="password" type="password" placeholder="Choose a password">
-        </label>
-        <button type="submit">Register</button>
-      </form>
-
-      <div class="auth-footer">
-        Already have an account?
-        <a href="{{ url_for('login') }}">Sign in</a>
-      </div>
-    </div>
-
-    <script>
-      (function () {
-        const canvas = document.getElementById('snow-canvas');
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-
-        let width, height;
-        let flakes = [];
-
-        function resize() {
-          width = canvas.width = window.innerWidth;
-          height = canvas.height = window.innerHeight;
-        }
-        window.addEventListener('resize', resize);
-        resize();
-
-        const FLAKE_COUNT = 140;
-
-        function initFlakes() {
-          flakes = [];
-          for (let i = 0; i < FLAKE_COUNT; i++) {
-            flakes.push({
-              x: Math.random() * width,
-              y: Math.random() * height,
-              r: Math.random() * 2 + 1,
-              v: Math.random() * 0.5 + 0.3,
-              drift: (Math.random() - 0.5) * 0.5
-            });
-          }
-        }
-
-        function draw() {
-          ctx.clearRect(0, 0, width, height);
-          ctx.beginPath();
-          for (const f of flakes) {
-            ctx.moveTo(f.x, f.y);
-            ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
-
-            f.y += f.v;
-            f.x += f.drift + Math.sin(f.y * 0.01) * 0.2;
-
-            if (f.y > height + 5) {
-              f.y = -5;
-              f.x = Math.random() * width;
-            }
-            if (f.x > width + 5) f.x = -5;
-            if (f.x < -5) f.x = width + 5;
-          }
-          ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
-          ctx.fill();
-          requestAnimationFrame(draw);
-        }
-
-        initFlakes();
-        draw();
-      })();
-    </script>
-  </body>
-</html>
-"""
 
 
 
@@ -1710,6 +1872,7 @@ if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
