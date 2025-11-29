@@ -1052,6 +1052,42 @@ INDEX_HTML = """
         margin-top: 12px;
       }
 
+
+
+      .yt-wrap {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        border-radius: 12px;
+        overflow: hidden;
+        margin: 12px 0 10px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.85);
+      }
+
+      .yt-wrap iframe {
+        width: 100%;
+        height: 100%;
+        border: 0;
+      }
+
+      .tutorial-steps {
+        margin-top: 10px;
+        font-size: 0.85rem;
+        line-height: 1.6;
+        color: #d4d4d4;
+      }
+
+      .tutorial-steps li {
+        margin-bottom: 4px;
+      }
+
+
+
+
+
+
+
+
+
       #search-result {
         margin-top: 8px;
         font-size: 0.85rem;
@@ -1106,28 +1142,63 @@ INDEX_HTML = """
       <div class="topbar">
         <div class="topbar-title">Konvy Accounts – Web Panel</div>
         <div class="topbar-user">
-          Logged in as <strong>{{ username }}</strong> |
-          <a href="/logout">Logout</a>
+          {% if logged_in %}
+            Logged in as <strong>{{ username }}</strong> |
+            <a href="{{ url_for('logout') }}">Logout</a>
+          {% else %}
+            <a href="{{ url_for('login') }}">Login</a> ·
+            <a href="{{ url_for('register') }}">Register</a>
+          {% endif %}
         </div>
       </div>
 
       <p class="small">
-        Search Fortnite accounts, check balance, top up via Shopify, redeem orders, and leave a review.
+        Search Fortnite accounts, then sign up to buy and manage them securely.
       </p>
 
       <!-- TAB BAR -->
       <div class="tab-bar">
-        <button class="tab-btn active" data-tab-target="#tab-buy">Buy Account</button>
-        <button class="tab-btn" data-tab-target="#tab-balance">Reload Balance</button>
-        <button class="tab-btn" data-tab-target="#tab-my-accounts">My Account Info</button>
-        <button class="tab-btn" data-tab-target="#tab-redeem">Redeem</button>
-        {% if has_purchases %}
-        <button class="tab-btn" data-tab-target="#tab-review">Review</button>
+        <button class="tab-btn" data-tab-target="#tab-tutorial">Tutorial</button>
+        <button class="tab-btn active" data-tab-target="#tab-buy">Search Accounts</button>
+
+        {% if logged_in %}
+          <button class="tab-btn" data-tab-target="#tab-balance">Reload Balance</button>
+          <button class="tab-btn" data-tab-target="#tab-my-accounts">My Account Info</button>
+          <button class="tab-btn" data-tab-target="#tab-redeem">Redeem</button>
+          {% if has_purchases %}
+          <button class="tab-btn" data-tab-target="#tab-review">Review</button>
+          {% endif %}
         {% endif %}
       </div>
 
+      <!-- TAB: TUTORIAL -->
+      <div id="tab-tutorial" class="tab-panel">
+        <div class="card">
+          <h2>How Konvy Accounts Works</h2>
+          <p class="small">
+            Watch this quick tutorial, then follow the steps below to use Konvy Accounts.
+          </p>
 
-      <!-- TAB: BUY ACCOUNT -->
+          <div class="yt-wrap">
+            <iframe
+              src="https://www.youtube.com/embed/XXXXXXXX"
+              title="Konvy Accounts Tutorial"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowfullscreen>
+            </iframe>
+          </div>
+
+          <ol class="tutorial-steps">
+            <li>Search any Fortnite item (ex: <strong>Black Knight</strong>) on the <strong>Search Accounts</strong> tab.</li>
+            <li>When you find an account you like, hit <strong>Buy</strong> – you'll be asked to sign up or log in.</li>
+            <li>After login, your balance, purchases, and redeem options unlock in the other tabs.</li>
+            <li>Once bought, your account login info shows under <strong>My Account Info</strong>.</li>
+          </ol>
+        </div>
+      </div>
+
+
+      <!-- TAB: BUY / SEARCH -->
       <div id="tab-buy" class="tab-panel active">
         <div class="row card">
           <h2>Fortnite Search</h2>
@@ -1154,6 +1225,7 @@ INDEX_HTML = """
         </div>
       </div>  <!-- close #tab-buy -->
 
+      {% if logged_in %}
       <!-- TAB: BALANCE / RELOAD -->
       <div id="tab-balance" class="tab-panel">
         <div class="row card">
@@ -1222,10 +1294,13 @@ INDEX_HTML = """
         </div>
       </div>
       {% endif %}
+      {% endif %}
 
     </div> <!-- end .app-shell -->
 
     <script>
+      const KONVY_LOGGED_IN = {{ 'true' if logged_in else 'false' }};
+
       // Helper to post JSON
       async function postJSON(url, data) {
         const res = await fetch(url, {
@@ -1351,6 +1426,12 @@ INDEX_HTML = """
               `;
               const btn = div.querySelector('button');
               btn.addEventListener('click', async () => {
+                // If not logged in, send to sign up instead of buying
+                if (!KONVY_LOGGED_IN) {
+                  window.location.href = "{{ url_for('register') }}";
+                  return;
+                }
+
                 btn.disabled = true;
                 btn.textContent = 'Buying...';
                 try {
@@ -1434,6 +1515,7 @@ INDEX_HTML = """
       let myAccountsIndex = 0;
 
       async function loadMyAccounts() {
+        if (!KONVY_LOGGED_IN) return;
         try {
           const res = await postJSON('/api/fortnite/my-accounts', {});
           myAccounts = res.accounts || [];
@@ -1500,7 +1582,7 @@ INDEX_HTML = """
           });
         }
 
-        // Load accounts on page open
+        // Load accounts on page open (only if logged in)
         loadMyAccounts();
 
         // TAB SWITCHING
@@ -1613,6 +1695,7 @@ INDEX_HTML = """
   </body>
 </html>
 """
+
 
 REGISTER_HTML = """
 <!doctype html>
@@ -1872,20 +1955,171 @@ REGISTER_HTML = """
   </body>
 </html>
 """
+TUTORIAL_HTML = """
+<!doctype html>
+<html>
+  <head>
+    <title>Konvy Accounts – Tutorial</title>
+    <style>
+      body {
+        margin:0;
+        padding:0;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI";
+        background: #000;
+        background-image: radial-gradient(circle at top, #222 0, #000 55%);
+        color: #fff;
+        min-height: 100vh;
+        display:flex;
+        justify-content:center;
+        align-items:flex-start;
+        padding:40px 16px;
+        position:relative;
+        overflow:hidden;
+      }
+
+      #snow-canvas {
+        position:absolute;
+        top:0; left:0;
+        width:100%; height:100%;
+        z-index:-1;
+        pointer-events:none;
+      }
+
+      .tutorial-shell {
+        max-width:900px;
+        width:100%;
+        padding:24px 22px;
+        border-radius:18px;
+        background: rgba(0,0,0,0.7);
+        border:1px solid rgba(255,255,255,0.08);
+        backdrop-filter: blur(18px);
+      }
+
+      h1 {
+        margin-bottom:14px;
+        font-size:1.5rem;
+      }
+
+      .yt-wrap {
+        width:100%;
+        aspect-ratio:16 / 9;
+        border-radius:12px;
+        overflow:hidden;
+        margin-top:16px;
+        box-shadow:0 0 20px rgba(0,0,0,0.8);
+      }
+
+      iframe {
+        width:100%;
+        height:100%;
+        border:0;
+      }
+
+      a {
+        color:#fff;
+        text-decoration:underline;
+      }
+    </style>
+  </head>
+
+  <body>
+    <canvas id="snow-canvas"></canvas>
+
+    <div class="tutorial-shell">
+      <h1>Konvy Accounts – Tutorial</h1>
+      <p>Welcome! Watch this quick tutorial before using the site.</p>
+
+      <div class="yt-wrap">
+        <iframe 
+          src="https://www.youtube.com/embed/XXXXXXXX"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen></iframe>
+      </div>
+
+      <p style="margin-top:20px;">
+        When you're ready, <a href="/login">login here</a> or 
+        <a href="/register">create an account</a>.
+      </p>
+    </div>
+
+    <script>
+      // snow animation reused
+      (function(){
+        const canvas = document.getElementById('snow-canvas');
+        const ctx = canvas.getContext('2d');
+        function resize(){
+          canvas.width = window.innerWidth;
+          canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        let flakes = [];
+        for (let i=0; i<130; i++){
+          flakes.push({
+            x: Math.random()*canvas.width,
+            y: Math.random()*canvas.height,
+            r: Math.random()*2+1,
+            v: Math.random()*0.6+0.3,
+            drift: (Math.random()-0.5)*0.5
+          });
+        }
+
+        function draw(){
+          ctx.clearRect(0,0,canvas.width,canvas.height);
+          ctx.beginPath();
+          for (const f of flakes){
+            ctx.moveTo(f.x,f.y);
+            ctx.arc(f.x,f.y,f.r,0,Math.PI*2);
+            f.y += f.v;
+            f.x += f.drift;
+            if (f.y>canvas.height) f.y = -5;
+            if (f.x>canvas.width) f.x = -5;
+            if (f.x<0) f.x = canvas.width + 5;
+          }
+          ctx.fillStyle="rgba(255,255,255,0.85)";
+          ctx.fill();
+          requestAnimationFrame(draw);
+        }
+        draw();
+      })();
+    </script>
+  </body>
+</html>
+"""
 
 
+
+
+@app.route("/tutorial")
+def tutorial():
+    return render_template_string(TUTORIAL_HTML)
+
+
+@app.route("/dashboard")
+def index():
+    username = session.get("username")
+    has_purchases = bool(username and get_purchases(username))
+    return render_template_string(
+        INDEX_HTML,
+        username=username or "",
+        has_purchases=has_purchases,
+        logged_in=bool(username),
+    )
 
 
 @app.route("/")
-@login_required_page
-def index():
-    username = session["username"]
-    has_purchases = bool(get_purchases(username))
-    return render_template_string(
-        INDEX_HTML,
-        username=username,
-        has_purchases=has_purchases,
-    )
+def home_redirect():
+    # If not logged in, send them to the tutorial page
+    if "username" not in session:
+        return redirect(url_for("tutorial"))
+    # If logged in, send them to the main panel
+    return redirect(url_for("index"))
+
+
+# ===================== API ROUTES =====================
+# (rest of your code stays the same)
+
 
 
 
@@ -1980,7 +2214,6 @@ def api_redeem():
 
 
 @app.route("/api/fortnite/search", methods=["POST"])
-@login_required_api
 def api_fortnite_search():
     data = request.json or {}
     item = data.get("item", "")
@@ -2130,7 +2363,6 @@ if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
-
 
 
 
