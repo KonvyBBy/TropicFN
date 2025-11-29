@@ -1,0 +1,17 @@
+{
+  "acalvillo97": {
+    "password_hash": "scrypt:32768:8:1$L9kVq8fNGdjgChDL$23aaa18588c189d962b004fe12727032d362da69f32c9940525082353255262571f51992bc9cf9ac6c017b862615962c1ff2ef2f40b0e602a1abf1e95fb423a1"
+  },
+  "dwaddawdawd241@gmail.com": {
+    "password_hash": "scrypt:32768:8:1$VRGLLfa8NzozMb0C$714adf33eee5db36c75c1056c598c179333aa58120609877ed52a387b3815509ea7e9ecb48ae93a16b5ae65d4019b149ff194c6101e0f667e7490c0b5128558e"
+  },
+  "rife": {
+    "password_hash": "scrypt:32768:8:1$yAF6lPOMy6elh1C2$fc0c721fa17388f84cfcfe59c1ad722f002f37acac16b66ce114c21ec1c096d896009eb577f9bf5ef16b869970876517574e4e1761d6e186bc9067462d415342"
+  },
+  "mommy": {
+    "password_hash": "scrypt:32768:8:1$JQxArNHOJ09I8HBS$6494895091a66d7f57005198908c09146b3d470da007e7adbeb9b703a396a7b62e3b226abc202edd59edd1dca890b4c8afcd4d7f93f9a8fee0b02f4de842b3f1"
+  },
+  "bingo": {
+    "password_hash": "scrypt:32768:8:1$YY8JfZsRtETkqCh6$c856e828cae9fb40b6d8b0ae0e2af4f6d5331d74bdf650e0634484f09302587be60a7a2bae6ed98836169effe7211a1253cd9480de1b3ba32ae84478efa0cdde"
+  }
+}
