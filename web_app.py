@@ -1194,6 +1194,264 @@ INDEX_HTML = """
 </html>
 """
 
+REGISTER_HTML = """
+<!doctype html>
+<html>
+  <head>
+    <title>Konvy Accounts – Register</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #000;
+        background-image: radial-gradient(circle at top, #222 0, #000 55%);
+        background-attachment: fixed;
+        color: #f6f6f6;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 40px 16px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      #snow-canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+        pointer-events: none;
+      }
+
+      .auth-shell {
+        width: 100%;
+        max-width: 420px;
+        padding: 26px 22px 24px;
+        border-radius: 18px;
+        background: rgba(0, 0, 0, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow:
+          0 24px 60px rgba(0, 0, 0, 0.9),
+          0 0 0 1px rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(18px);
+      }
+
+      .auth-title {
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        color: #fdfdfd;
+        margin-bottom: 4px;
+      }
+
+      .auth-heading {
+        font-size: 1.35rem;
+        font-weight: 500;
+        margin-bottom: 4px;
+      }
+
+      .auth-sub {
+        font-size: 0.8rem;
+        color: #a3a3a3;
+        margin-bottom: 18px;
+      }
+
+      form {
+        margin-top: 8px;
+      }
+
+      label {
+        display: block;
+        margin-top: 12px;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #bfbfbf;
+      }
+
+      input {
+        margin-top: 6px;
+        padding: 9px 12px;
+        width: 100%;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        background: rgba(0, 0, 0, 0.85);
+        color: #f9f9f9;
+        outline: none;
+        font-size: 0.9rem;
+        transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+      }
+
+      input::placeholder {
+        color: #666;
+      }
+
+      input:focus {
+        border-color: #ffffff;
+        background: rgba(0, 0, 0, 0.96);
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.4);
+      }
+
+      button {
+        margin-top: 16px;
+        padding: 9px 20px;
+        width: 100%;
+        border-radius: 999px;
+        border: 1px solid #ffffff;
+        background: #ffffff;
+        color: #000000;
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+      }
+
+      button:hover {
+        background: #000000;
+        color: #ffffff;
+        box-shadow: 0 0 0 1px #ffffff, 0 8px 18px rgba(0, 0, 0, 0.9);
+        transform: translateY(-1px);
+      }
+
+      button:active {
+        transform: translateY(0);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.8);
+      }
+
+      .auth-footer {
+        margin-top: 16px;
+        font-size: 0.8rem;
+        color: #b5b5b5;
+        text-align: center;
+      }
+
+      .auth-footer a {
+        color: #ffffff;
+        text-decoration: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+      }
+
+      .auth-footer a:hover {
+        border-color: #ffffff;
+      }
+
+      .error {
+        margin-top: 10px;
+        padding: 8px 10px;
+        border-radius: 10px;
+        font-size: 0.8rem;
+        background: rgba(255, 77, 77, 0.1);
+        border: 1px solid rgba(255, 77, 77, 0.5);
+        color: #ffb3b3;
+      }
+
+      @media (max-width: 480px) {
+        .auth-shell {
+          padding: 22px 18px 20px;
+          border-radius: 14px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="snow-canvas"></canvas>
+
+    <div class="auth-shell">
+      <div class="auth-title">Konvy Accounts</div>
+      <div class="auth-heading">Create account</div>
+      <div class="auth-sub">Register to start buying Fortnite accounts.</div>
+
+      {% if error %}
+      <div class="error">{{ error }}</div>
+      {% endif %}
+
+      <form method="post">
+        <label>Username
+          <input name="username" placeholder="yourname" value="{{ username_prefill or '' }}">
+        </label>
+        <label>Password
+          <input name="password" type="password" placeholder="Choose a password">
+        </label>
+        <button type="submit">Register</button>
+      </form>
+
+      <div class="auth-footer">
+        Already have an account?
+        <a href="{{ url_for('login') }}">Sign in</a>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        const canvas = document.getElementById('snow-canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        let flakes = [];
+
+        function resize() {
+          width = canvas.width = window.innerWidth;
+          height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        const FLAKE_COUNT = 140;
+
+        function initFlakes() {
+          flakes = [];
+          for (let i = 0; i < FLAKE_COUNT; i++) {
+            flakes.push({
+              x: Math.random() * width,
+              y: Math.random() * height,
+              r: Math.random() * 2 + 1,
+              v: Math.random() * 0.5 + 0.3,
+              drift: (Math.random() - 0.5) * 0.5
+            });
+          }
+        }
+
+        function draw() {
+          ctx.clearRect(0, 0, width, height);
+          ctx.beginPath();
+          for (const f of flakes) {
+            ctx.moveTo(f.x, f.y);
+            ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
+
+            f.y += f.v;
+            f.x += f.drift + Math.sin(f.y * 0.01) * 0.2;
+
+            if (f.y > height + 5) {
+              f.y = -5;
+              f.x = Math.random() * width;
+            }
+            if (f.x > width + 5) f.x = -5;
+            if (f.x < -5) f.x = width + 5;
+          }
+          ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
+          ctx.fill();
+          requestAnimationFrame(draw);
+        }
+
+        initFlakes();
+        draw();
+      })();
+    </script>
+  </body>
+</html>
+"""
 
 
 
@@ -1452,6 +1710,7 @@ if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
