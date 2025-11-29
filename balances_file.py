@@ -2,7 +2,10 @@
 import json
 import os
 
-BALANCES_FILE = "balances.json"
+DATA_DIR = "/opt/render/project/src/data"
+os.makedirs(DATA_DIR, exist_ok=True)
+BALANCES_FILE = os.path.join(DATA_DIR, "balances.json")
+
 
 
 def _load_balances():
@@ -50,3 +53,4 @@ def add_balance(user_key, delta_cents: int) -> None:
         new_balance = 0  # safety: no negative balances
     balances[uid] = new_balance
     _save_balances(balances)
+
