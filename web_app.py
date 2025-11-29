@@ -1191,7 +1191,7 @@ INDEX_HTML = """
           <ol class="tutorial-steps">
             <li>Search any Fortnite item (ex: <strong>Black Knight</strong>) on the <strong>Search Accounts</strong> tab.</li>
             <li>When you find an account you like, hit <strong>Buy</strong> – you'll be asked to sign up or log in.</li>
-            <li>After login, your balance, purchases, and redeem options unlock in the other tabs.</li>
+            <li>After you login, your balance, purchases, and redeem options unlock in the other tabs.</li>
             <li>Once bought, your account login info shows under <strong>My Account Info</strong>.</li>
           </ol>
         </div>
@@ -2363,6 +2363,7 @@ if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
