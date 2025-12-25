@@ -126,7 +126,37 @@ REDEEMED_FILE = os.path.join(DATA_DIR, "redeemed_orders.json")
 PURCHASES_FILE = os.path.join(DATA_DIR, "purchased_accounts.json")
 
 # --- Pricing ---
-UPCHARGE_MULTIPLIER = 1.8  # same as bot
+# --- Pricing Tiers ---
+UPCHARGE_TIERS = [
+    {"min": 0,  "max": 5,  "multiplier": 3.3},
+    {"min": 5,  "max": 10, "multiplier": 3.0},
+    {"min": 10, "max": 15, "multiplier": 2.8},
+    {"min": 15, "max": 20, "multiplier": 2.6},
+    {"min": 20, "max": 25, "multiplier": 2.4},
+    {"min": 25, "max": 30, "multiplier": 2.2},
+    {"min": 30, "max": 35, "multiplier": 2.05},
+    {"min": 35, "max": 40, "multiplier": 1.95},
+    {"min": 40, "max": 45, "multiplier": 1.85},
+    {"min": 45, "max": 50, "multiplier": 1.75},
+    {"min": 50, "max": 60, "multiplier": 1.65},
+    {"min": 60, "max": 70, "multiplier": 1.6},
+    {"min": 70, "max": 80, "multiplier": 1.55},
+    {"min": 80, "max": 90, "multiplier": 1.5},
+    {"min": 90, "max": 100,"multiplier": 1.45},
+    {"min": 100,"max": 999999,"multiplier": 1.4}
+]
+
+
+
+
+
+
+def get_upcharge_multiplier(base_price: float) -> float:
+    """Get the appropriate upcharge multiplier based on base price."""
+    for tier in UPCHARGE_TIERS:
+        if tier["min"] <= base_price < tier["max"]:
+            return tier["multiplier"]
+    return 1.5  # Default fallback
 
 # --- User storage ---
 USERS_FILE = os.path.join(DATA_DIR, "users.json")
@@ -1020,7 +1050,8 @@ INDEX_HTML = """
 <!doctype html>
 <html>
   <head>
-    <title>Konvy Accounts â€“ Web Panel</title>
+    <title>Konvy Accounts – Web Panel</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
       * {
         box-sizing: border-box;
@@ -2586,7 +2617,7 @@ def api_fortnite_search():
         except Exception:
             base_price = 0.0
 
-        user_price = base_price * UPCHARGE_MULTIPLIER
+        user_price = base_price * get_upcharge_multiplier(base_price)
         
 # Filter by budget
         if user_price > budget:
@@ -2625,7 +2656,7 @@ def api_fortnite_buy():
     if not item_id or base_price <= 0:
         return jsonify({"error": "item_id and base_price required"}), 400
 
-    user_price = base_price * UPCHARGE_MULTIPLIER
+    user_price = base_price * get_upcharge_multiplier(base_price)
     cost_cents = int(round(user_price * 100))
     starting_balance = get_balance(username)
 
