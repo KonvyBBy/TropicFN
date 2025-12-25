@@ -100,6 +100,31 @@ document.addEventListener("DOMContentLoaded", () => {
 
   animateParticles();
 
+
+
+// =============== MOBILE TOUCH IMPROVEMENTS ===============
+  let touchStartY = 0;
+  let touchEndY = 0;
+
+  document.addEventListener('touchstart', (e) => {
+    touchStartY = e.changedTouches[0].screenY;
+  }, { passive: true });
+
+  document.addEventListener('touchend', (e) => {
+    touchEndY = e.changedTouches[0].screenY;
+  }, { passive: true });
+
+  // Prevent double-tap zoom on buttons
+  document.addEventListener('touchend', (e) => {
+    if (e.target.matches('button, .action-btn, .nav-btn')) {
+      e.preventDefault();
+      e.target.click();
+    }
+  });
+
+
+
+
   // =============== UTILITIES ===============
   async function postJSON(url, data = {}) {
     const res = await fetch(url, {
