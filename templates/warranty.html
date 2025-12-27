@@ -6,6 +6,29 @@
   <title>Warranty Policy - Konvy Accounts</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
+    /* =============== THEME VARIABLES =============== */
+    :root {
+      /* Dark theme (default) */
+      --bg-color: #0a0a0c;
+      --text-color: #f5f5f5;
+      --card-bg-color: rgba(255,255,255,0.06);
+      --button-bg-color: #ffffff;
+      --button-text-color: #000000;
+      --border-color: rgba(255,255,255,0.12);
+      --muted-color: #9ca3af;
+    }
+
+    /* Light theme */
+    body:not(.dark-mode) {
+      --bg-color: #f5f7fa;
+      --text-color: #1a1a1a;
+      --card-bg-color: #ffffff;
+      --button-bg-color: #1a1a1a;
+      --button-text-color: #ffffff;
+      --border-color: rgba(0,0,0,0.12);
+      --muted-color: #6b7280;
+    }
+
     * {
       box-sizing: border-box;
       margin: 0;
@@ -14,21 +37,32 @@
 
     body {
       font-family: Inter, system-ui, sans-serif;
-      background: #000;
-      background-image: radial-gradient(circle at top, #222 0, #000 55%);
-      color: #f5f5f5;
+      background: var(--bg-color);
+      background-image: radial-gradient(circle at top, #222 0, #0a0a0c 55%);
+      color: var(--text-color);
       min-height: 100vh;
       padding: 40px 20px;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    body:not(.dark-mode) {
+      background-image: radial-gradient(circle at top, #e0e7ef 0, #f5f7fa 55%);
     }
 
     .container {
       max-width: 800px;
       margin: 0 auto;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: var(--card-bg-color);
+      border: 1px solid var(--border-color);
       border-radius: 18px;
       padding: 40px;
-      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.9);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.3);
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    body:not(.dark-mode) .container {
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
     }
 
     .back-link {
@@ -41,7 +75,37 @@
     }
 
     .back-link:hover {
-      color: #fff;
+      color: var(--button-bg-color);
+    }
+
+    /* =============== THEME TOGGLE BUTTON =============== */
+    .theme-toggle-btn {
+      position: absolute;
+      top: 24px;
+      right: 24px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--border-color);
+      background: var(--card-bg-color);
+      color: var(--text-color);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .theme-toggle-btn:hover {
+      border-color: var(--button-bg-color);
+      background: var(--button-bg-color);
+      color: var(--button-text-color);
+      transform: translateY(-1px);
+    }
+
+    .theme-toggle-btn .icon {
+      font-size: 16px;
     }
 
     h1 {
@@ -54,7 +118,7 @@
     }
 
     .subtitle {
-      color: #9ca3af;
+      color: var(--muted-color);
       font-size: 0.95rem;
       margin-bottom: 32px;
     }
@@ -63,7 +127,7 @@
       font-size: 1.4rem;
       margin-top: 32px;
       margin-bottom: 12px;
-      color: #fff;
+      color: var(--text-color);
     }
 
     h3 {
@@ -76,14 +140,16 @@
     p {
       line-height: 1.8;
       margin-bottom: 16px;
-      color: #d1d5db;
+      color: var(--text-color);
+      opacity: 0.9;
     }
 
     ul, ol {
       margin-left: 24px;
       margin-bottom: 16px;
       line-height: 1.8;
-      color: #d1d5db;
+      color: var(--text-color);
+      opacity: 0.9;
     }
 
     li {
@@ -96,6 +162,7 @@
       border-radius: 12px;
       padding: 20px;
       margin: 24px 0;
+      transition: all 0.3s ease;
     }
 
     .warning-box {
@@ -104,6 +171,7 @@
       border-radius: 12px;
       padding: 20px;
       margin: 24px 0;
+      transition: all 0.3s ease;
     }
 
     .success-box {
@@ -112,10 +180,11 @@
       border-radius: 12px;
       padding: 20px;
       margin: 24px 0;
+      transition: all 0.3s ease;
     }
 
     strong {
-      color: #fff;
+      color: var(--text-color);
     }
 
     .badge {
@@ -135,6 +204,12 @@
     @media (max-width: 768px) {
       .container {
         padding: 24px;
+        padding-top: 60px;
+      }
+
+      .theme-toggle-btn {
+        top: 16px;
+        right: 16px;
       }
 
       h1 {
@@ -149,6 +224,11 @@
 </head>
 <body>
   <div class="container">
+    <button class="theme-toggle-btn" id="theme-toggle" aria-label="Toggle theme">
+      <span class="icon">🌙</span>
+      <span class="label">Dark Mode</span>
+    </button>
+    
     <a href="/dashboard" class="back-link">â† Back to Dashboard</a>
     
     <h1>Warranty Policy</h1>
@@ -224,5 +304,7 @@
       Last updated: December 2024
     </p>
   </div>
+
+  <script src="/static/theme.js"></script>
 </body>
 </html>
