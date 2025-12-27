@@ -46,6 +46,10 @@
       </div>
 
       <div class="header-right">
+        <button class="theme-toggle-btn" id="theme-toggle" aria-label="Toggle theme">
+          <span class="icon">🌙</span>
+          <span class="label">Dark Mode</span>
+        </button>
         {% if logged_in %}
           <div class="pill">Balance: ${{ balance }}</div>
           <a href="{{ url_for('warranty') }}" class="pill" style="text-decoration: none;">Warranty</a>
