@@ -1039,7 +1039,11 @@ body:not(.dark-mode) .item-search-input {
 .item-search-input:focus {
   outline: none;
   border-color: var(--button-bg-color);
-  box-shadow: 0 0 0 2px rgba(var(--button-bg-color), 0.1);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+body:not(.dark-mode) .item-search-input:focus {
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
 }
 
 .item-search-input::placeholder {

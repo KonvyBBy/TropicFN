@@ -383,6 +383,7 @@
 <script>
   window.KONVY_LOGGED_IN = {{ 'true' if logged_in else 'false' }};
 </script>
+<script src="{{ url_for('static', filename='theme.js') }}"></script>
 <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
 </body>
 </html>
