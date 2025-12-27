@@ -1359,411 +1359,6 @@ input::placeholder {
 
 /* =============== MOBILE RESPONSIVE =============== */
 @media (max-width: 768px) {
-  /* App Layout */
-  .app {
-    grid-template-columns: 1fr;
-    grid-template-rows: 1fr auto;
-  }
-
-  .sidebar {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-    height: 70px;
-    flex-direction: row;
-    justify-content: space-around;
-    padding: 8px 0;
-    border-right: none;
-    border-top: 1px solid var(--border);
-    background: rgba(0, 0, 0, 0.95);
-    backdrop-filter: blur(20px);
-    z-index: 100;
-  }
-
-  .logo {
-    display: none;
-  }
-
-  .main {
-    padding: 16px;
-    padding-bottom: 90px;
-    overflow-y: auto;
-  }
-
-  /* Topbar */
-  .topbar {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-
-  .topbar h1 {
-    font-size: 1.5rem;
-  }
-
-  .header-right {
-    width: 100%;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .pill {
-    font-size: 0.85rem;
-    padding: 6px 12px;
-  }
-
-  /* Grids */
-  .grid-2, .grid-4 {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-
-  /* Cards */
-  .card {
-    padding: 16px;
-  }
-
-  .card.large {
-    min-height: auto;
-  }
-
-  /* Search Hero */
-  .search-hero h2 {
-    font-size: 1.5rem;
-  }
-
-  .search-hero p {
-    font-size: 0.9rem;
-  }
-
-  /* Search Card */
-  .search-card {
-    padding: 16px;
-  }
-
-  /* Filter Sections */
-  .filter-row {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-
-  /* Items Container */
-  .item-input-row {
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .remove-item-btn {
-    width: 100%;
-    padding: 10px;
-  }
-
-  /* Autocomplete */
-  .autocomplete-dropdown {
-    max-height: 200px;
-  }
-
-  .autocomplete-item {
-    padding: 10px;
-  }
-
-  .autocomplete-item img {
-    width: 32px;
-    height: 32px;
-  }
-
-  /* Results Grid */
-  .results-grid {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-
-  /* Account Cards */
-  .account-card {
-    padding: 16px;
-  }
-
-  .account-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-
-  .account-price {
-    font-size: 1.6rem;
-  }
-
-  .account-stats {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-  }
-
-  .stat-item {
-    padding: 8px;
-  }
-
-  .stat-label {
-    font-size: 0.65rem;
-  }
-
-  .stat-value {
-    font-size: 1rem;
-  }
-
-  .account-actions {
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .action-btn {
-    width: 100%;
-    padding: 12px 16px;
-    font-size: 0.9rem;
-  }
-
-  /* Buttons */
-  button {
-    padding: 12px 18px;
-    font-size: 0.9rem;
-  }
-
-  /* Forms */
-  input {
-    font-size: 0.9rem;
-    padding: 12px;
-  }
-
-  /* Pager */
-  .pager {
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .pager button {
-    width: 100%;
-    max-width: none;
-  }
-
-  #account-indicator {
-    order: -1;
-    text-align: center;
-    padding: 8px;
-  }
-
-  /* Table */
-  table {
-    font-size: 0.85rem;
-  }
-
-  th, td {
-    padding: 8px;
-  }
-
-  /* Info Boxes */
-  .info-box {
-    flex-direction: column;
-    gap: 8px;
-    padding: 12px;
-  }
-
-  .info-icon {
-    font-size: 1.5rem;
-  }
-
-  .info-content {
-    font-size: 0.85rem;
-  }
-
-  /* Skins Modal */
-  .skins-modal-content {
-    width: 95vw;
-    height: 90vh;
-  }
-
-  .skins-modal-header {
-    padding: 14px 16px;
-  }
-
-  .skins-modal-header h2 {
-    font-size: 1rem;
-  }
-
-  .skins-grid {
-    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-    gap: 8px;
-    padding: 12px;
-  }
-
-  .skins-close {
-    padding: 8px 14px;
-    font-size: 0.85rem;
-  }
-
-  /* Cosmetic Type Selector */
-  .cosmetic-type-selector {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-    padding: 12px;
-  }
-
-  .cosmetic-type-btn {
-    padding: 10px 8px;
-    font-size: 0.8rem;
-  }
-
-  .cosmetic-type-icon {
-    font-size: 1.4rem;
-  }
-
-  .cosmetic-type-label {
-    font-size: 0.75rem;
-  }
-
-  /* Processing Overlay */
-  .processing-content {
-    padding: 24px;
-    max-width: 90vw;
-  }
-
-  .processing-title {
-    font-size: 1.3rem;
-  }
-
-  .processing-message {
-    font-size: 0.9rem;
-  }
-
-  .processing-warning {
-    font-size: 0.85rem;
-    padding: 12px;
-  }
-
-  /* Secure Card */
-  .secure-card h2 {
-    font-size: 1.3rem;
-  }
-
-  .secure-card h3 {
-    font-size: 1rem;
-  }
-
-  .secure-card h4 {
-    font-size: 0.9rem;
-  }
-
-  .secure-card ul, .secure-card ol {
-    margin-left: 16px;
-    font-size: 0.9rem;
-  }
-
-  /* Empty State */
-  .empty-state {
-    padding: 40px 16px;
-  }
-
-  .empty-state-icon {
-    font-size: 3rem;
-  }
-
-  .empty-state-text {
-    font-size: 1rem;
-  }
-
-  .empty-state-hint {
-    font-size: 0.85rem;
-  }
-
-  /* Loading State */
-  .loading-state {
-    padding: 40px 16px;
-  }
-
-  .loading-spinner {
-    width: 40px;
-    height: 40px;
-    border-width: 3px;
-  }
-
-  /* Loader (Skins) */
-  .loader-spinner {
-    width: 48px;
-    height: 48px;
-    border-width: 3px;
-  }
-
-  .loader-text {
-    font-size: 1rem;
-  }
-
-  .loader-count {
-    font-size: 0.85rem;
-  }
-
-  .loader-progress {
-    font-size: 1.1rem;
-  }
-
-  /* Nav Buttons */
-  .nav-btn {
-    width: 44px;
-    height: 44px;
-    font-size: 18px;
-    margin: 0;
-  }
-
-  /* Favorite Button */
-  .favorite-btn {
-    width: 32px;
-    height: 32px;
-    font-size: 1rem;
-    top: 10px;
-    right: 10px;
-  }
-
-  /* Warranty Badge */
-  .warranty-badge {
-    top: 12px;
-    left: 12px;
-    font-size: 0.65rem;
-    padding: 3px 8px;
-  }
-
-  /* Full Access Badge */
-  .full-access-badge {
-    font-size: 0.75rem;
-    padding: 5px 10px;
-  }
-
-  /* Particles Canvas */
-  #particles-canvas {
-    display: none; /* Hide particles on mobile for better performance */
-  }
-}
-
-/* Extra Small Devices */
-@media (max-width: 480px) {
-  .topbar h1 {
-    font-size: 1.3rem;
-  }
-
-  .search-hero h2 {
-    font-size: 1.3rem;
-  }
-
-  .account-stats {
-    grid-template-columns: 1fr;
-  }
-
-  .cosmetic-type-selector {
-    grid-template-columns: 1fr;
-  }
-
-/* =============== COMPREHENSIVE MOBILE FIXES =============== */
-/* Add this to the end of your dashboard.css file */
-
-@media (max-width: 768px) {
   /* Fix body/html to prevent horizontal scroll */
   html, body {
     overflow-x: hidden;
@@ -1771,7 +1366,7 @@ input::placeholder {
     position: relative;
   }
 
-  /* App Layout - Mobile Bottom Navigation */
+  /* App Layout */
   .app {
     grid-template-columns: 1fr;
     grid-template-rows: 1fr auto;
@@ -1796,16 +1391,13 @@ input::placeholder {
     background: rgba(0, 0, 0, 0.95);
     backdrop-filter: blur(20px);
     z-index: 1000;
-    overflow-x: auto;
-    overflow-y: hidden;
   }
 
-  /* Hide logo on mobile */
   .logo {
     display: none;
   }
 
-  /* Navigation buttons - smaller and horizontal */
+  /* Navigation buttons */
   .nav-btn {
     width: 52px;
     height: 52px;
@@ -1823,15 +1415,16 @@ input::placeholder {
     overflow-x: hidden;
     height: calc(100vh - 70px);
     -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
   }
 
   /* Sections */
   .section {
-    padding: 12px 4px;
+    padding: 16px 8px;
     min-height: auto;
   }
 
-  /* Topbar - Stack vertically */
+  /* Topbar */
   .topbar {
     flex-direction: column;
     align-items: flex-start;
@@ -1848,7 +1441,6 @@ input::placeholder {
     font-size: 0.85rem;
   }
 
-  /* Header right - full width */
   .header-right {
     width: 100%;
     flex-wrap: wrap;
@@ -1861,7 +1453,7 @@ input::placeholder {
     white-space: nowrap;
   }
 
-  /* Grids - single column */
+  /* Grids */
   .grid-2, .grid-4 {
     grid-template-columns: 1fr;
     gap: 10px;
@@ -1869,18 +1461,18 @@ input::placeholder {
 
   /* Cards */
   .card {
-    padding: 14px;
-    margin-bottom: 12px;
-    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 14px;
+    border-radius: 16px;
   }
 
   .card.large {
     min-height: auto;
-    padding: 16px;
+    padding: 18px 16px;
   }
 
   .card strong {
-    font-size: 20px;
+    font-size: 22px;
   }
 
   /* Search Hero */
@@ -1901,87 +1493,138 @@ input::placeholder {
 
   /* Search Card */
   .search-card {
-    padding: 16px 14px;
-    margin-bottom: 16px;
+    padding: 20px 16px;
+    margin-bottom: 20px;
+    border-radius: 16px;
   }
 
   .search-card h3 {
-    font-size: 1rem;
-    margin-bottom: 14px;
+    font-size: 1.1rem;
+    margin-bottom: 16px;
   }
 
   /* Filter sections */
   .filter-section {
-    margin-bottom: 16px;
+    margin-bottom: 20px;
   }
 
   .filter-label {
-    font-size: 0.75rem;
-    margin-bottom: 8px;
+    font-size: 0.8rem;
+    margin-bottom: 10px;
   }
 
   .filter-hint {
-    font-size: 0.7rem;
-    line-height: 1.3;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    margin-top: 6px;
   }
 
-  /* Filter row - single column */
   .filter-row {
     grid-template-columns: 1fr;
     gap: 12px;
   }
 
-  /* Items container */
+  /* Items container - FIXED */
   #items-container {
-    gap: 10px;
+    gap: 12px;
   }
 
   .item-input-row {
-    flex-direction: row;
-    gap: 8px;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .autocomplete-wrapper {
     width: 100%;
   }
 
   .item-search-input {
-    font-size: 0.85rem;
-    padding: 10px 12px;
+    font-size: 16px; /* Prevent iOS zoom */
+    padding: 12px 14px;
     width: 100%;
+    border-radius: 12px;
   }
 
   .remove-item-btn {
-    padding: 10px 12px;
-    min-width: 44px;
-    height: 44px;
-    flex-shrink: 0;
+    padding: 12px 16px;
+    width: 100%;
+    height: auto;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .remove-item-btn::before {
+    content: 'Remove';
+    font-weight: 600;
   }
 
   .add-btn {
     width: 100%;
     justify-content: center;
-    padding: 10px 14px;
+    padding: 12px 16px;
     margin-top: 4px;
+    font-size: 0.9rem;
   }
 
   /* Filter inputs */
   .filter-input {
-    font-size: 0.85rem;
-    padding: 10px 12px;
+    font-size: 16px;
+    padding: 12px 14px;
+    border-radius: 12px;
   }
 
-  /* Budget input */
   #budget-input {
-    font-size: 0.85rem;
-    padding: 10px 12px;
+    font-size: 16px;
+    padding: 12px 14px;
+    border-radius: 12px;
   }
 
   /* Search submit button */
   .search-submit-btn {
-    padding: 12px 20px;
-    font-size: 0.9rem;
-    margin-top: 12px;
+    padding: 14px 20px;
+    font-size: 1rem;
+    margin-top: 16px;
+    border-radius: 12px;
   }
 
-  /* Results grid - single column */
+  /* Autocomplete dropdown */
+  .autocomplete-dropdown {
+    max-height: 240px;
+    font-size: 0.9rem;
+    border-radius: 12px;
+    margin-top: 8px;
+  }
+
+  .autocomplete-item {
+    padding: 12px 14px;
+    gap: 10px;
+  }
+
+  .autocomplete-item img {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+  }
+
+  .autocomplete-item-name {
+    font-size: 0.9rem;
+  }
+
+  .autocomplete-item-type {
+    font-size: 0.75rem;
+  }
+
+  .autocomplete-item-rarity {
+    font-size: 0.65rem;
+    padding: 3px 6px;
+  }
+
+  /* Results grid */
   .results-grid {
     grid-template-columns: 1fr;
     gap: 14px;
@@ -1990,8 +1633,8 @@ input::placeholder {
 
   /* Account cards */
   .account-card {
-    padding: 16px;
-    border-radius: 14px;
+    padding: 18px;
+    border-radius: 16px;
   }
 
   .account-card:hover {
@@ -2000,54 +1643,57 @@ input::placeholder {
 
   .account-header {
     flex-direction: row;
-    flex-wrap: wrap;
+    justify-content: space-between;
     align-items: center;
-    gap: 8px;
-    padding-bottom: 10px;
-    margin-bottom: 12px;
+    gap: 10px;
+    padding-bottom: 12px;
+    margin-bottom: 14px;
   }
 
   .account-price {
-    font-size: 1.5rem;
+    font-size: 1.6rem;
   }
 
   .account-id {
-    font-size: 0.7rem;
-    padding: 3px 8px;
+    font-size: 0.75rem;
+    padding: 4px 10px;
   }
 
   /* Account stats */
   .account-stats {
     grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-    margin-bottom: 12px;
+    gap: 10px;
+    margin-bottom: 14px;
   }
 
   .stat-item {
-    padding: 8px;
+    padding: 10px;
+    border-radius: 10px;
   }
 
   .stat-label {
-    font-size: 0.65rem;
+    font-size: 0.7rem;
+    margin-bottom: 4px;
   }
 
   .stat-value {
-    font-size: 0.95rem;
+    font-size: 1.05rem;
   }
 
   /* Account actions */
   .account-actions {
     display: flex;
     flex-direction: row;
-    gap: 8px;
-    margin-top: 12px;
+    gap: 10px;
+    margin-top: 14px;
   }
 
   .action-btn {
     flex: 1;
-    padding: 11px 14px;
-    font-size: 0.85rem;
+    padding: 12px 16px;
+    font-size: 0.9rem;
     white-space: nowrap;
+    border-radius: 10px;
   }
 
   .action-btn:hover {
@@ -2063,42 +1709,13 @@ input::placeholder {
     right: 10px;
   }
 
-  /* Warranty badge */
+  /* Badges */
   .warranty-badge,
   .full-access-badge {
     top: 10px;
     left: 10px;
     font-size: 0.65rem;
     padding: 3px 8px;
-  }
-
-  /* Autocomplete dropdown */
-  .autocomplete-dropdown {
-    max-height: 200px;
-    font-size: 0.85rem;
-  }
-
-  .autocomplete-item {
-    padding: 10px;
-    gap: 8px;
-  }
-
-  .autocomplete-item img {
-    width: 32px;
-    height: 32px;
-  }
-
-  .autocomplete-item-name {
-    font-size: 0.8rem;
-  }
-
-  .autocomplete-item-type {
-    font-size: 0.65rem;
-  }
-
-  .autocomplete-item-rarity {
-    font-size: 0.6rem;
-    padding: 2px 5px;
   }
 
   /* Empty state */
@@ -2138,16 +1755,17 @@ input::placeholder {
 
   /* Buttons */
   button {
-    padding: 11px 16px;
-    font-size: 0.85rem;
-    margin-top: 8px;
+    padding: 12px 18px;
+    font-size: 0.9rem;
+    margin-top: 10px;
   }
 
   /* Forms */
   input {
-    font-size: 0.85rem;
-    padding: 10px 12px;
-    margin-top: 6px;
+    font-size: 16px;
+    padding: 12px 14px;
+    margin-top: 8px;
+    border-radius: 12px;
   }
 
   /* Info boxes */
@@ -2362,17 +1980,12 @@ input::placeholder {
     font-size: 0.9rem;
   }
 
-  /* Hide particles on mobile for performance */
+  /* Hide particles on mobile */
   #particles-canvas {
     display: none;
   }
 
-  /* Fix any potential overflow */
-  * {
-    max-width: 100%;
-  }
-
-  /* Ensure sidebar doesn't interfere with scrolling */
+  /* Sidebar navigation scroll */
   .sidebar nav {
     display: flex;
     flex-direction: row;
@@ -2390,7 +2003,7 @@ input::placeholder {
   }
 }
 
-/* Extra Small Devices (phones < 480px) */
+/* =============== EXTRA SMALL DEVICES =============== */
 @media (max-width: 480px) {
   .topbar h1 {
     font-size: 1.3rem;
@@ -2424,6 +2037,7 @@ input::placeholder {
 
   .main {
     padding-bottom: 75px;
+    height: calc(100vh - 64px);
   }
 
   .skins-grid {
@@ -2438,20 +2052,9 @@ input::placeholder {
   .stat-item {
     padding: 10px 8px;
   }
-
-  .filter-input,
-  .item-search-input,
-  #budget-input {
-    padding: 12px 14px;
-    font-size: 16px; /* Prevent zoom on iOS */
-  }
-
-  input {
-    font-size: 16px; /* Prevent zoom on iOS */
-  }
 }
 
-/* Landscape mode on mobile */
+/* =============== LANDSCAPE MODE =============== */
 @media (max-width: 768px) and (orientation: landscape) {
   .sidebar {
     height: 60px;
@@ -2467,6 +2070,7 @@ input::placeholder {
   .main {
     padding: 10px;
     padding-bottom: 70px;
+    height: calc(100vh - 60px);
   }
 
   .section {
@@ -2474,7 +2078,7 @@ input::placeholder {
   }
 }
 
-/* Touch improvements */
+/* =============== TOUCH DEVICES =============== */
 @media (hover: none) and (pointer: coarse) {
   /* Bigger touch targets */
   button,
@@ -2485,7 +2089,7 @@ input::placeholder {
     min-width: 44px;
   }
 
-  /* Remove hover effects on touch devices */
+  /* Remove hover effects */
   .account-card:hover {
     transform: none;
     border-color: var(--border);
@@ -2501,13 +2105,5 @@ input::placeholder {
 
   .action-btn:hover {
     transform: none;
-  }
-}
-
-
-
-  .skins-grid {
-    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
-    gap: 6px;
   }
 }
