@@ -130,8 +130,8 @@ PURCHASES_FILE = os.path.join(DATA_DIR, "purchased_accounts.json")
 UPCHARGE_TIERS = [
     {"min": 0,  "max": 5,  "multiplier": 3.3},
     {"min": 5,  "max": 10, "multiplier": 3.0},
-    {"min": 10, "max": 15, "multiplier": 2.8},
-    {"min": 15, "max": 20, "multiplier": 2.6},
+    {"min": 10, "max": 15, "multiplier": 2.3},
+    {"min": 15, "max": 20, "multiplier": 2.3},
     {"min": 20, "max": 25, "multiplier": 2.4},
     {"min": 25, "max": 30, "multiplier": 2.2},
     {"min": 30, "max": 35, "multiplier": 2.05},
@@ -2714,6 +2714,7 @@ if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
