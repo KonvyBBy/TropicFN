@@ -183,7 +183,9 @@ USERS_FILE = os.path.join(DATA_DIR, "users.json")
 from balances_file import get_balance, add_balance  # uses balances.json
 
 
-# ===================== USER HELPERS =====================def _load_users():
+# ===================== USER HELPERS =====================
+
+def _load_users():
     """Load users from users.json: {username: {password_hash: ...}}"""
     if not os.path.exists(USERS_FILE):
         return {}
