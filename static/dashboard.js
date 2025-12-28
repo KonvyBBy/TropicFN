@@ -541,8 +541,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Preview
         card.querySelector(".skins-btn").onclick = () => {
-          openSkinsModal();
-          loadSkinImages(acc.item_id);
+          showCosmeticTypeDialog(acc.item_id);
         };
 
         searchResults.appendChild(card);
@@ -580,10 +579,78 @@ document.addEventListener("DOMContentLoaded", () => {
 
   showSection("home");
 
-  // =============== SKINS MODAL (OPTIMIZED) ===============
-  window.openSkinsModal = () => {
+  // =============== COSMETIC TYPE DIALOG ===============
+  window.showCosmeticTypeDialog = (itemId) => {
+    const types = [
+      { id: 'skins', label: '🎭 Skins', emoji: '🎭' },
+      { id: 'pickaxes', label: '⛏️ Pickaxes', emoji: '⛏️' },
+      { id: 'emotes', label: '💃 Emotes', emoji: '💃' },
+      { id: 'gliders', label: '🪂 Gliders', emoji: '🪂' }
+    ];
+
+    const dialogHtml = `
+      <div class="cosmetic-type-dialog" id="cosmetic-type-dialog">
+        <div class="cosmetic-type-content">
+          <h3>Choose what to preview</h3>
+          <p>Select the type of cosmetics you want to see</p>
+          <div class="cosmetic-type-options">
+            ${types.map(type => `
+              <button class="cosmetic-type-btn" data-type="${type.id}" data-item-id="${itemId}">
+                <span class="type-emoji">${type.emoji}</span>
+                <span class="type-label">${type.label}</span>
+              </button>
+            `).join('')}
+          </div>
+          <button class="cosmetic-type-close" onclick="closeCosmeticTypeDialog()">Cancel</button>
+        </div>
+      </div>
+    `;
+
+    // Remove existing dialog if any
+    const existing = document.getElementById('cosmetic-type-dialog');
+    if (existing) existing.remove();
+
+    // Add new dialog
+    document.body.insertAdjacentHTML('beforeend', dialogHtml);
     document.body.style.overflow = "hidden";
-    qs("skins-modal").classList.add("open");
+
+    // Add click handlers
+    document.querySelectorAll('.cosmetic-type-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const type = btn.dataset.type;
+        const itemId = btn.dataset.itemId;
+        closeCosmeticTypeDialog();
+        openSkinsModal(type);
+        loadCosmeticImages(itemId, type);
+      });
+    });
+  };
+
+  window.closeCosmeticTypeDialog = () => {
+    const dialog = document.getElementById('cosmetic-type-dialog');
+    if (dialog) {
+      dialog.remove();
+      document.body.style.overflow = "";
+    }
+  };
+
+  // =============== SKINS MODAL (OPTIMIZED) ===============
+  window.openSkinsModal = (cosmeticType = 'skins') => {
+    document.body.style.overflow = "hidden";
+    const modal = qs("skins-modal");
+    modal.classList.add("open");
+    
+    // Update modal title based on cosmetic type
+    const titles = {
+      'skins': 'Account Skins',
+      'pickaxes': 'Account Pickaxes',
+      'emotes': 'Account Emotes',
+      'gliders': 'Account Gliders'
+    };
+    const titleEl = modal.querySelector('.skins-modal-header h2');
+    if (titleEl) {
+      titleEl.textContent = titles[cosmeticType] || 'Account Cosmetics';
+    }
   };
 
   window.closeSkinsModal = () => {
@@ -592,7 +659,7 @@ document.addEventListener("DOMContentLoaded", () => {
     qs("skins-grid").innerHTML = "";
   };
 
-  window.loadSkinImages = async (itemId) => {
+  window.loadCosmeticImages = async (itemId, cosmeticType = 'skins') => {
     const grid = qs("skins-grid");
     const loader = qs("skins-loader");
     const loadedEl = qs("skins-loaded");
@@ -604,16 +671,26 @@ document.addEventListener("DOMContentLoaded", () => {
     totalEl.textContent = "0";
 
     try {
-      const skinsRes = await fetch(`/api/account/${itemId}/skins`);
-      const skinsData = await skinsRes.json();
-      const names = Array.isArray(skinsData.skins) ? skinsData.skins : [];
+      // Use the new cosmetics endpoint
+      const cosmeticsRes = await fetch(`/api/account/${itemId}/cosmetics/${cosmeticType}`);
+      const cosmeticsData = await cosmeticsRes.json();
+      const names = Array.isArray(cosmeticsData.cosmetics) ? cosmeticsData.cosmetics : [];
 
       if (!names.length) {
-        loader.querySelector(".loader-text").textContent = "No skins available for this account";
+        loader.querySelector(".loader-text").textContent = `No ${cosmeticType} available for this account`;
         return;
       }
 
       totalEl.textContent = names.length;
+
+      // Map cosmetic type to API type
+      const typeMapping = {
+        'skins': 'outfit',
+        'pickaxes': 'pickaxe',
+        'emotes': 'emote',
+        'gliders': 'glider'
+      };
+      const apiType = typeMapping[cosmeticType] || 'outfit';
 
       // OPTIMIZED: Load icons in batches of 10
       const BATCH_SIZE = 10;
@@ -625,17 +702,20 @@ document.addEventListener("DOMContentLoaded", () => {
         const iconsRes = await fetch("/api/skins/icons", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ names: batch }),
+          body: JSON.stringify({ 
+            names: batch,
+            type: apiType
+          }),
         });
 
         const iconsData = await iconsRes.json();
         const icons = Array.isArray(iconsData.icons) ? iconsData.icons : [];
 
         // Create images for this batch
-        await Promise.all(icons.map(skin => {
+        await Promise.all(icons.map(cosmetic => {
           return new Promise((resolve) => {
             const img = new Image();
-            img.src = skin.icon || "/static/placeholder.png";
+            img.src = cosmetic.icon || "/static/placeholder.png";
             
             const onComplete = () => {
               loaded++;
