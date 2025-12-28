@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Balance - Konvy Accounts</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+</head>
+
+<body>
+  <!-- Modern Navigation Header -->
+  <header class="modern-header">
+    <div class="header-container">
+      <div class="header-left">
+        <div class="logo-modern">
+          <span class="logo-icon">K</span>
+          <span class="logo-text">Konvy</span>
+        </div>
+      </div>
+      
+      <nav class="header-nav">
+        <a href="/dashboard" class="nav-link">Search</a>
+        <a href="/balance" class="nav-link active">Balance</a>
+        <a href="/my-accounts" class="nav-link">My Accounts</a>
+        <a href="/redeem" class="nav-link">Redeem</a>
+        <a href="{{ url_for('warranty') }}" class="nav-link">Warranty</a>
+      </nav>
+      
+      <div class="header-right">
+        <div class="user-badge">
+          <span class="user-icon">👤</span>
+          <span class="user-name">{{ username }}</span>
+        </div>
+        <div class="balance-badge">${{ balance }}</div>
+        <a href="{{ url_for('logout') }}" class="btn-logout">Logout</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Wrapper -->
+  <div class="content-wrapper">
+    <main class="main-content">
+
+      <!-- Balance Section -->
+      <section class="content-section" id="balance">
+        <div class="section-header">
+          <h2 class="section-title">Manage Balance</h2>
+          <p class="section-description">Check your balance and add funds to your account</p>
+        </div>
+
+        <div class="balance-grid">
+          <div class="balance-card">
+            <div class="card-icon">💰</div>
+            <h3 class="card-title">Check Balance</h3>
+            <p class="card-description">View your current account balance</p>
+            <button id="check-balance-btn" class="btn-card-action">Check Balance</button>
+            <div id="balance-result" class="result-display"></div>
+          </div>
+
+          <div class="balance-card">
+            <div class="card-icon">💳</div>
+            <h3 class="card-title">Add Funds</h3>
+            <p class="card-description">Generate a secure payment link to add funds</p>
+            <div class="form-group">
+              <label class="form-label">Amount (USD)</label>
+              <div class="input-with-icon">
+                <span class="input-icon">$</span>
+                <input id="topup-amount" type="number" step="0.01" value="10" class="form-input" placeholder="10.00">
+              </div>
+            </div>
+            <button id="topup-btn" class="btn-card-action">Generate Link</button>
+            <div id="topup-result" class="result-display"></div>
+          </div>
+        </div>
+
+        <div class="info-banner">
+          <div class="info-icon">💡</div>
+          <div class="info-content">
+            <strong>How it works:</strong> Generate a payment link, complete the transaction on Shopify, then use the Redeem section with your order number to add funds to your account.
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+<script>
+  window.KONVY_LOGGED_IN = true;
+</script>
+<script src="{{ url_for('static', filename='dashboard.js') }}"></script>
+</body>
+</html>

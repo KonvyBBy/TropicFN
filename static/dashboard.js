@@ -1,47 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
 
-  // =============== SMOOTH SCROLL NAVIGATION ===============
-  const navLinks = document.querySelectorAll('[data-scroll]');
-  navLinks.forEach(link => {
-    link.addEventListener('click', (e) => {
-      e.preventDefault();
-      const targetId = link.getAttribute('data-scroll');
-      const targetSection = document.getElementById(targetId);
-      
-      if (targetSection) {
-        // Update active state
-        navLinks.forEach(l => l.classList.remove('active'));
-        link.classList.add('active');
-        
-        // Smooth scroll
-        targetSection.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start'
-        });
-      }
-    });
-  });
-
-  // Update active nav link on scroll
-  const sections = document.querySelectorAll('.content-section, .hero-section');
-  window.addEventListener('scroll', () => {
-    let current = '';
-    sections.forEach(section => {
-      const sectionTop = section.offsetTop;
-      const sectionHeight = section.clientHeight;
-      if (pageYOffset >= (sectionTop - 100)) {
-        current = section.getAttribute('id');
-      }
-    });
-    
-    navLinks.forEach(link => {
-      link.classList.remove('active');
-      if (link.getAttribute('data-scroll') === current) {
-        link.classList.add('active');
-      }
-    });
-  });
-
   // =============== UTILITIES ===============
   async function postJSON(url, data = {}) {
     const res = await fetch(url, {
@@ -53,7 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!res.ok) throw new Error(json.error || "Request failed");
     return json;
   }
-
+
   const qs = (id) => document.getElementById(id);
 
   // =============== PROCESSING OVERLAY ===============
@@ -87,46 +45,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (overlay) overlay.classList.remove('active');
   }
 
-  // =============== FAVORITES SYSTEM ===============
-  let userFavorites = [];
-
-  async function loadFavorites() {
-    if (!window.KONVY_LOGGED_IN) return;
-    try {
-      const res = await postJSON('/api/favorites/list', {});
-      userFavorites = res.favorites || [];
-    } catch (err) {
-      console.error('Failed to load favorites:', err);
-    }
-  }
-
-  async function toggleFavorite(itemId, btn) {
-    if (!window.KONVY_LOGGED_IN) {
-      alert('Please login to save favorites');
-      return;
-    }
-
-    const isFavorite = userFavorites.includes(itemId);
-    
-    try {
-      if (isFavorite) {
-        await postJSON('/api/favorites/remove', { item_id: itemId });
-        userFavorites = userFavorites.filter(id => id !== itemId);
-        btn.classList.remove('active');
-        btn.textContent = '♡';
-      } else {
-        await postJSON('/api/favorites/add', { item_id: itemId });
-        userFavorites.push(itemId);
-        btn.classList.add('active');
-        btn.textContent = '♥';
-      }
-    } catch (err) {
-      alert('Failed to update favorites: ' + err.message);
-    }
-  }
-
-  // Load favorites on page load
-  loadFavorites();
 
   // =============== LOAD COSMETICS DATA ===============
   window.allCosmetics = [];
@@ -353,22 +271,13 @@ document.addEventListener("DOMContentLoaded", () => {
         const card = document.createElement('div');
         card.className = 'account-card';
         
-        const isFavorite = userFavorites.includes(acc.item_id);
-        
         card.innerHTML = `
-          <!-- Favorite -->
-          <button class="favorite-btn ${isFavorite ? "active" : ""}"
-                  data-item-id="${acc.item_id}">
-            ${isFavorite ? "♥" : "♡"}
-          </button>
-
           <!-- Badge -->
           <div class="full-access-badge">Full Access</div>
 
           <!-- Header -->
           <div class="account-header">
             <div class="account-price">$${acc.user_price.toFixed(2)}</div>
-            <div class="account-id">#${acc.item_id}</div>
           </div>
 
           <!-- Stats -->
@@ -418,13 +327,6 @@ document.addEventListener("DOMContentLoaded", () => {
             </button>
           </div>
         `;
-
-        // Favorite
-        const favBtn = card.querySelector(".favorite-btn");
-        favBtn.onclick = (e) => {
-          e.stopPropagation();
-          toggleFavorite(acc.item_id, favBtn);
-        };
 
         // Buy
         const buyBtn = card.querySelector(".buy-btn");

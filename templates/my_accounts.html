@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>My Accounts - Konvy Accounts</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+</head>
+
+<body>
+  <!-- Modern Navigation Header -->
+  <header class="modern-header">
+    <div class="header-container">
+      <div class="header-left">
+        <div class="logo-modern">
+          <span class="logo-icon">K</span>
+          <span class="logo-text">Konvy</span>
+        </div>
+      </div>
+      
+      <nav class="header-nav">
+        <a href="/dashboard" class="nav-link">Search</a>
+        <a href="/balance" class="nav-link">Balance</a>
+        <a href="/my-accounts" class="nav-link active">My Accounts</a>
+        <a href="/redeem" class="nav-link">Redeem</a>
+        <a href="{{ url_for('warranty') }}" class="nav-link">Warranty</a>
+      </nav>
+      
+      <div class="header-right">
+        <div class="user-badge">
+          <span class="user-icon">👤</span>
+          <span class="user-name">{{ username }}</span>
+        </div>
+        <div class="balance-badge">${{ balance }}</div>
+        <a href="{{ url_for('logout') }}" class="btn-logout">Logout</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Wrapper -->
+  <div class="content-wrapper">
+    <main class="main-content">
+
+      <!-- My Accounts Section -->
+      <section class="content-section" id="my-accounts">
+        <div class="section-header">
+          <h2 class="section-title">My Accounts</h2>
+          <p class="section-description">View and manage your purchased Fortnite accounts</p>
+        </div>
+
+        <div class="account-viewer">
+          <div id="my-accounts-view" class="account-details"></div>
+
+          <div class="account-navigation">
+            <button id="prev-account" class="btn-nav-account">← Previous</button>
+            <span id="account-indicator" class="account-counter"></span>
+            <button id="next-account" class="btn-nav-account">Next →</button>
+          </div>
+        </div>
+
+        {% if purchases|length > 0 %}
+        <div class="security-notice">
+          <div class="notice-header">
+            <span class="notice-icon">🔒</span>
+            <h3>Security Reminder</h3>
+          </div>
+          <p>Remember to secure your account following our <a href="https://youtu.be/ykQsz5QrZkg" target="_blank">warranty guide</a> to maintain eligibility for warranty claims.</p>
+        </div>
+        {% endif %}
+      </section>
+
+    </main>
+  </div>
+
+<script>
+  window.KONVY_LOGGED_IN = true;
+</script>
+<script src="{{ url_for('static', filename='dashboard.js') }}"></script>
+</body>
+</html>
