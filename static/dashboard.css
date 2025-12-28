@@ -482,7 +482,8 @@ body {
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
 }
 
-.remove-item-btn {
+.remove-item-btn,
+.btn-icon-remove {
   padding: 0.875rem 1.125rem;
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid rgba(239, 68, 68, 0.3);
@@ -494,7 +495,8 @@ body {
   transition: var(--transition);
 }
 
-.remove-item-btn:hover {
+.remove-item-btn:hover,
+.btn-icon-remove:hover {
   background: rgba(239, 68, 68, 0.2);
   border-color: #ef4444;
   transform: scale(1.05);
