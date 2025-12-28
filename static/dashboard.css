@@ -2107,3 +2107,136 @@ input::placeholder {
     transform: none;
   }
 }
+
+/* =============== COSMETIC TYPE DIALOG =============== */
+.cosmetic-type-dialog {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(8px);
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.cosmetic-type-content {
+  background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 100%);
+  border-radius: 24px;
+  padding: 32px;
+  max-width: 500px;
+  width: 90%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.cosmetic-type-content h3 {
+  margin: 0 0 8px 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
+  text-align: center;
+}
+
+.cosmetic-type-content p {
+  margin: 0 0 24px 0;
+  color: #9ca3af;
+  text-align: center;
+  font-size: 0.95rem;
+}
+
+.cosmetic-type-options {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.cosmetic-type-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  padding: 20px 16px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  color: #fff;
+}
+
+.cosmetic-type-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.cosmetic-type-btn:active {
+  transform: translateY(-2px);
+}
+
+.type-emoji {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.type-label {
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.cosmetic-type-close {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.cosmetic-type-close:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+@media (max-width: 640px) {
+  .cosmetic-type-content {
+    padding: 24px;
+  }
+
+  .cosmetic-type-options {
+    grid-template-columns: 1fr;
+  }
+
+  .type-emoji {
+    font-size: 2rem;
+  }
+}

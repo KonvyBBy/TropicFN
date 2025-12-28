@@ -27,6 +27,17 @@ FORTNITE_COSMETICS_SEARCH_URL = "https://fortnite-api.com/v2/cosmetics/br/search
 COSMETIC_ICON_CACHE_FILE = "cosmetic_icon_cache.json"
 
 def fortnite_api_get_outfit_icon_url_by_name(name: str):
+    """
+    Fetch outfit/skin icon URL by name. Wrapper around the generic function.
+    """
+    return fortnite_api_get_cosmetic_icon_url_by_name(name, 'outfit')
+
+
+def fortnite_api_get_cosmetic_icon_url_by_name(name: str, cosmetic_type: str = None):
+    """
+    Generic function to fetch cosmetic icon URLs by name.
+    cosmetic_type can be: 'outfit', 'pickaxe', 'emote', 'glider', or None (searches all types)
+    """
     name = (name or "").strip()
     if not name:
         return None
@@ -39,7 +50,9 @@ def fortnite_api_get_outfit_icon_url_by_name(name: str):
         except Exception:
             cache = {}
 
-    key = f"outfit::{name.lower()}"
+    # Create a cache key that includes the type
+    cache_type = cosmetic_type or "any"
+    key = f"{cache_type}::{name.lower()}"
     if key in cache:
         return cache[key]
 
@@ -60,13 +73,17 @@ def fortnite_api_get_outfit_icon_url_by_name(name: str):
         for item in data:
             t = item.get("type", {})
             t_val = (t.get("value") or t.get("backendValue") or "").lower()
-            if t_val == "outfit":
+            
+            # If cosmetic_type is specified, only match that type
+            # Otherwise, match any type
+            if cosmetic_type is None or t_val == cosmetic_type.lower():
                 images = item.get("images") or {}
                 url = images.get("icon") or images.get("smallIcon") or images.get("featured")
-                cache[key] = url
-                with open(COSMETIC_ICON_CACHE_FILE, "w", encoding="utf-8") as f:
-                    json.dump(cache, f, indent=2)
-                return url
+                if url:
+                    cache[key] = url
+                    with open(COSMETIC_ICON_CACHE_FILE, "w", encoding="utf-8") as f:
+                        json.dump(cache, f, indent=2)
+                    return url
 
         cache[key] = None
         return None
@@ -892,10 +909,13 @@ LOGIN_HTML = """
 @app.route("/api/skins/icons", methods=["POST"])
 def get_skin_icons():
     names = request.json.get("names", [])
+    cosmetic_type = request.json.get("type", None)  # Optional: 'outfit', 'pickaxe', 'emote', 'glider'
     icons = []
 
     for name in names:
-        url = fortnite_api_get_outfit_icon_url_by_name(name)
+        # Use the generic function - it handles both with and without type
+        url = fortnite_api_get_cosmetic_icon_url_by_name(name, cosmetic_type)
+        
         icons.append({
             "name": name,
             "icon": url
