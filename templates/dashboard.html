@@ -2,379 +2,329 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Konvy Dashboard</title>
+  <title>Konvy Accounts - Premium Fortnite Marketplace</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
 </head>
 
 <body>
-<div class="app">
-
-  <!-- SIDEBAR -->
-  <aside class="sidebar">
-    <div class="logo">K</div>
-
-    <nav>
-      <button class="nav-btn active" data-section="home">🏠</button>
-      <button class="nav-btn" data-section="search">🔍</button>
-      {% if logged_in %}
-        <button class="nav-btn" data-section="balance">💳</button>
-        <button class="nav-btn" data-section="accounts">📦</button>
-        <button class="nav-btn" data-section="redeem">🎟️</button>
-        {% if purchases|length > 0 %}
-          <button class="nav-btn" data-section="secure">🔒</button>
-        {% endif %}
-      {% endif %}
-    </nav>
-  </aside>
-
-  <!-- MAIN -->
-  <main class="main">
-
-    <!-- HEADER -->
-    <header class="topbar">
-      <div>
-        <h1>Dashboard</h1>
-        <span>
-          {% if logged_in %}
-            Welcome back, {{ username }}
-          {% else %}
-            Browsing as Guest
-          {% endif %}
-        </span>
+  <!-- Modern Navigation Header -->
+  <header class="modern-header">
+    <div class="header-container">
+      <div class="header-left">
+        <div class="logo-modern">
+          <span class="logo-icon">K</span>
+          <span class="logo-text">Konvy</span>
+        </div>
       </div>
-
+      
+      <nav class="header-nav">
+        <a href="#search" class="nav-link active" data-scroll="search">Search</a>
+        {% if logged_in %}
+          <a href="#balance" class="nav-link" data-scroll="balance">Balance</a>
+          <a href="#my-accounts" class="nav-link" data-scroll="my-accounts">My Accounts</a>
+          <a href="#redeem" class="nav-link" data-scroll="redeem">Redeem</a>
+        {% endif %}
+        <a href="{{ url_for('warranty') }}" class="nav-link">Warranty</a>
+      </nav>
+      
       <div class="header-right">
         {% if logged_in %}
-          <div class="pill">Balance: ${{ balance }}</div>
-          <a href="{{ url_for('warranty') }}" class="pill" style="text-decoration: none;">Warranty</a>
-          <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+          <div class="user-badge">
+            <span class="user-icon">👤</span>
+            <span class="user-name">{{ username }}</span>
+          </div>
+          <div class="balance-badge">${{ balance }}</div>
+          <a href="{{ url_for('logout') }}" class="btn-logout">Logout</a>
         {% else %}
-          <a href="{{ url_for('login') }}" class="pill" style="text-decoration: none;">Login</a>
-          <a href="{{ url_for('register') }}" class="pill" style="text-decoration: none;">Sign Up</a>
+          <a href="{{ url_for('login') }}" class="btn-secondary-header">Login</a>
+          <a href="{{ url_for('register') }}" class="btn-primary-header">Sign Up</a>
         {% endif %}
       </div>
-    </header>
+    </div>
+  </header>
 
-    <!-- SKINS MODAL -->
-    <div id="skins-modal" class="skins-modal">
-      <div class="skins-modal-content">
-        <div class="skins-modal-header">
-          <h2>Account Skins</h2>
-          <button class="skins-close" onclick="closeSkinsModal()">✕</button>
+  <!-- Main Content Wrapper -->
+  <div class="content-wrapper">
+    <main class="main-content">
+
+      <!-- Hero Section -->
+      <section class="hero-section" id="home">
+        <div class="hero-content">
+          {% if logged_in %}
+            <h1 class="hero-title">Welcome back, <span class="highlight">{{ username }}</span></h1>
+            <p class="hero-subtitle">Manage your Fortnite accounts and explore new opportunities</p>
+            
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-icon">💰</div>
+                <div class="stat-info">
+                  <div class="stat-label">Balance</div>
+                  <div class="stat-value">${{ balance }}</div>
+                </div>
+              </div>
+              
+              <div class="stat-card">
+                <div class="stat-icon">🎮</div>
+                <div class="stat-info">
+                  <div class="stat-label">Accounts Owned</div>
+                  <div class="stat-value">{{ purchases|length }}</div>
+                </div>
+              </div>
+              
+              <div class="stat-card">
+                <div class="stat-icon">✅</div>
+                <div class="stat-info">
+                  <div class="stat-label">Account Status</div>
+                  <div class="stat-value">Active</div>
+                </div>
+              </div>
+              
+              <div class="stat-card">
+                <div class="stat-icon">⭐</div>
+                <div class="stat-info">
+                  <div class="stat-label">Membership</div>
+                  <div class="stat-value">Standard</div>
+                </div>
+              </div>
+            </div>
+          {% else %}
+            <h1 class="hero-title">Find Your Perfect <span class="highlight">Fortnite Account</span></h1>
+            <p class="hero-subtitle">Browse thousands of premium accounts with rare skins, high levels, and exclusive cosmetics</p>
+            
+            <div class="hero-actions">
+              <a href="{{ url_for('register') }}" class="btn-hero-primary">Get Started</a>
+              <a href="#search" class="btn-hero-secondary" data-scroll="search">Browse Accounts</a>
+            </div>
+            
+            <div class="features-grid">
+              <div class="feature-item">
+                <div class="feature-icon">⚡</div>
+                <div class="feature-text">Instant Delivery</div>
+              </div>
+              <div class="feature-item">
+                <div class="feature-icon">🔒</div>
+                <div class="feature-text">Secure Transactions</div>
+              </div>
+              <div class="feature-item">
+                <div class="feature-icon">🎭</div>
+                <div class="feature-text">Rare Skins & Items</div>
+              </div>
+              <div class="feature-item">
+                <div class="feature-icon">✨</div>
+                <div class="feature-text">Full Access Accounts</div>
+              </div>
+            </div>
+          {% endif %}
         </div>
-        <div id="skins-grid" class="skins-grid"></div>
-        <div id="skins-loader" class="skins-loader">
-          <div class="loader-spinner"></div>
-          <div class="loader-text">Loading Preview...</div>
-          <div class="loader-progress">
-            <span id="skins-loaded">0</span> / <span id="skins-total">0</span>
-          </div>
-          <div class="loader-count">
-            Loading skins in optimized batches for faster preview
+      </section>
+
+      <!-- Search Section -->
+      <section class="content-section" id="search">
+        <div class="section-header">
+          <h2 class="section-title">Search Accounts</h2>
+          <p class="section-description">Find accounts with your favorite skins and cosmetics</p>
+        </div>
+        
+        <div class="search-container">
+          <form id="search-form" class="modern-form">
+            <!-- Search Items -->
+            <div class="form-group">
+              <label class="form-label">Search Items <span class="label-required">*</span></label>
+              <p class="form-hint">Enter skins, emotes, or other cosmetics you're looking for</p>
+              <div id="items-container">
+                <div class="item-input-row">
+                  <div class="autocomplete-wrapper">
+                    <input 
+                      type="text" 
+                      class="form-input item-search-input" 
+                      placeholder="e.g., Black Knight, Floss, Reaper Pickaxe..." 
+                      autocomplete="off">
+                    <div class="autocomplete-dropdown"></div>
+                  </div>
+                  <button type="button" class="btn-icon-remove remove-item-btn" style="display:none;">
+                    <span>✕</span>
+                  </button>
+                </div>
+              </div>
+              <button type="button" id="add-item-btn" class="btn-link">+ Add Another Item</button>
+            </div>
+
+            <!-- Filter Grid -->
+            <div class="filters-grid">
+              <div class="form-group">
+                <label class="form-label">Maximum Budget</label>
+                <div class="input-with-icon">
+                  <span class="input-icon">$</span>
+                  <input 
+                    id="budget-input"
+                    name="budget" 
+                    type="number" 
+                    class="form-input" 
+                    placeholder="Enter max price" 
+                    min="0"
+                    step="1">
+                </div>
+                <p class="form-hint">Leave blank for no limit</p>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Days Offline</label>
+                <input name="days" type="number" placeholder="0 = any" min="0" value="0" class="form-input">
+                <p class="form-hint">Minimum days since last played</p>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Minimum Skins</label>
+                <input name="skins" type="number" placeholder="0 = any" min="0" value="0" class="form-input">
+                <p class="form-hint">Total number of skins required</p>
+              </div>
+            </div>
+
+            <button type="submit" class="btn-search">
+              <span class="btn-icon">🔍</span>
+              <span>Search Accounts</span>
+            </button>
+          </form>
+
+          <!-- Results -->
+          <div id="search-results-wrapper">
+            <div id="search-results" class="accounts-grid"></div>
           </div>
         </div>
+      </section>
+
+      {% if logged_in %}
+      <!-- Balance Section -->
+      <section class="content-section" id="balance">
+        <div class="section-header">
+          <h2 class="section-title">Manage Balance</h2>
+          <p class="section-description">Check your balance and add funds to your account</p>
+        </div>
+
+        <div class="balance-grid">
+          <div class="balance-card">
+            <div class="card-icon">💰</div>
+            <h3 class="card-title">Check Balance</h3>
+            <p class="card-description">View your current account balance</p>
+            <button id="check-balance-btn" class="btn-card-action">Check Balance</button>
+            <div id="balance-result" class="result-display"></div>
+          </div>
+
+          <div class="balance-card">
+            <div class="card-icon">💳</div>
+            <h3 class="card-title">Add Funds</h3>
+            <p class="card-description">Generate a secure payment link to add funds</p>
+            <div class="form-group">
+              <label class="form-label">Amount (USD)</label>
+              <div class="input-with-icon">
+                <span class="input-icon">$</span>
+                <input id="topup-amount" type="number" step="0.01" value="10" class="form-input" placeholder="10.00">
+              </div>
+            </div>
+            <button id="topup-btn" class="btn-card-action">Generate Link</button>
+            <div id="topup-result" class="result-display"></div>
+          </div>
+        </div>
+
+        <div class="info-banner">
+          <div class="info-icon">💡</div>
+          <div class="info-content">
+            <strong>How it works:</strong> Generate a payment link, complete the transaction on Shopify, then use the Redeem section with your order number to add funds to your account.
+          </div>
+        </div>
+      </section>
+
+      <!-- My Accounts Section -->
+      <section class="content-section" id="my-accounts">
+        <div class="section-header">
+          <h2 class="section-title">My Accounts</h2>
+          <p class="section-description">View and manage your purchased Fortnite accounts</p>
+        </div>
+
+        <div class="account-viewer">
+          <div id="my-accounts-view" class="account-details"></div>
+
+          <div class="account-navigation">
+            <button id="prev-account" class="btn-nav-account">← Previous</button>
+            <span id="account-indicator" class="account-counter"></span>
+            <button id="next-account" class="btn-nav-account">Next →</button>
+          </div>
+        </div>
+
+        {% if purchases|length > 0 %}
+        <div class="security-notice">
+          <div class="notice-header">
+            <span class="notice-icon">🔒</span>
+            <h3>Security Reminder</h3>
+          </div>
+          <p>Remember to secure your account following our <a href="https://youtu.be/ykQsz5QrZkg" target="_blank">warranty guide</a> to maintain eligibility for warranty claims.</p>
+        </div>
+        {% endif %}
+      </section>
+
+      <!-- Redeem Section -->
+      <section class="content-section" id="redeem">
+        <div class="section-header">
+          <h2 class="section-title">Redeem Order</h2>
+          <p class="section-description">Convert your Shopify order into account balance</p>
+        </div>
+
+        <div class="redeem-card">
+          <div class="card-icon">🎟️</div>
+          
+          <div class="steps-list">
+            <div class="step-item">
+              <span class="step-number">1</span>
+              <span class="step-text">Generate payment link in the Balance section</span>
+            </div>
+            <div class="step-item">
+              <span class="step-number">2</span>
+              <span class="step-text">Complete payment on Shopify</span>
+            </div>
+            <div class="step-item">
+              <span class="step-number">3</span>
+              <span class="step-text">Find your order number (e.g., 1234)</span>
+            </div>
+            <div class="step-item">
+              <span class="step-number">4</span>
+              <span class="step-text">Enter below and redeem to add funds</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Order Number</label>
+            <input id="redeem-order" type="number" class="form-input" placeholder="Enter order number without #">
+          </div>
+
+          <button id="redeem-btn" class="btn-redeem">🎟️ Redeem Order</button>
+          <div id="redeem-result" class="result-display"></div>
+        </div>
+      </section>
+      {% endif %}
+
+    </main>
+  </div>
+
+  <!-- Modals -->
+  <div id="skins-modal" class="skins-modal">
+    <div class="skins-modal-content">
+      <div class="skins-modal-header">
+        <h2>Account Preview</h2>
+        <button class="modal-close-btn" onclick="closeSkinsModal()">✕</button>
+      </div>
+      <div id="skins-grid" class="skins-grid"></div>
+      <div id="skins-loader" class="skins-loader">
+        <div class="loader-spinner"></div>
+        <div class="loader-text">Loading Preview...</div>
+        <div class="loader-progress">
+          <span id="skins-loaded">0</span> / <span id="skins-total">0</span>
+        </div>
+        <div class="loader-count">Loading cosmetics in optimized batches</div>
       </div>
     </div>
-
-    <!-- HOME -->
-    <section class="section" id="section-home">
-      {% if logged_in %}
-        <div class="grid-4">
-          <div class="card">
-            <span>Balance</span>
-            <strong>${{ balance }}</strong>
-          </div>
-          <div class="card">
-            <span>Purchases</span>
-            <strong>{{ purchases|length }}</strong>
-          </div>
-          <div class="card">
-            <span>Status</span>
-            <strong>Active</strong>
-          </div>
-          <div class="card">
-            <span>Tier</span>
-            <strong>Visitor</strong>
-          </div>
-        </div>
-
-        <div class="card large">
-          <h3>Recent Purchases</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Item</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for p in purchases[:5] %}
-              <tr>
-                <td>{{ p.timestamp }}</td>
-                <td>{{ p.latest_order.title if p.latest_order }}</td>
-                <td>Paid</td>
-              </tr>
-              {% else %}
-              <tr>
-                <td colspan="3">No purchases yet</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      {% else %}
-        <!-- GUEST WELCOME -->
-        <div class="card large">
-          <h2>Welcome to Konvy Accounts! 🎮</h2>
-          <p style="margin: 16px 0; font-size: 1.05rem; line-height: 1.6;">
-            Browse thousands of Fortnite accounts with rare skins, high levels, and V-Bucks.
-            Search by any cosmetic item to find your perfect account.
-          </p>
-          <div style="display: flex; gap: 12px; margin-top: 20px;">
-            <a href="{{ url_for('register') }}" class="btn-primary">Create Account</a>
-            <a href="{{ url_for('login') }}" class="btn-secondary">Sign In</a>
-          </div>
-        </div>
-
-        <div class="card">
-          <h3>Why Choose Konvy?</h3>
-          <ul style="margin: 12px 0; line-height: 2;">
-            <li>✅ Instant delivery of account credentials</li>
-            <li>✅ Search by specific skins and cosmetics</li>
-            <li>✅ Secure payment through Shopify</li>
-            <li>✅ Browse without signing up</li>
-            <li>✅ 11+ day warranty on inactive accounts</li>
-          </ul>
-        </div>
-      {% endif %}
-    </section>
-
-{% if logged_in and purchases|length > 0 %}
-    <section class="section" id="section-secure">
-      <div class="card large secure-card">
-        <h2>🔒 Important: Account Security & Warranty Instructions</h2>
-        <p class="warn">
-          ⚠️ Attention all buyers: To ensure your purchased account is fully secure
-          and eligible for warranty, you must follow the security procedure outlined in the video below.
-        </p>
-        
-        <h3>🎥 Video Guide</h3>
-        <p>
-          <a href="https://youtu.be/ykQsz5QrZkg" target="_blank">
-            https://youtu.be/ykQsz5QrZkg
-          </a>
-        </p>
-        
-        <h3>💡 Why This Matters</h3>
-        <p>Properly securing your account:</p>
-        <ul>
-          <li>Protects it from unauthorized access</li>
-          <li>Ensures it stays fully functional</li>
-          <li>Maintains your warranty eligibility</li>
-        </ul>
-        
-        <p class="danger">
-          ❌ Important: Accounts played in tournaments or not secured according to this guide 
-          are NOT eligible for refunds or warranty claims.
-        </p>
-        
-        <h3>📋 Step-by-Step Instructions</h3>
-        
-        <h4>📱 iPhone Users:</h4>
-        <ul>
-          <li>Use the screen recording feature on your device while following the steps in the video.</li>
-          <li>Make sure the recording clearly shows every step being completed.</li>
-        </ul>
-        
-        <h4>💻 Computer Users:</h4>
-        <p>You have two options:</p>
-        <ul>
-          <li>Record your screen using your phone while following the guide, OR</li>
-          <li>Use GeForce Experience or any reliable screen recording software to capture your actions.</li>
-        </ul>
-        
-        <p><strong>💡 Tip:</strong> Make sure the recording clearly shows:</p>
-        <ul>
-          <li>Login steps</li>
-          <li>Password changes</li>
-          <li>Any security settings you update</li>
-        </ul>
-        
-        <h3>🛡️ Warranty Requirement</h3>
-        <ul>
-          <li>Completing this procedure is <strong>mandatory</strong> for your account warranty.</li>
-          <li>Accounts not secured properly will not qualify for refunds.</li>
-          <li>Warranty claims for unsecured accounts will be denied.</li>
-          <li><strong>Submit another request every time they say yours is denied (for up to 2 weeks).</strong></li>
-        </ul>
-        
-        <p class="warn">
-          ⚠️ Reminder: This step protects your purchase and ensures your account stays secure. Do not skip it.
-        </p>
-      </div>
-    </section>
-    {% endif %}
-
-<!-- SEARCH (AVAILABLE TO ALL) -->
-<section class="section" id="section-search">
-  <div class="search-hero">
-    <h2>🔍 Search Fortnite Accounts</h2>
-    <p>Find accounts with your favorite skins, emotes, and cosmetics</p>
   </div>
-
-  <div class="card search-card">
-    <h3>Search Filters</h3>
-    
-    <form id="search-form">
-      <!-- Items Section -->
-      <div class="filter-section">
-        <label class="filter-label">Items to Search</label>
-        <div id="items-container">
-          <div class="item-input-row">
-            <div class="autocomplete-wrapper">
-              <input 
-                type="text" 
-                class="item-search-input" 
-                placeholder="Type item name: Black Knight, Floss..." 
-                autocomplete="off">
-              <div class="autocomplete-dropdown"></div>
-            </div>
-            <button type="button" class="remove-item-btn" style="display:none;">✕</button>
-          </div>
-        </div>
-        <button type="button" id="add-item-btn" class="add-btn">+ Add Another Item</button>
-      </div>
-
-      <!-- Budget Input (replaces slider) -->
-      <div class="filter-section">
-        <label class="filter-label">Budget (Max Price)</label>
-        <input 
-          id="budget-input"
-          name="budget" 
-          type="number" 
-          class="filter-input" 
-          placeholder="Enter maximum price (e.g., 250)" 
-          min="0"
-          step="1">
-        <span class="filter-hint">Leave blank for no budget limit</span>
-      </div>
-
-      <!-- Other Filters -->
-      <div class="filter-row">
-        <div class="filter-group">
-          <label class="filter-label">Days Offline</label>
-          <input name="days" type="number" placeholder="0 = any" min="0" value="0" class="filter-input">
-          <span class="filter-hint">Minimum days since last played</span>
-        </div>
-        
-        <div class="filter-group">
-          <label class="filter-label">Minimum Skins</label>
-          <input name="skins" type="number" placeholder="0 = any" min="0" value="0" class="filter-input">
-          <span class="filter-hint">Total number of skins required</span>
-        </div>
-      </div>
-
-      <button type="submit" class="search-submit-btn">
-        🔎 Search Accounts
-      </button>
-    </form>
-  </div>
-
-  <!-- Results -->
-  <div id="search-results-container">
-    <div id="search-results" class="results-grid"></div>
-  </div>
-</section>
-
-    {% if logged_in %}
-    <!-- BALANCE -->
-    <section class="section" id="section-balance">
-      <div class="grid-2">
-        <div class="card">
-          <h3>💰 Check Balance</h3>
-          
-          <div class="info-box small">
-            <div class="info-icon">💡</div>
-            <div class="info-content">
-              Click to view your current account balance.
-            </div>
-          </div>
-
-          <button id="check-balance-btn">Check Balance</button>
-          <div id="balance-result"></div>
-        </div>
-
-        <div class="card">
-          <h3>💳 Add Funds</h3>
-          
-          <div class="info-box small">
-            <div class="info-icon">💡</div>
-            <div class="info-content">
-              Enter an amount and we'll generate a secure Shopify checkout link. 
-              <strong>After payment, use the Redeem tab</strong> with your order number.
-            </div>
-          </div>
-
-          <input id="topup-amount" type="number" step="0.01" value="10" placeholder="Amount in USD">
-          <button id="topup-btn">💳 Generate Payment Link</button>
-          <div id="topup-result"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ACCOUNTS -->
-    <section class="section" id="section-accounts">
-      <div class="card large">
-        <h3>📦 My Accounts</h3>
-        
-        <div class="info-box">
-          <div class="info-icon">💡</div>
-          <div class="info-content">
-            <strong>Your purchased accounts appear here.</strong> Use the buttons below to browse 
-            through your purchases. Copy the login credentials to access your Fortnite account.
-          </div>
-        </div>
-
-        <div id="my-accounts-view"></div>
-
-        <div class="pager">
-          <button id="prev-account">← Previous</button>
-          <span id="account-indicator"></span>
-          <button id="next-account">Next →</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- REDEEM -->
-    <section class="section" id="section-redeem">
-      <div class="card">
-        <h3>🎟️ Redeem Balance</h3>
-        
-        <div class="info-box">
-          <div class="info-icon">💡</div>
-          <div class="info-content">
-            <strong>How to redeem:</strong>
-            <ol style="margin: 8px 0 0 20px; padding: 0;">
-              <li>Generate a payment link in the <strong>Add Funds</strong> tab</li>
-              <li>Complete payment on Shopify</li>
-              <li>Find your order number (e.g., <strong>1234</strong>)</li>
-              <li>Enter it below and click Redeem to add funds to your balance</li>
-            </ol>
-          </div>
-        </div>
-
-        <input id="redeem-order" type="number" placeholder="Order number (without #)">
-        <button id="redeem-btn">🎟️ Redeem Order</button>
-        <div id="redeem-result"></div>
-      </div>
-    </section>
-    {% endif %}
-
-  </main>
-</div>
 
 <script>
   window.KONVY_LOGGED_IN = {{ 'true' if logged_in else 'false' }};

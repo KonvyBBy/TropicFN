@@ -1,129 +1,46 @@
 document.addEventListener("DOMContentLoaded", () => {
 
-  // =============== ANIMATED PARTICLES BACKGROUND ===============
-  const canvas = document.createElement('canvas');
-  canvas.id = 'particles-canvas';
-  document.body.prepend(canvas);
-
-  const ctx = canvas.getContext('2d');
-  let particles = [];
-  let mouseX = 0;
-  let mouseY = 0;
-
-  function resizeCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-  }
-
-  window.addEventListener('resize', resizeCanvas);
-  resizeCanvas();
-
-  document.addEventListener('mousemove', (e) => {
-    mouseX = e.clientX;
-    mouseY = e.clientY;
-  });
-
-  class Particle {
-    constructor() {
-      this.x = Math.random() * canvas.width;
-      this.y = Math.random() * canvas.height;
-      this.vx = (Math.random() - 0.5) * 0.5;
-      this.vy = (Math.random() - 0.5) * 0.5;
-      this.radius = Math.random() * 2 + 1;
-    }
-
-    update() {
-      this.x += this.vx;
-      this.y += this.vy;
-
-      // Mouse interaction
-      const dx = mouseX - this.x;
-      const dy = mouseY - this.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      
-      if (dist < 100) {
-        const angle = Math.atan2(dy, dx);
-        this.vx -= Math.cos(angle) * 0.05;
-        this.vy -= Math.sin(angle) * 0.05;
-      }
-
-      // Boundaries
-      if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
-      if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
-
-      // Damping
-      this.vx *= 0.99;
-      this.vy *= 0.99;
-    }
-
-    draw() {
-      ctx.beginPath();
-      ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-      ctx.fill();
-    }
-  }
-
-  // Create particles
-  for (let i = 0; i < 80; i++) {
-    particles.push(new Particle());
-  }
-
-  function animateParticles() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    particles.forEach(p => {
-      p.update();
-      p.draw();
-    });
-
-    // Connect nearby particles
-    for (let i = 0; i < particles.length; i++) {
-      for (let j = i + 1; j < particles.length; j++) {
-        const dx = particles[i].x - particles[j].x;
-        const dy = particles[i].y - particles[j].y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-
-        if (dist < 120) {
-          ctx.beginPath();
-          ctx.strokeStyle = `rgba(255, 255, 255, ${0.1 * (1 - dist / 120)})`;
-          ctx.lineWidth = 0.5;
-          ctx.moveTo(particles[i].x, particles[i].y);
-          ctx.lineTo(particles[j].x, particles[j].y);
-          ctx.stroke();
-        }
-      }
-    }
-
-    requestAnimationFrame(animateParticles);
-  }
-
-  animateParticles();
-
-
-
-// =============== MOBILE TOUCH IMPROVEMENTS ===============
-  let touchStartY = 0;
-  let touchEndY = 0;
-
-  document.addEventListener('touchstart', (e) => {
-    touchStartY = e.changedTouches[0].screenY;
-  }, { passive: true });
-
-  document.addEventListener('touchend', (e) => {
-    touchEndY = e.changedTouches[0].screenY;
-  }, { passive: true });
-
-  // Prevent double-tap zoom on buttons
-  document.addEventListener('touchend', (e) => {
-    if (e.target.matches('button, .action-btn, .nav-btn')) {
+  // =============== SMOOTH SCROLL NAVIGATION ===============
+  const navLinks = document.querySelectorAll('[data-scroll]');
+  navLinks.forEach(link => {
+    link.addEventListener('click', (e) => {
       e.preventDefault();
-      e.target.click();
-    }
+      const targetId = link.getAttribute('data-scroll');
+      const targetSection = document.getElementById(targetId);
+      
+      if (targetSection) {
+        // Update active state
+        navLinks.forEach(l => l.classList.remove('active'));
+        link.classList.add('active');
+        
+        // Smooth scroll
+        targetSection.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
+      }
+    });
   });
 
-
-
+  // Update active nav link on scroll
+  const sections = document.querySelectorAll('.content-section, .hero-section');
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(section => {
+      const sectionTop = section.offsetTop;
+      const sectionHeight = section.clientHeight;
+      if (pageYOffset >= (sectionTop - 100)) {
+        current = section.getAttribute('id');
+      }
+    });
+    
+    navLinks.forEach(link => {
+      link.classList.remove('active');
+      if (link.getAttribute('data-scroll') === current) {
+        link.classList.add('active');
+      }
+    });
+  });
 
   // =============== UTILITIES ===============
   async function postJSON(url, data = {}) {
@@ -557,27 +474,6 @@ document.addEventListener("DOMContentLoaded", () => {
       `;
     }
   });
-
-  // =============== SECTION NAV ===============
-  const navButtons = document.querySelectorAll(".nav-btn");
-  const sections = document.querySelectorAll(".section");
-
-  function showSection(name) {
-    sections.forEach(sec => sec.style.display = "none");
-    navButtons.forEach(btn => btn.classList.remove("active"));
-
-    const target = qs("section-" + name);
-    const btn = document.querySelector(`.nav-btn[data-section="${name}"]`);
-
-    if (target) target.style.display = "block";
-    if (btn) btn.classList.add("active");
-  }
-
-  navButtons.forEach(btn => {
-    btn.addEventListener("click", () => showSection(btn.dataset.section));
-  });
-
-  showSection("home");
 
   // =============== COSMETIC TYPE DIALOG ===============
   window.showCosmeticTypeDialog = (itemId) => {
