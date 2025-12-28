@@ -9,7 +9,7 @@ from flask import (
     Flask,
     request,
     jsonify,
-    render_template,          # âœ… ADD
+    render_template,          # ✅ ADD
     render_template_string,
     redirect,
     url_for,
@@ -177,33 +177,13 @@ def get_upcharge_multiplier(base_price: float) -> float:
 
 # --- User storage ---
 USERS_FILE = os.path.join(DATA_DIR, "users.json")
-FAVORITES_FILE = os.path.join(DATA_DIR, "favorites.json")
 
 
 # --- Balances (reuse your balances_file) ---
 from balances_file import get_balance, add_balance  # uses balances.json
 
 
-# ===================== USER HELPERS =====================
-
-# --- Favorites tracking ---
-
-def _load_favorites() -> dict:
-    if not os.path.exists(FAVORITES_FILE):
-        return {}
-    try:
-        with open(FAVORITES_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except Exception:
-        return {}
-
-def _save_favorites(favorites: dict) -> None:
-    with open(FAVORITES_FILE, "w", encoding="utf-8") as f:
-        json.dump(favorites, f, indent=2)
-
-
-
-def _load_users():
+# ===================== USER HELPERS =====================def _load_users():
     """Load users from users.json: {username: {password_hash: ...}}"""
     if not os.path.exists(USERS_FILE):
         return {}
@@ -830,7 +810,7 @@ LOGIN_HTML = """
           <input name="username" placeholder="yourname" value="{{ username_prefill or '' }}">
         </label>
         <label>Password
-          <input name="password" type="password" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢">
+          <input name="password" type="password" placeholder="••••••••">
         </label>
         <button type="submit">Login</button>
       </form>
@@ -1576,11 +1556,11 @@ INDEX_HTML = """
           <h2>Rate Your Experience</h2>
           <p class="small">Please click a star to leave a rating (1â€“5).</p>
           <div class="star-row" id="star-rating">
-            <span class="star" data-value="1">â˜…</span>
-            <span class="star" data-value="2">â˜…</span>
-            <span class="star" data-value="3">â˜…</span>
-            <span class="star" data-value="4">â˜…</span>
-            <span class="star" data-value="5">â˜…</span>
+            <span class="star" data-value="1">★</span>
+            <span class="star" data-value="2">★</span>
+            <span class="star" data-value="3">★</span>
+            <span class="star" data-value="4">★</span>
+            <span class="star" data-value="5">★</span>
           </div>
           <button type="button" id="submit-review-btn">Submit Review</button>
           <div class="small" id="star-result" style="margin-top:8px;"></div>
@@ -2381,54 +2361,6 @@ TUTORIAL_HTML = """
 </html>
 """
 
-@app.route("/api/favorites/add", methods=["POST"])
-@login_required_api
-def api_add_favorite():
-    data = request.json or {}
-    username = session["username"]
-    item_id = int(data.get("item_id") or 0)
-    
-    if not item_id:
-        return jsonify({"error": "item_id required"}), 400
-    
-    favorites = _load_favorites()
-    user_favs = favorites.get(username, [])
-    
-    if item_id not in user_favs:
-        user_favs.append(item_id)
-        favorites[username] = user_favs
-        _save_favorites(favorites)
-    
-    return jsonify({"message": "Added to favorites", "favorites": user_favs})
-
-
-@app.route("/api/favorites/remove", methods=["POST"])
-@login_required_api
-def api_remove_favorite():
-    data = request.json or {}
-    username = session["username"]
-    item_id = int(data.get("item_id") or 0)
-    
-    favorites = _load_favorites()
-    user_favs = favorites.get(username, [])
-    
-    if item_id in user_favs:
-        user_favs.remove(item_id)
-        favorites[username] = user_favs
-        _save_favorites(favorites)
-    
-    return jsonify({"message": "Removed from favorites", "favorites": user_favs})
-
-
-@app.route("/api/favorites/list", methods=["POST"])
-@login_required_api
-def api_list_favorites():
-    username = session["username"]
-    favorites = _load_favorites()
-    user_favs = favorites.get(username, [])
-    return jsonify({"favorites": user_favs})
-
-
 
 
 
@@ -2443,6 +2375,7 @@ def api_list_favorites():
 
 
 @app.route("/warranty")
+@login_required_page
 def warranty():
     return render_template("warranty.html")
 
@@ -2452,7 +2385,7 @@ def tutorial():
     return render_template_string(TUTORIAL_HTML)
 
 
-# 2. Remove @login_required_page from dashboard
+# Main dashboard route - now just shows search
 @app.route("/dashboard")
 def dashboard():
     # Check if logged in
@@ -2474,6 +2407,53 @@ def dashboard():
         balance=balance,
         purchases=purchases,
         logged_in=logged_in
+    )
+
+# Balance page
+@app.route("/balance")
+@login_required_page
+def balance_page():
+    username = session["username"]
+    balance_cents = get_balance(username)
+    balance = f"{balance_cents / 100:.2f}"
+    
+    return render_template(
+        "balance.html",
+        username=username,
+        balance=balance,
+        logged_in=True
+    )
+
+# My Accounts page
+@app.route("/my-accounts")
+@login_required_page
+def my_accounts_page():
+    username = session["username"]
+    balance_cents = get_balance(username)
+    purchases = get_purchases(username)
+    balance = f"{balance_cents / 100:.2f}"
+    
+    return render_template(
+        "my_accounts.html",
+        username=username,
+        balance=balance,
+        purchases=purchases,
+        logged_in=True
+    )
+
+# Redeem page
+@app.route("/redeem")
+@login_required_page
+def redeem_page():
+    username = session["username"]
+    balance_cents = get_balance(username)
+    balance = f"{balance_cents / 100:.2f}"
+    
+    return render_template(
+        "redeem.html",
+        username=username,
+        balance=balance,
+        logged_in=True
     )
 
 

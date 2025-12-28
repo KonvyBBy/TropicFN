@@ -20,13 +20,13 @@
       </div>
       
       <nav class="header-nav">
-        <a href="#search" class="nav-link active" data-scroll="search">Search</a>
+        <a href="/dashboard" class="nav-link active">Search</a>
         {% if logged_in %}
-          <a href="#balance" class="nav-link" data-scroll="balance">Balance</a>
-          <a href="#my-accounts" class="nav-link" data-scroll="my-accounts">My Accounts</a>
-          <a href="#redeem" class="nav-link" data-scroll="redeem">Redeem</a>
+          <a href="/balance" class="nav-link">Balance</a>
+          <a href="/my-accounts" class="nav-link">My Accounts</a>
+          <a href="/redeem" class="nav-link">Redeem</a>
+          <a href="{{ url_for('warranty') }}" class="nav-link">Warranty</a>
         {% endif %}
-        <a href="{{ url_for('warranty') }}" class="nav-link">Warranty</a>
       </nav>
       
       <div class="header-right">
@@ -194,115 +194,6 @@
           </div>
         </div>
       </section>
-
-      {% if logged_in %}
-      <!-- Balance Section -->
-      <section class="content-section" id="balance">
-        <div class="section-header">
-          <h2 class="section-title">Manage Balance</h2>
-          <p class="section-description">Check your balance and add funds to your account</p>
-        </div>
-
-        <div class="balance-grid">
-          <div class="balance-card">
-            <div class="card-icon">💰</div>
-            <h3 class="card-title">Check Balance</h3>
-            <p class="card-description">View your current account balance</p>
-            <button id="check-balance-btn" class="btn-card-action">Check Balance</button>
-            <div id="balance-result" class="result-display"></div>
-          </div>
-
-          <div class="balance-card">
-            <div class="card-icon">💳</div>
-            <h3 class="card-title">Add Funds</h3>
-            <p class="card-description">Generate a secure payment link to add funds</p>
-            <div class="form-group">
-              <label class="form-label">Amount (USD)</label>
-              <div class="input-with-icon">
-                <span class="input-icon">$</span>
-                <input id="topup-amount" type="number" step="0.01" value="10" class="form-input" placeholder="10.00">
-              </div>
-            </div>
-            <button id="topup-btn" class="btn-card-action">Generate Link</button>
-            <div id="topup-result" class="result-display"></div>
-          </div>
-        </div>
-
-        <div class="info-banner">
-          <div class="info-icon">💡</div>
-          <div class="info-content">
-            <strong>How it works:</strong> Generate a payment link, complete the transaction on Shopify, then use the Redeem section with your order number to add funds to your account.
-          </div>
-        </div>
-      </section>
-
-      <!-- My Accounts Section -->
-      <section class="content-section" id="my-accounts">
-        <div class="section-header">
-          <h2 class="section-title">My Accounts</h2>
-          <p class="section-description">View and manage your purchased Fortnite accounts</p>
-        </div>
-
-        <div class="account-viewer">
-          <div id="my-accounts-view" class="account-details"></div>
-
-          <div class="account-navigation">
-            <button id="prev-account" class="btn-nav-account">← Previous</button>
-            <span id="account-indicator" class="account-counter"></span>
-            <button id="next-account" class="btn-nav-account">Next →</button>
-          </div>
-        </div>
-
-        {% if purchases|length > 0 %}
-        <div class="security-notice">
-          <div class="notice-header">
-            <span class="notice-icon">🔒</span>
-            <h3>Security Reminder</h3>
-          </div>
-          <p>Remember to secure your account following our <a href="https://youtu.be/ykQsz5QrZkg" target="_blank">warranty guide</a> to maintain eligibility for warranty claims.</p>
-        </div>
-        {% endif %}
-      </section>
-
-      <!-- Redeem Section -->
-      <section class="content-section" id="redeem">
-        <div class="section-header">
-          <h2 class="section-title">Redeem Order</h2>
-          <p class="section-description">Convert your Shopify order into account balance</p>
-        </div>
-
-        <div class="redeem-card">
-          <div class="card-icon">🎟️</div>
-          
-          <div class="steps-list">
-            <div class="step-item">
-              <span class="step-number">1</span>
-              <span class="step-text">Generate payment link in the Balance section</span>
-            </div>
-            <div class="step-item">
-              <span class="step-number">2</span>
-              <span class="step-text">Complete payment on Shopify</span>
-            </div>
-            <div class="step-item">
-              <span class="step-number">3</span>
-              <span class="step-text">Find your order number (e.g., 1234)</span>
-            </div>
-            <div class="step-item">
-              <span class="step-number">4</span>
-              <span class="step-text">Enter below and redeem to add funds</span>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Order Number</label>
-            <input id="redeem-order" type="number" class="form-input" placeholder="Enter order number without #">
-          </div>
-
-          <button id="redeem-btn" class="btn-redeem">🎟️ Redeem Order</button>
-          <div id="redeem-result" class="result-display"></div>
-        </div>
-      </section>
-      {% endif %}
 
     </main>
   </div>
