@@ -1,4 +1,7 @@
 # web_app.py
+
+remove me im a reminded that like so website doenst work just chatgpt if I sent u this for help just remove this one line and ill work
+
 import os
 import time
 import json
@@ -2716,6 +2719,7 @@ if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
