@@ -1,83 +1,77 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>My Accounts - Konvy Accounts</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
-</head>
+{% extends "base.html" %}
+{% block title %}My Accounts — Konvy Accounts{% endblock %}
 
-<body>
-  <!-- Modern Navigation Header -->
-  <header class="modern-header">
-    <div class="header-container">
-      <div class="header-left">
-        <div class="logo-modern">
-          <span class="logo-icon">K</span>
-          <span class="logo-text">Konvy</span>
-        </div>
-      </div>
-      
-      <nav class="header-nav">
-        <a href="/dashboard" class="nav-link">Search</a>
-        <a href="/balance" class="nav-link">Balance</a>
-        <a href="/my-accounts" class="nav-link active">My Accounts</a>
-        <a href="/transactions" class="nav-link">Transactions</a>
-        {% if has_topup %}
-        <a href="{{ url_for('warranty') }}" class="nav-link">Warranty</a>
-        {% endif %}
-      </nav>
-      
-      <div class="header-right">
-        <div class="user-badge">
-          <span class="user-icon">👤</span>
-          <span class="user-name">{{ username }}</span>
-        </div>
-        <div class="balance-badge">${{ balance }}</div>
-        <a href="{{ url_for('logout') }}" class="btn-logout">Logout</a>
-      </div>
-    </div>
-  </header>
+{% block content %}
 
-  <!-- Main Content Wrapper -->
-  <div class="content-wrapper">
-    <main class="main-content">
+<header class="glass-panel relative overflow-hidden rounded-3xl px-5 py-8 sm:px-8 sm:py-10">
+  <h1 class="text-glow font-space text-2xl font-bold text-white sm:text-3xl md:text-4xl">My Accounts</h1>
+  <p class="mt-2 max-w-xl text-sm text-zinc-400 md:text-base">
+    View and manage your purchased Fortnite accounts.
+  </p>
+</header>
 
-      <!-- My Accounts Section -->
-      <section class="content-section" id="my-accounts">
-        <div class="section-header">
-          <h2 class="section-title">My Accounts</h2>
-          <p class="section-description">View and manage your purchased Fortnite accounts</p>
-        </div>
+{% if purchases|length == 0 %}
+<section class="glass-panel rounded-3xl p-8 text-center">
+  <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
+    <i class="ri-gamepad-line text-2xl text-zinc-500"></i>
+  </div>
+  <h3 class="font-space text-base font-semibold text-white">No accounts yet</h3>
+  <p class="mt-2 text-sm text-zinc-500">Browse the marketplace and purchase your first account.</p>
+  <a href="/dashboard">
+    <button class="mt-5 inline-flex h-10 items-center justify-center rounded-xl bg-emerald-500 text-black px-5 text-sm font-medium hover:bg-emerald-400 transition cursor-pointer">
+      <i class="ri-shopping-cart-line mr-2"></i>Browse Marketplace
+    </button>
+  </a>
+</section>
+{% else %}
 
-        <div class="account-viewer">
-          <div id="my-accounts-view" class="account-details"></div>
-
-          <div class="account-navigation">
-            <button id="prev-account" class="btn-nav-account">← Previous</button>
-            <span id="account-indicator" class="account-counter"></span>
-            <button id="next-account" class="btn-nav-account">Next →</button>
-          </div>
-        </div>
-
-        {% if purchases|length > 0 %}
-        <div class="security-notice">
-          <div class="notice-header">
-            <span class="notice-icon">🔒</span>
-            <h3>Security Reminder</h3>
-          </div>
-          <p>Remember to secure your account following our <a href="https://youtu.be/ykQsz5QrZkg" target="_blank">warranty guide</a> to maintain eligibility for warranty claims.</p>
-        </div>
-        {% endif %}
-      </section>
-
-    </main>
+<!-- Account viewer -->
+<section class="glass-panel rounded-3xl p-5 sm:p-6 space-y-4">
+  <div class="flex items-center justify-between">
+    <h2 class="font-space text-base font-semibold text-white">Account Details</h2>
+    <span id="account-indicator" class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] text-zinc-400"></span>
   </div>
 
+  <div id="my-accounts-view" class="rounded-2xl border border-white/10 bg-black/25 p-5 space-y-4 min-h-[140px]">
+    <div class="text-sm text-zinc-500 text-center py-4">Loading...</div>
+  </div>
+
+  <div class="flex items-center justify-between gap-3">
+    <button id="prev-account"
+      class="inline-flex h-10 items-center justify-center rounded-xl border border-white/15 bg-white/5 px-4 text-sm font-medium text-zinc-300 hover:text-white hover:border-white/30 transition cursor-pointer gap-2">
+      <i class="ri-arrow-left-line"></i>Previous
+    </button>
+    <button id="next-account"
+      class="inline-flex h-10 items-center justify-center rounded-xl border border-white/15 bg-white/5 px-4 text-sm font-medium text-zinc-300 hover:text-white hover:border-white/30 transition cursor-pointer gap-2">
+      Next<i class="ri-arrow-right-line"></i>
+    </button>
+  </div>
+</section>
+
+<!-- Security notice -->
+<section class="flex items-start gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/5 px-4 py-3.5 sm:px-5">
+  <i class="ri-shield-line text-amber-400 mt-0.5 shrink-0"></i>
+  <p class="text-sm text-zinc-400 leading-relaxed">
+    <span class="font-semibold text-amber-300">Security Reminder:</span>
+    Secure your account by following our
+    <a href="https://youtu.be/ykQsz5QrZkg" target="_blank" class="text-emerald-400 hover:text-emerald-300 transition underline">warranty guide</a>
+    to maintain warranty eligibility.
+  </p>
+</section>
+
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<style>
+  #my-accounts-view .cred-block { display: flex; flex-direction: column; gap: 4px; }
+  #my-accounts-view .cred-block label { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #71717a; }
+  #my-accounts-view .cred-block code { font-size: 0.82rem; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 8px 12px; color: #e4e4e7; word-break: break-all; display: block; }
+  #my-accounts-view .account-name-header { font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 12px; font-family: 'Space Grotesk', sans-serif; }
+</style>
 <script>
   window.KONVY_LOGGED_IN = true;
 </script>
 <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
-</body>
-</html>
+{% endblock %}

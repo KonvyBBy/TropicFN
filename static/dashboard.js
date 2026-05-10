@@ -14,49 +14,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const qs = (id) => document.getElementById(id);
 
-  // =============== AUTH MODAL ===============
-  const authModal = qs("auth-modal");
-
-  function setAuthTab(mode) {
-    if (!authModal) return;
-    authModal.querySelectorAll("[data-auth-tab]").forEach((tab) => {
-      tab.classList.toggle("active", tab.dataset.authTab === mode);
-    });
-    authModal.querySelectorAll("[data-auth-panel]").forEach((panel) => {
-      panel.classList.toggle("active", panel.dataset.authPanel === mode);
-    });
-  }
-
+  // =============== AUTH REDIRECT ===============
   function openAuthModal(mode = "login") {
-    if (!authModal) return;
-    authModal.classList.add("open");
-    document.body.style.overflow = "hidden";
-    setAuthTab(mode);
+    window.location.href = mode === "register" ? "/register" : "/login";
   }
 
-  function closeAuthModal() {
-    if (!authModal) return;
-    authModal.classList.remove("open");
-    document.body.style.overflow = "";
-  }
-
-  document.querySelectorAll("[data-auth-open]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      openAuthModal(btn.dataset.authOpen || "login");
-    });
-  });
-
-  authModal?.querySelectorAll("[data-auth-close]").forEach((node) => {
-    node.addEventListener("click", closeAuthModal);
-  });
-
-  authModal?.querySelectorAll("[data-auth-tab]").forEach((tab) => {
-    tab.addEventListener("click", () => setAuthTab(tab.dataset.authTab));
-  });
-
-  if (window.KONVY_AUTH_MODE) {
-    openAuthModal(window.KONVY_AUTH_MODE);
-  }
 
   // =============== PROCESSING OVERLAY ===============
   function showProcessingOverlay() {
@@ -338,9 +300,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     
     searchResults.innerHTML = `
-      <div class="loading-state">
-        <div class="loading-spinner"></div>
-        <div class="loading-text">Searching for accounts...</div>
+      <div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;gap:14px;">
+        <div style="width:36px;height:36px;border:3px solid rgba(255,255,255,0.08);border-top-color:#10b981;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+        <div style="font-size:0.9rem;font-weight:500;color:#a1a1aa;">Searching for accounts...</div>
       </div>
     `;
     
@@ -360,10 +322,10 @@ document.addEventListener("DOMContentLoaded", () => {
       
       if (!data.accounts || data.accounts.length === 0) {
         searchResults.innerHTML = `
-          <div class="empty-state">
-            <div class="empty-state-icon">😕</div>
-            <div class="empty-state-text">No accounts found</div>
-            <div class="empty-state-hint">Try different items or adjust your filters</div>
+          <div style="grid-column:1/-1;text-align:center;padding:48px 24px;">
+            <div style="font-size:2.5rem;margin-bottom:12px;opacity:0.5;">😕</div>
+            <div style="font-size:0.95rem;font-weight:600;color:#e4e4e7;margin-bottom:6px;">No accounts found</div>
+            <div style="font-size:0.82rem;color:#71717a;">Try different items or adjust your filters</div>
           </div>
         `;
         return;
@@ -371,58 +333,57 @@ document.addEventListener("DOMContentLoaded", () => {
       
       data.accounts.forEach(acc => {
         const card = document.createElement('div');
-        card.className = 'account-card';
-        
+        card.className = 'glass-panel group relative overflow-hidden rounded-2xl transition hover:border-white/20';
+        card.style.display = 'flex';
+        card.style.flexDirection = 'column';
+
+        const warrantyTag = acc.last_played_days != null && acc.last_played_days >= 11
+          ? `<span style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:#34d399;padding:2px 8px;border-radius:99px;font-size:0.65rem;font-weight:700;">✓ Warranty</span>`
+          : '';
+
         card.innerHTML = `
-          <!-- Card top: badge + price -->
-          <div class="account-card-top">
-            <div class="full-access-badge">Full Access</div>
-            <div class="account-price">$${acc.user_price.toFixed(2)}</div>
+          <div style="padding:16px 18px 0;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+              <span style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#e4e4e7;padding:3px 8px;border-radius:99px;font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;">Full Access</span>
+              ${warrantyTag}
+            </div>
+            <div style="font-family:'Space Grotesk',sans-serif;font-size:1.25rem;font-weight:700;color:#fff;">$${acc.user_price.toFixed(2)}</div>
           </div>
 
-          <!-- Stats -->
-          <div class="account-stats">
-            <div class="stat-item">
-              <span class="stat-label">🎭 Skins</span>
-              <span class="stat-value">${acc.skins || 0}</span>
+          <div style="padding:14px 18px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;flex:1;">
+            <div style="text-align:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:10px 6px;">
+              <div style="font-size:0.7rem;color:#71717a;margin-bottom:3px;">🎭 Skins</div>
+              <div style="font-weight:700;color:#fff;font-size:0.95rem;">${acc.skins || 0}</div>
             </div>
-
-            <div class="stat-item">
-              <span class="stat-label">⛏️ Pickaxes</span>
-              <span class="stat-value">${acc.pickaxes || 0}</span>
+            <div style="text-align:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:10px 6px;">
+              <div style="font-size:0.7rem;color:#71717a;margin-bottom:3px;">💃 Emotes</div>
+              <div style="font-weight:700;color:#fff;font-size:0.95rem;">${acc.emotes || 0}</div>
             </div>
-
-            <div class="stat-item">
-              <span class="stat-label">💃 Emotes</span>
-              <span class="stat-value">${acc.emotes || 0}</span>
+            <div style="text-align:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:10px 6px;">
+              <div style="font-size:0.7rem;color:#71717a;margin-bottom:3px;">⛏️ Picks</div>
+              <div style="font-weight:700;color:#fff;font-size:0.95rem;">${acc.pickaxes || 0}</div>
             </div>
-
-            <div class="stat-item">
-              <span class="stat-label">🪂 Gliders</span>
-              <span class="stat-value">${acc.gliders || 0}</span>
+            <div style="text-align:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:10px 6px;">
+              <div style="font-size:0.7rem;color:#71717a;margin-bottom:3px;">🪂 Gliders</div>
+              <div style="font-weight:700;color:#fff;font-size:0.95rem;">${acc.gliders || 0}</div>
             </div>
-
-            <div class="stat-item">
-              <span class="stat-label">💰 V-Bucks</span>
-              <span class="stat-value">${acc.vbucks || 0}</span>
+            <div style="text-align:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:10px 6px;">
+              <div style="font-size:0.7rem;color:#71717a;margin-bottom:3px;">💰 V-Bucks</div>
+              <div style="font-weight:700;color:#fff;font-size:0.95rem;">${acc.vbucks || 0}</div>
             </div>
-
-            <div class="stat-item">
-              <span class="stat-label">📅 Last Played</span>
-              <span class="stat-value">${acc.last_played || "Unknown"}</span>
+            <div style="text-align:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:10px 6px;">
+              <div style="font-size:0.7rem;color:#71717a;margin-bottom:3px;">📅 Offline</div>
+              <div style="font-weight:700;color:#fff;font-size:0.85rem;">${acc.last_played || "?"}</div>
             </div>
           </div>
 
-          <!-- Actions -->
-          <div class="account-actions">
-            <button class="action-btn primary buy-btn"
-                    data-item-id="${acc.item_id}"
-                    data-base-price="${acc.base_price}">
-              💳 Buy
+          <div style="padding:0 18px 16px;display:flex;gap:8px;">
+            <button class="buy-btn" data-item-id="${acc.item_id}" data-base-price="${acc.base_price}"
+              style="flex:1;background:#10b981;color:#000;border:none;border-radius:12px;padding:10px;font-size:0.82rem;font-weight:700;cursor:pointer;transition:background 0.15s;">
+              💳 Buy Now
             </button>
-
-            <button class="action-btn secondary skins-btn"
-                    data-item-id="${acc.item_id}">
+            <button class="skins-btn" data-item-id="${acc.item_id}"
+              style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#a1a1aa;border-radius:12px;padding:10px 14px;font-size:0.82rem;font-weight:600;cursor:pointer;transition:all 0.15s;white-space:nowrap;">
               👀 Preview
             </button>
           </div>
@@ -476,10 +437,10 @@ document.addEventListener("DOMContentLoaded", () => {
       
     } catch (err) {
       searchResults.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-state-icon">❌</div>
-          <div class="empty-state-text">Search Error</div>
-          <div class="empty-state-hint">${err.message}</div>
+        <div style="grid-column:1/-1;text-align:center;padding:48px 24px;">
+          <div style="font-size:2.5rem;margin-bottom:12px;opacity:0.5;">❌</div>
+          <div style="font-size:0.95rem;font-weight:600;color:#e4e4e7;margin-bottom:6px;">Search Error</div>
+          <div style="font-size:0.82rem;color:#71717a;">${err.message}</div>
         </div>
       `;
     }
