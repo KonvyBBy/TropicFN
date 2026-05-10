@@ -23,7 +23,10 @@
         <a href="/dashboard" class="nav-link">Search</a>
         <a href="/balance" class="nav-link">Balance</a>
         <a href="/my-accounts" class="nav-link active">My Accounts</a>
+        <a href="/transactions" class="nav-link">Transactions</a>
+        {% if has_topup %}
         <a href="{{ url_for('warranty') }}" class="nav-link">Warranty</a>
+        {% endif %}
       </nav>
       
       <div class="header-right">
