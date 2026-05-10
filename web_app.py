@@ -1617,7 +1617,7 @@ INDEX_HTML = """
         <div class="row card">
           <h2>Top Up Balance</h2>
           <p>Your balance is credited <strong>automatically</strong> when your Shopify order is paid &mdash; no manual redemption needed.</p>
-          <p class="small">Make sure you enter <code>user:{{ username }}</code> in the order note at checkout so we know which account to credit.</p>
+          <p class="small">Make sure you enter <code>user:{{ username }}</code> in the <strong>Order Notes</strong> field at Shopify checkout so we know which account to credit.</p>
           <hr />
           <p class="small">If your balance has not appeared within a few minutes after payment, use the manual form below as a fallback.</p>
           <form id="redeem-form">
@@ -2677,7 +2677,8 @@ def shopify_order_paid_webhook():
 
     try:
         order = json.loads(raw_body)
-    except Exception:
+    except (ValueError, Exception) as exc:
+        app.logger.error("Shopify webhook: failed to parse JSON body: %s", exc)
         return "", 400
 
     order_id_str = str(order.get("id", ""))
@@ -2701,13 +2702,22 @@ def shopify_order_paid_webhook():
         app.logger.info("Shopify webhook order %s: empty username in note", order_id_str)
         return "", 200
 
+    # Validate that the username exists in the system
+    users = _load_users()
+    if username not in users:
+        app.logger.warning(
+            "Shopify webhook order %s: username %r not found; skipping balance credit",
+            order_id_str, username,
+        )
+        return "", 200
+
     if is_redeemed(order_id_str):
         app.logger.info("Shopify webhook order %s already redeemed; skipping", order_id_str)
         return "", 200
 
     try:
         amount_dollars = float(total_price_str)
-    except Exception:
+    except ValueError:
         app.logger.error("Shopify webhook order %s: bad total_price %r", order_id_str, total_price_str)
         return "", 200
 
