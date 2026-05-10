@@ -2577,23 +2577,30 @@ def api_redeem():
         return jsonify({"error": "SHOPIFY_ADMIN_TOKEN not configured"}), 500
 
     if reason == "not_found":
-        return jsonify({"error": f"No order found with number #{order_number_raw}"}), 404
+        return jsonify({"error": f"No Shopify order found for reference {order_number_raw}"}), 404
 
     if reason == "api_error":
-        return jsonify({"error": "Shopify API error", "details": api_error or {}}), 500
+        app.logger.warning("Shopify API error while redeeming %s: %s", order_number_raw, api_error)
+        return jsonify({"error": "Shopify API error"}), 500
 
     if reason == "not_paid":
-        return jsonify({"error": f"Order not paid yet (status: {status})"}), 400
+        app.logger.info("Redeem rejected for unpaid order %s (status=%s)", order_number_raw, status)
+        return jsonify({"error": "Order not paid yet"}), 400
 
     if reason != "ok":
         return jsonify({"error": "Could not validate order"}), 400
 
     expected_note = f"user:{username}"
     if (note or "").strip() != expected_note:
+        app.logger.info(
+            "Redeem note mismatch for %s: expected %s got %r",
+            order_number_raw,
+            expected_note,
+            note,
+        )
         return jsonify(
             {
                 "error": "Order note does not match this user",
-                "details": f"expected {expected_note}, got {note!r}",
             }
         ), 403
 
