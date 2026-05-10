@@ -14,6 +14,50 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const qs = (id) => document.getElementById(id);
 
+  // =============== AUTH MODAL ===============
+  const authModal = qs("auth-modal");
+
+  function setAuthTab(mode) {
+    if (!authModal) return;
+    authModal.querySelectorAll("[data-auth-tab]").forEach((tab) => {
+      tab.classList.toggle("active", tab.dataset.authTab === mode);
+    });
+    authModal.querySelectorAll("[data-auth-panel]").forEach((panel) => {
+      panel.classList.toggle("active", panel.dataset.authPanel === mode);
+    });
+  }
+
+  function openAuthModal(mode = "login") {
+    if (!authModal) return;
+    authModal.classList.add("open");
+    document.body.style.overflow = "hidden";
+    setAuthTab(mode);
+  }
+
+  function closeAuthModal() {
+    if (!authModal) return;
+    authModal.classList.remove("open");
+    document.body.style.overflow = "";
+  }
+
+  document.querySelectorAll("[data-auth-open]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      openAuthModal(btn.dataset.authOpen || "login");
+    });
+  });
+
+  authModal?.querySelectorAll("[data-auth-close]").forEach((node) => {
+    node.addEventListener("click", closeAuthModal);
+  });
+
+  authModal?.querySelectorAll("[data-auth-tab]").forEach((tab) => {
+    tab.addEventListener("click", () => setAuthTab(tab.dataset.authTab));
+  });
+
+  if (window.KONVY_AUTH_MODE) {
+    openAuthModal(window.KONVY_AUTH_MODE);
+  }
+
   // =============== PROCESSING OVERLAY ===============
   function showProcessingOverlay() {
     let overlay = qs('processing-overlay');
@@ -332,9 +376,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const buyBtn = card.querySelector(".buy-btn");
         buyBtn.onclick = async () => {
           if (!window.KONVY_LOGGED_IN) {
-            if (confirm("You need to login to purchase accounts. Go to login page?")) {
-              window.location.href = "/login";
-            }
+            openAuthModal("login");
             return;
           }
 
@@ -560,19 +602,6 @@ document.addEventListener("DOMContentLoaded", () => {
         `<a href="${res.checkout_url}" target="_blank">Open Checkout</a>`;
     } catch (e) {
       qs("topup-result").textContent = e.message;
-    }
-  });
-
-  // =============== REDEEM ===============
-  qs("redeem-btn")?.addEventListener("click", async () => {
-    qs("redeem-result").textContent = "Redeeming…";
-    try {
-      const res = await postJSON("/api/redeem", {
-        order_number: Number(qs("redeem-order").value),
-      });
-      qs("redeem-result").textContent = res.message;
-    } catch (e) {
-      qs("redeem-result").textContent = e.message;
     }
   });
 

@@ -8,6 +8,7 @@ import json
 import hmac
 import hashlib
 import base64
+from urllib.parse import urlencode
 from typing import List, Tuple, Optional, Set
 
 import requests
@@ -157,37 +158,44 @@ REDEEMED_FILE = os.path.join(DATA_DIR, "redeemed_orders.json")
 PURCHASES_FILE = os.path.join(DATA_DIR, "purchased_accounts.json")
 
 # --- Pricing ---
-# --- Pricing Tiers ---
-UPCHARGE_TIERS = [
-    {"min": 0,  "max": 5,  "multiplier": 3.3},
-    {"min": 5,  "max": 10, "multiplier": 3.0},
-    {"min": 10, "max": 15, "multiplier": 2.3},
-    {"min": 15, "max": 20, "multiplier": 2.3},
-    {"min": 20, "max": 25, "multiplier": 2.4},
-    {"min": 25, "max": 30, "multiplier": 2.2},
-    {"min": 30, "max": 35, "multiplier": 2.05},
-    {"min": 35, "max": 40, "multiplier": 1.95},
-    {"min": 40, "max": 45, "multiplier": 1.85},
-    {"min": 45, "max": 50, "multiplier": 1.75},
-    {"min": 50, "max": 60, "multiplier": 1.65},
-    {"min": 60, "max": 70, "multiplier": 1.6},
-    {"min": 70, "max": 80, "multiplier": 1.55},
-    {"min": 80, "max": 90, "multiplier": 1.5},
-    {"min": 90, "max": 100,"multiplier": 1.45},
-    {"min": 100,"max": 999999,"multiplier": 1.4}
-]
+PRICING_CONFIG_FILE = os.path.join(DATA_DIR, "pricing_config.json")
+DEFAULT_LZT_MULTIPLIER = float(os.environ.get("DEFAULT_LZT_MULTIPLIER", "2.0"))
 
 
+def _load_pricing_config() -> dict:
+    if not os.path.exists(PRICING_CONFIG_FILE):
+        return {}
+    try:
+        with open(PRICING_CONFIG_FILE, "r", encoding="utf-8") as f:
+            return json.load(f) or {}
+    except Exception:
+        return {}
 
 
+def _save_pricing_config(config: dict) -> None:
+    with open(PRICING_CONFIG_FILE, "w", encoding="utf-8") as f:
+        json.dump(config, f, indent=2)
+
+
+def get_lzt_multiplier() -> float:
+    config = _load_pricing_config()
+    raw = config.get("lzt_multiplier", DEFAULT_LZT_MULTIPLIER)
+    try:
+        value = float(raw)
+    except Exception:
+        value = DEFAULT_LZT_MULTIPLIER
+    return value if value > 0 else DEFAULT_LZT_MULTIPLIER
+
+
+def set_lzt_multiplier(value: float) -> None:
+    config = _load_pricing_config()
+    config["lzt_multiplier"] = value
+    _save_pricing_config(config)
 
 
 def get_upcharge_multiplier(base_price: float) -> float:
-    """Get the appropriate upcharge multiplier based on base price."""
-    for tier in UPCHARGE_TIERS:
-        if tier["min"] <= base_price < tier["max"]:
-            return tier["multiplier"]
-    return 1.5  # Default fallback
+    """Get configured LZT multiplier used for customer pricing."""
+    return get_lzt_multiplier()
 
 # --- User storage ---
 USERS_FILE = os.path.join(DATA_DIR, "users.json")
@@ -667,6 +675,7 @@ def get_shopify_order_by_ref(order_ref: str):
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-change-this")
+KONVY_ADMIN_PASSWORD = os.environ.get("KONVY_ADMIN_PASSWORD", "Kelvilo40")
 
 
 def login_required_page(f):
@@ -684,6 +693,16 @@ def login_required_api(f):
     def wrapper(*args, **kwargs):
         if "username" not in session:
             return jsonify({"error": "not_logged_in"}), 401
+        return f(*args, **kwargs)
+
+    return wrapper
+
+
+def admin_required_page(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if not session.get("is_konvy_admin"):
+            return redirect(url_for("konvyadmin_page"))
         return f(*args, **kwargs)
 
     return wrapper
@@ -1046,52 +1065,57 @@ def get_account_skins(item_id):
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    error = None
-    username_prefill = ""
+    if request.method == "GET":
+        return redirect(url_for("dashboard", auth="login"))
 
-    if request.method == "POST":
-        username = (request.form.get("username") or "").strip()
-        password = request.form.get("password") or ""
-        username_prefill = username
+    username = (request.form.get("username") or "").strip()
+    password = request.form.get("password") or ""
 
-        if not verify_user(username, password):
-            error = "Invalid username or password."
-        else:
-            session["username"] = username
-            return redirect(url_for("index"))
+    if not verify_user(username, password):
+        query = urlencode(
+            {
+                "auth": "login",
+                "auth_error": "Invalid username or password.",
+                "auth_user": username,
+            }
+        )
+        return redirect(f"{url_for('dashboard')}?{query}")
 
-    return render_template_string(
-        LOGIN_HTML,
-        error=error,
-        username_prefill=username_prefill,
-    )
+    session["username"] = username
+    return redirect(url_for("index"))
 
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
-    error = None
-    username_prefill = ""
+    if request.method == "GET":
+        return redirect(url_for("dashboard", auth="register"))
 
-    if request.method == "POST":
-        username = (request.form.get("username") or "").strip()
-        password = request.form.get("password") or ""
-        username_prefill = username
+    username = (request.form.get("username") or "").strip()
+    password = request.form.get("password") or ""
 
-        if not username or not password:
-            error = "Username and password are required."
-        else:
-            created = create_user(username, password)
-            if not created:
-                error = "That username is already taken."
-            else:
-                session["username"] = username
-                return redirect(url_for("index"))
+    if not username or not password:
+        query = urlencode(
+            {
+                "auth": "register",
+                "auth_error": "Username and password are required.",
+                "auth_user": username,
+            }
+        )
+        return redirect(f"{url_for('dashboard')}?{query}")
 
-    return render_template_string(
-        REGISTER_HTML,
-        error=error,
-        username_prefill=username_prefill,
-    )
+    created = create_user(username, password)
+    if not created:
+        query = urlencode(
+            {
+                "auth": "register",
+                "auth_error": "That username is already taken.",
+                "auth_user": username,
+            }
+        )
+        return redirect(f"{url_for('dashboard')}?{query}")
+
+    session["username"] = username
+    return redirect(url_for("index"))
 
 @app.route("/secure")
 @login_required_page
@@ -2472,6 +2496,9 @@ def dashboard():
     # Check if logged in
     logged_in = "username" in session
     username = session.get("username", "Guest")
+    auth_mode = request.args.get("auth")
+    auth_error = request.args.get("auth_error", "")
+    auth_username_prefill = request.args.get("auth_user", "")
     
     balance_cents = 0
     purchases = []
@@ -2479,6 +2506,11 @@ def dashboard():
     if logged_in:
         balance_cents = get_balance(username)
         purchases = get_purchases(username)
+        auth_mode = None
+        auth_error = ""
+        auth_username_prefill = ""
+    elif auth_mode not in {"login", "register"}:
+        auth_mode = None
     
     balance = f"{balance_cents / 100:.2f}"
     
@@ -2487,7 +2519,10 @@ def dashboard():
         username=username,
         balance=balance,
         purchases=purchases,
-        logged_in=logged_in
+        logged_in=logged_in,
+        auth_mode=auth_mode,
+        auth_error=auth_error,
+        auth_username_prefill=auth_username_prefill,
     )
 
 # Balance page
@@ -2522,19 +2557,56 @@ def my_accounts_page():
         logged_in=True
     )
 
-# Redeem page
 @app.route("/redeem")
-@login_required_page
 def redeem_page():
-    username = session["username"]
-    balance_cents = get_balance(username)
-    balance = f"{balance_cents / 100:.2f}"
-    
+    if "username" in session:
+        return redirect(url_for("balance_page"))
+    return redirect(url_for("dashboard", auth="login"))
+
+
+@app.route("/konvyadmin", methods=["GET", "POST"])
+def konvyadmin_page():
+    is_admin = bool(session.get("is_konvy_admin"))
+    error = ""
+    notice = ""
+
+    if request.method == "POST":
+        action = request.form.get("action")
+
+        if action == "logout":
+            session.pop("is_konvy_admin", None)
+            is_admin = False
+            notice = "Logged out of admin panel."
+        elif action == "login":
+            password = request.form.get("password") or ""
+            if password == KONVY_ADMIN_PASSWORD:
+                session["is_konvy_admin"] = True
+                is_admin = True
+                notice = "Admin access granted."
+            else:
+                error = "Invalid admin password."
+        elif action == "set_multiplier":
+            if not is_admin:
+                error = "Admin password required."
+            else:
+                raw_value = (request.form.get("multiplier") or "").strip()
+                try:
+                    multiplier = float(raw_value)
+                except ValueError:
+                    multiplier = 0.0
+
+                if multiplier <= 0 or multiplier > 100:
+                    error = "Multiplier must be greater than 0 and less than or equal to 100."
+                else:
+                    set_lzt_multiplier(multiplier)
+                    notice = f"Saved multiplier: {multiplier:.2f}x"
+
     return render_template(
-        "redeem.html",
-        username=username,
-        balance=balance,
-        logged_in=True
+        "konvyadmin.html",
+        is_admin=is_admin,
+        current_multiplier=f"{get_lzt_multiplier():.2f}",
+        error=error,
+        notice=notice,
     )
 
 

@@ -24,7 +24,6 @@
         {% if logged_in %}
           <a href="/balance" class="nav-link">Balance</a>
           <a href="/my-accounts" class="nav-link">My Accounts</a>
-          <a href="/redeem" class="nav-link">Redeem</a>
           <a href="{{ url_for('warranty') }}" class="nav-link">Warranty</a>
         {% endif %}
       </nav>
@@ -38,8 +37,8 @@
           <div class="balance-badge">${{ balance }}</div>
           <a href="{{ url_for('logout') }}" class="btn-logout">Logout</a>
         {% else %}
-          <a href="{{ url_for('login') }}" class="btn-secondary-header">Login</a>
-          <a href="{{ url_for('register') }}" class="btn-primary-header">Sign Up</a>
+          <button type="button" class="btn-secondary-header" data-auth-open="login">Login</button>
+          <button type="button" class="btn-primary-header" data-auth-open="register">Sign Up</button>
         {% endif %}
       </div>
     </div>
@@ -88,7 +87,7 @@
             <h1 class="hero-title">Find Your Perfect <span class="highlight">Fortnite Account</span></h1>
             <p class="hero-subtitle">Browse thousands of premium accounts with rare skins, high levels, and exclusive cosmetics</p>
             <div class="hero-actions">
-              <a href="{{ url_for('register') }}" class="btn-hero-primary">Get Started</a>
+              <button type="button" class="btn-hero-primary" data-auth-open="register">Get Started</button>
               <a href="#search" class="btn-hero-secondary" data-scroll="search">Browse Accounts</a>
             </div>
             <div class="features-grid">
@@ -195,8 +194,53 @@
     </div>
   </div>
 
+  {% if not logged_in %}
+  <div id="auth-modal" class="auth-modal{% if auth_mode %} open{% endif %}">
+    <div class="auth-modal-backdrop" data-auth-close="true"></div>
+    <div class="auth-modal-card">
+      <button class="auth-modal-close" type="button" data-auth-close="true">✕</button>
+
+      <div class="auth-modal-tabs">
+        <button type="button" class="auth-tab{% if auth_mode != 'register' %} active{% endif %}" data-auth-tab="login">Login</button>
+        <button type="button" class="auth-tab{% if auth_mode == 'register' %} active{% endif %}" data-auth-tab="register">Sign Up</button>
+      </div>
+
+      <div class="auth-panel{% if auth_mode != 'register' %} active{% endif %}" data-auth-panel="login">
+        <h3>Welcome back</h3>
+        <p>Sign in to buy accounts and manage your balance.</p>
+        {% if auth_mode == 'login' and auth_error %}
+        <div class="auth-error">{{ auth_error }}</div>
+        {% endif %}
+        <form method="post" action="{{ url_for('login') }}" class="auth-form">
+          <label>Username</label>
+          <input name="username" placeholder="yourname" value="{{ auth_username_prefill if auth_mode == 'login' else '' }}" required>
+          <label>Password</label>
+          <input name="password" type="password" placeholder="••••••••" required>
+          <button type="submit" class="auth-submit">Login</button>
+        </form>
+      </div>
+
+      <div class="auth-panel{% if auth_mode == 'register' %} active{% endif %}" data-auth-panel="register">
+        <h3>Create your account</h3>
+        <p>Sign up to start buying Fortnite accounts instantly.</p>
+        {% if auth_mode == 'register' and auth_error %}
+        <div class="auth-error">{{ auth_error }}</div>
+        {% endif %}
+        <form method="post" action="{{ url_for('register') }}" class="auth-form">
+          <label>Username</label>
+          <input name="username" placeholder="yourname" value="{{ auth_username_prefill if auth_mode == 'register' else '' }}" required>
+          <label>Password</label>
+          <input name="password" type="password" placeholder="Choose a password" required>
+          <button type="submit" class="auth-submit">Sign Up</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
   <script>
     window.KONVY_LOGGED_IN = {{ 'true' if logged_in else 'false' }};
+    window.KONVY_AUTH_MODE = "{{ auth_mode or '' }}";
   </script>
 
   <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
