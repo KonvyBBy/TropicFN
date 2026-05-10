@@ -543,17 +543,17 @@ def get_latest_order():
 # ===================== SHOPIFY ADMIN HELPER =====================
 
 
-def get_shopify_order_by_number(order_number: str):
+def get_shopify_order_by_ref(order_ref: str):
     """
     Look up Shopify order by numeric ID or #number.
     Note format used: user:<username>
     """
     if not SHOPIFY_ADMIN_TOKEN:
-        return None, None, None, None, "no_token"
+        return None, None, None, None, "no_token", None
 
-    order_ref = str(order_number).strip()
+    order_ref = str(order_ref).strip()
     if not order_ref.isdigit():
-        return None, None, None, None, "invalid_order_ref"
+        return None, None, None, None, "invalid_order_ref", None
 
     base_url = f"https://{SHOPIFY_ADMIN_DOMAIN}/admin/api/{SHOPIFY_API_VERSION}"
     headers_shopify = {
@@ -573,7 +573,8 @@ def get_shopify_order_by_number(order_number: str):
             None,
             None,
             None,
-            f"api_error:{resp_id.status_code}:{resp_id.text[:200]}",
+            "api_error",
+            {"status_code": resp_id.status_code, "body": resp_id.text[:200]},
         )
 
     if not order:
@@ -593,13 +594,14 @@ def get_shopify_order_by_number(order_number: str):
                 None,
                 None,
                 None,
-                f"api_error:{resp_number.status_code}:{resp_number.text[:200]}",
+                "api_error",
+                {"status_code": resp_number.status_code, "body": resp_number.text[:200]},
             )
 
         data = resp_number.json()
         orders = data.get("orders", [])
         if not orders:
-            return None, None, None, None, "not_found"
+            return None, None, None, None, "not_found", None
         order = orders[0]
 
     order_id_str = str(order.get("id"))
@@ -607,17 +609,17 @@ def get_shopify_order_by_number(order_number: str):
     financial_status = order.get("financial_status")
 
     if financial_status != "paid":
-        return None, None, None, financial_status, "not_paid"
+        return None, None, None, financial_status, "not_paid", None
 
     total_price_str = order.get("total_price") or "0.00"
     try:
         amount_dollars = float(total_price_str)
     except Exception:
-        return None, None, None, None, "bad_price"
+        return None, None, None, None, "bad_price", None
 
     amount_cents = int(round(amount_dollars * 100))
 
-    return amount_cents, order_id_str, note, financial_status, "ok"
+    return amount_cents, order_id_str, note, financial_status, "ok", None
 
 
 # ===================== FLASK APP =====================
@@ -2547,21 +2549,21 @@ def api_redeem():
     if not order_number_raw.isdigit():
         return jsonify({"error": "order_number must be numeric"}), 400
 
-    order_number = int(order_number_raw)
-
-    amount_cents, order_id_str, note, status, reason = get_shopify_order_by_number(
+    amount_cents, order_id_str, note, status, reason, api_error = get_shopify_order_by_ref(
         order_number_raw
     )
 
     if reason == "no_token":
         return jsonify({"error": "SHOPIFY_ADMIN_TOKEN not configured"}), 500
 
-    if reason == "not_found":
-        return jsonify({"error": f"No order found with number #{order_number}"}), 404
+    if reason == "invalid_order_ref":
+        return jsonify({"error": "order_number must be numeric"}), 400
 
-    if reason.startswith("api_error"):
-        details = reason.split(":", 2)[-1] if ":" in reason else ""
-        return jsonify({"error": "Shopify API error", "details": details}), 500
+    if reason == "not_found":
+        return jsonify({"error": f"No order found with number #{order_number_raw}"}), 404
+
+    if reason == "api_error":
+        return jsonify({"error": "Shopify API error", "details": api_error or {}}), 500
 
     if reason == "not_paid":
         return jsonify({"error": f"Order not paid yet (status: {status})"}), 400
