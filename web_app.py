@@ -5,6 +5,9 @@
 import os
 import time
 import json
+import hmac
+import hashlib
+import base64
 from typing import List, Tuple, Optional, Set
 
 import requests
@@ -136,6 +139,12 @@ SHOPIFY_ERROR_BODY_LIMIT = int(os.environ.get("SHOPIFY_ERROR_BODY_LIMIT", "200")
 
 if not SHOPIFY_ADMIN_TOKEN:
     print("WARNING: SHOPIFY_ADMIN_TOKEN not set â€“ /redeem will not work.")
+
+# --- Shopify Webhook (for auto top-up) ---
+SHOPIFY_WEBHOOK_SECRET = os.environ.get("SHOPIFY_WEBHOOK_SECRET")  # set in env
+
+if not SHOPIFY_WEBHOOK_SECRET:
+    print("WARNING: SHOPIFY_WEBHOOK_SECRET not set – /webhooks/shopify/order-paid will reject all requests.")
 
 # --- Fortnite browse limits ---
 MAX_ACCOUNTS = 50
@@ -1606,12 +1615,16 @@ INDEX_HTML = """
       <!-- TAB: REDEEM -->
       <div id="tab-redeem" class="tab-panel">
         <div class="row card">
-          <h2>Redeem Shopify Order</h2>
+          <h2>Top Up Balance</h2>
+          <p>Your balance is credited <strong>automatically</strong> when your Shopify order is paid &mdash; no manual redemption needed.</p>
+          <p class="small">Make sure you enter <code>user:{{ username }}</code> in the order note at checkout so we know which account to credit.</p>
+          <hr />
+          <p class="small">If your balance has not appeared within a few minutes after payment, use the manual form below as a fallback.</p>
           <form id="redeem-form">
             <label>Order number (without #)
               <input name="order_number" type="number" />
             </label>
-            <button type="submit">Redeem</button>
+            <button type="submit">Redeem Manually</button>
           </form>
           <div id="redeem-result"></div>
         </div>
@@ -2635,6 +2648,80 @@ def api_redeem():
             )
         }
     )
+
+
+@app.route("/webhooks/shopify/order-paid", methods=["POST"])
+def shopify_order_paid_webhook():
+    """
+    Shopify sends this when an order is marked paid.
+    Verifies HMAC signature, then credits the balance for the user
+    specified in the order note (format: user:<username>).
+    """
+    if not SHOPIFY_WEBHOOK_SECRET:
+        app.logger.error("SHOPIFY_WEBHOOK_SECRET not configured")
+        return "", 500
+
+    raw_body = request.get_data()
+
+    # Verify HMAC-SHA256 signature from Shopify
+    shopify_hmac = request.headers.get("X-Shopify-Hmac-Sha256", "")
+    digest = hmac.new(
+        SHOPIFY_WEBHOOK_SECRET.encode("utf-8"),
+        raw_body,
+        hashlib.sha256,
+    ).digest()
+    expected_hmac = base64.b64encode(digest).decode("utf-8")
+    if not hmac.compare_digest(expected_hmac, shopify_hmac):
+        app.logger.warning("Shopify webhook HMAC mismatch")
+        return "", 401
+
+    try:
+        order = json.loads(raw_body)
+    except Exception:
+        return "", 400
+
+    order_id_str = str(order.get("id", ""))
+    financial_status = order.get("financial_status", "")
+    total_price_str = order.get("total_price") or "0.00"
+    note = (order.get("note") or "").strip()
+
+    if financial_status != "paid":
+        # Not a paid order; acknowledge but do nothing
+        return "", 200
+
+    if not note.startswith("user:"):
+        app.logger.info(
+            "Shopify webhook order %s has no user: note (%r); skipping balance credit",
+            order_id_str, note,
+        )
+        return "", 200
+
+    username = note[len("user:"):].strip()
+    if not username:
+        app.logger.info("Shopify webhook order %s: empty username in note", order_id_str)
+        return "", 200
+
+    if is_redeemed(order_id_str):
+        app.logger.info("Shopify webhook order %s already redeemed; skipping", order_id_str)
+        return "", 200
+
+    try:
+        amount_dollars = float(total_price_str)
+    except Exception:
+        app.logger.error("Shopify webhook order %s: bad total_price %r", order_id_str, total_price_str)
+        return "", 200
+
+    amount_cents = int(round(amount_dollars * 100))
+
+    add_balance(username, amount_cents)
+    mark_redeemed(order_id_str)
+
+    app.logger.info(
+        "Shopify webhook: credited %d cents to user %r for order %s",
+        amount_cents, username, order_id_str,
+    )
+    return "", 200
+
 
 
 @app.route("/api/fortnite/search", methods=["POST"])
