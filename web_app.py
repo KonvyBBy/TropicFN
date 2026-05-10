@@ -543,36 +543,65 @@ def get_latest_order():
 # ===================== SHOPIFY ADMIN HELPER =====================
 
 
-def get_shopify_order_by_number(order_number: int):
+def get_shopify_order_by_number(order_number: str):
     """
-    Look up Shopify order by #number.
+    Look up Shopify order by numeric ID or #number.
     Note format used: user:<username>
     """
     if not SHOPIFY_ADMIN_TOKEN:
         return None, None, None, None, "no_token"
 
-    order_name = f"#{order_number}"
-    url = f"https://{SHOPIFY_ADMIN_DOMAIN}/admin/api/{SHOPIFY_API_VERSION}/orders.json"
-    params = {
-        "status": "any",
-        "name": order_name,
-        "limit": 1,
-    }
+    order_ref = str(order_number).strip()
+    if not order_ref.isdigit():
+        return None, None, None, None, "invalid_order_ref"
+
+    base_url = f"https://{SHOPIFY_ADMIN_DOMAIN}/admin/api/{SHOPIFY_API_VERSION}"
     headers_shopify = {
         "X-Shopify-Access-Token": SHOPIFY_ADMIN_TOKEN,
         "Content-Type": "application/json",
     }
 
-    resp = requests.get(url, headers=headers_shopify, params=params)
-    if resp.status_code != 200:
-        return None, None, None, None, "api_error"
+    order = None
 
-    data = resp.json()
-    orders = data.get("orders", [])
-    if not orders:
-        return None, None, None, None, "not_found"
+    by_id_url = f"{base_url}/orders/{order_ref}.json"
+    resp_id = requests.get(by_id_url, headers=headers_shopify, timeout=30)
+    if resp_id.status_code == 200:
+        order = (resp_id.json() or {}).get("order")
+    elif resp_id.status_code not in (400, 404):
+        return (
+            None,
+            None,
+            None,
+            None,
+            f"api_error:{resp_id.status_code}:{resp_id.text[:200]}",
+        )
 
-    order = orders[0]
+    if not order:
+        order_name = f"#{order_ref}"
+        by_number_url = f"{base_url}/orders.json"
+        params = {
+            "status": "any",
+            "name": order_name,
+            "limit": 1,
+        }
+        resp_number = requests.get(
+            by_number_url, headers=headers_shopify, params=params, timeout=30
+        )
+        if resp_number.status_code != 200:
+            return (
+                None,
+                None,
+                None,
+                None,
+                f"api_error:{resp_number.status_code}:{resp_number.text[:200]}",
+            )
+
+        data = resp_number.json()
+        orders = data.get("orders", [])
+        if not orders:
+            return None, None, None, None, "not_found"
+        order = orders[0]
+
     order_id_str = str(order.get("id"))
     note = order.get("note", "")
     financial_status = order.get("financial_status")
@@ -2510,13 +2539,18 @@ def api_topup():
 def api_redeem():
     data = request.json or {}
     username = session["username"]
-    order_number = int(data.get("order_number") or 0)
+    order_number_raw = str(data.get("order_number") or "").strip()
 
-    if not order_number:
+    if not order_number_raw:
         return jsonify({"error": "order_number required"}), 400
 
+    if not order_number_raw.isdigit():
+        return jsonify({"error": "order_number must be numeric"}), 400
+
+    order_number = int(order_number_raw)
+
     amount_cents, order_id_str, note, status, reason = get_shopify_order_by_number(
-        order_number
+        order_number_raw
     )
 
     if reason == "no_token":
@@ -2525,8 +2559,9 @@ def api_redeem():
     if reason == "not_found":
         return jsonify({"error": f"No order found with number #{order_number}"}), 404
 
-    if reason == "api_error":
-        return jsonify({"error": "Shopify API error"}), 500
+    if reason.startswith("api_error"):
+        details = reason.split(":", 2)[-1] if ":" in reason else ""
+        return jsonify({"error": "Shopify API error", "details": details}), 500
 
     if reason == "not_paid":
         return jsonify({"error": f"Order not paid yet (status: {status})"}), 400
