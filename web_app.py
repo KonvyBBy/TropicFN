@@ -552,8 +552,6 @@ def get_shopify_order_by_ref(order_ref: str):
         return None, None, None, None, "no_token", None
 
     order_ref = str(order_ref).strip()
-    if not order_ref.isdigit():
-        return None, None, None, None, "invalid_order_ref", None
 
     base_url = f"https://{SHOPIFY_ADMIN_DOMAIN}/admin/api/{SHOPIFY_API_VERSION}"
     headers_shopify = {
@@ -2555,9 +2553,6 @@ def api_redeem():
 
     if reason == "no_token":
         return jsonify({"error": "SHOPIFY_ADMIN_TOKEN not configured"}), 500
-
-    if reason == "invalid_order_ref":
-        return jsonify({"error": "order_number must be numeric"}), 400
 
     if reason == "not_found":
         return jsonify({"error": f"No order found with number #{order_number_raw}"}), 404
