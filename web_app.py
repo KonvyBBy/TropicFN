@@ -583,7 +583,7 @@ def get_shopify_order_by_ref(order_ref: str):
             order_ref,
             resp_id.status_code,
         )
-    elif resp_id.status_code not in (400, 404):
+    else:
         return (
             None,
             None,
@@ -2581,7 +2581,7 @@ def api_redeem():
     order_ref = order_number_raw[1:] if order_number_raw.startswith("#") else order_number_raw
 
     if not order_ref.isdigit():
-        return jsonify({"error": "order_number must be numeric"}), 400
+        return jsonify({"error": "Invalid order format: use digits or # followed by digits"}), 400
 
     amount_cents, order_id_str, note, status, reason, api_error = get_shopify_order_by_ref(
         order_ref
