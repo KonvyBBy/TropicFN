@@ -54,7 +54,7 @@ document.addEventListener("DOMContentLoaded", () => {
     tab.addEventListener("click", () => setAuthTab(tab.dataset.authTab));
   });
 
-  if (window.KONVY_AUTH_MODE && window.KONVY_AUTH_MODE !== "") {
+  if (window.KONVY_AUTH_MODE) {
     openAuthModal(window.KONVY_AUTH_MODE);
   }
 

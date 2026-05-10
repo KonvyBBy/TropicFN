@@ -159,6 +159,8 @@ PURCHASES_FILE = os.path.join(DATA_DIR, "purchased_accounts.json")
 # --- Pricing ---
 PRICING_CONFIG_FILE = os.path.join(DATA_DIR, "pricing_config.json")
 DEFAULT_LZT_MULTIPLIER = float(os.environ.get("DEFAULT_LZT_MULTIPLIER", "2.0"))
+MIN_LZT_MULTIPLIER = 0.01
+MAX_LZT_MULTIPLIER = 100.0
 
 
 def _load_pricing_config() -> dict:
@@ -192,7 +194,7 @@ def set_lzt_multiplier(value: float) -> None:
     _save_pricing_config(config)
 
 
-def get_upcharge_multiplier(_base_price: float) -> float:
+def get_lzt_multiplier_for_pricing() -> float:
     """Get configured LZT multiplier used for customer pricing."""
     return get_lzt_multiplier()
 
@@ -2594,8 +2596,8 @@ def konvyadmin_page():
                 except ValueError:
                     multiplier = 0.0
 
-                if multiplier < 0.01 or multiplier > 100:
-                    error = "Multiplier must be between 0.01 and 100."
+                if multiplier < MIN_LZT_MULTIPLIER or multiplier > MAX_LZT_MULTIPLIER:
+                    error = f"Multiplier must be between {MIN_LZT_MULTIPLIER:.2f} and {MAX_LZT_MULTIPLIER:.0f}."
                 else:
                     set_lzt_multiplier(multiplier)
                     notice = f"Saved multiplier: {multiplier:.2f}x"
@@ -2865,7 +2867,7 @@ def api_fortnite_search():
         except Exception:
             base_price = 0.0
 
-        user_price = base_price * get_upcharge_multiplier(base_price)
+        user_price = base_price * get_lzt_multiplier_for_pricing()
         
 # Filter by budget
         if user_price > budget:
@@ -2904,7 +2906,7 @@ def api_fortnite_buy():
     if not item_id or base_price <= 0:
         return jsonify({"error": "item_id and base_price required"}), 400
 
-    user_price = base_price * get_upcharge_multiplier(base_price)
+    user_price = base_price * get_lzt_multiplier_for_pricing()
     cost_cents = int(round(user_price * 100))
     starting_balance = get_balance(username)
 
