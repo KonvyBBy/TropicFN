@@ -131,6 +131,8 @@ SHOPIFY_ADMIN_DOMAIN = os.environ.get(
 )
 SHOPIFY_ADMIN_TOKEN = os.environ.get("SHOPIFY_ADMIN_TOKEN")  # set in env
 SHOPIFY_API_VERSION = os.environ.get("SHOPIFY_API_VERSION", "2025-10")
+SHOPIFY_API_TIMEOUT = int(os.environ.get("SHOPIFY_API_TIMEOUT", "30"))
+SHOPIFY_ERROR_BODY_LIMIT = int(os.environ.get("SHOPIFY_ERROR_BODY_LIMIT", "200"))
 
 if not SHOPIFY_ADMIN_TOKEN:
     print("WARNING: SHOPIFY_ADMIN_TOKEN not set â€“ /redeem will not work.")
@@ -563,7 +565,7 @@ def get_shopify_order_by_ref(order_ref: str):
 
     by_id_url = f"{base_url}/orders/{order_ref}.json"
     try:
-        resp_id = requests.get(by_id_url, headers=headers_shopify, timeout=30)
+        resp_id = requests.get(by_id_url, headers=headers_shopify, timeout=SHOPIFY_API_TIMEOUT)
     except requests.RequestException as e:
         return (
             None,
@@ -582,7 +584,10 @@ def get_shopify_order_by_ref(order_ref: str):
             None,
             None,
             "api_error",
-            {"status_code": resp_id.status_code, "body": resp_id.text[:200]},
+            {
+                "status_code": resp_id.status_code,
+                "body": resp_id.text[:SHOPIFY_ERROR_BODY_LIMIT],
+            },
         )
 
     if not order:
@@ -595,7 +600,7 @@ def get_shopify_order_by_ref(order_ref: str):
         }
         try:
             resp_number = requests.get(
-                by_number_url, headers=headers_shopify, params=params, timeout=30
+                by_number_url, headers=headers_shopify, params=params, timeout=SHOPIFY_API_TIMEOUT
             )
         except requests.RequestException as e:
             return (
@@ -613,7 +618,10 @@ def get_shopify_order_by_ref(order_ref: str):
                 None,
                 None,
                 "api_error",
-                {"status_code": resp_number.status_code, "body": resp_number.text[:200]},
+                {
+                    "status_code": resp_number.status_code,
+                    "body": resp_number.text[:SHOPIFY_ERROR_BODY_LIMIT],
+                },
             )
 
         data = resp_number.json()
