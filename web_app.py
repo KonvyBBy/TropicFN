@@ -3203,7 +3203,7 @@ def api_fortnite_search():
         except Exception as e:
             app.logger.error("Error resolving item '%s': %s", name, e)
             return jsonify(
-                {"error": f"Error while resolving item '{name}'"}
+                {"error": "Error resolving one or more items. Please try again."}
             ), 500
 
         if not result:
