@@ -562,7 +562,17 @@ def get_shopify_order_by_ref(order_ref: str):
     order = None
 
     by_id_url = f"{base_url}/orders/{order_ref}.json"
-    resp_id = requests.get(by_id_url, headers=headers_shopify, timeout=30)
+    try:
+        resp_id = requests.get(by_id_url, headers=headers_shopify, timeout=30)
+    except requests.RequestException as e:
+        return (
+            None,
+            None,
+            None,
+            None,
+            "api_error",
+            {"status_code": None, "body": str(e)},
+        )
     if resp_id.status_code == 200:
         order = (resp_id.json() or {}).get("order")
     elif resp_id.status_code not in (400, 404):
@@ -583,9 +593,19 @@ def get_shopify_order_by_ref(order_ref: str):
             "name": order_name,
             "limit": 1,
         }
-        resp_number = requests.get(
-            by_number_url, headers=headers_shopify, params=params, timeout=30
-        )
+        try:
+            resp_number = requests.get(
+                by_number_url, headers=headers_shopify, params=params, timeout=30
+            )
+        except requests.RequestException as e:
+            return (
+                None,
+                None,
+                None,
+                None,
+                "api_error",
+                {"status_code": None, "body": str(e)},
+            )
         if resp_number.status_code != 200:
             return (
                 None,
@@ -2544,11 +2564,13 @@ def api_redeem():
     if not order_number_raw:
         return jsonify({"error": "order_number required"}), 400
 
-    if not order_number_raw.isdigit():
+    order_ref = order_number_raw[1:] if order_number_raw.startswith("#") else order_number_raw
+
+    if not order_ref.isdigit():
         return jsonify({"error": "order_number must be numeric"}), 400
 
     amount_cents, order_id_str, note, status, reason, api_error = get_shopify_order_by_ref(
-        order_number_raw
+        order_ref
     )
 
     if reason == "no_token":
