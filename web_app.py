@@ -185,7 +185,7 @@ def get_lzt_multiplier() -> float:
         value = float(raw)
     except Exception:
         value = DEFAULT_LZT_MULTIPLIER
-    return value if value > 0 else DEFAULT_LZT_MULTIPLIER
+    return value if value >= MIN_LZT_MULTIPLIER else DEFAULT_LZT_MULTIPLIER
 
 
 def set_lzt_multiplier(value: float) -> None:
