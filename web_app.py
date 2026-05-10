@@ -8,7 +8,6 @@ import json
 import hmac
 import hashlib
 import base64
-from urllib.parse import urlencode
 from typing import List, Tuple, Optional, Set
 
 import requests
@@ -193,7 +192,7 @@ def set_lzt_multiplier(value: float) -> None:
     _save_pricing_config(config)
 
 
-def get_upcharge_multiplier(base_price: float) -> float:
+def get_upcharge_multiplier(_base_price: float) -> float:
     """Get configured LZT multiplier used for customer pricing."""
     return get_lzt_multiplier()
 
@@ -1072,14 +1071,14 @@ def login():
     password = request.form.get("password") or ""
 
     if not verify_user(username, password):
-        query = urlencode(
-            {
-                "auth": "login",
-                "auth_error": "Invalid username or password.",
-                "auth_user": username,
-            }
+        return redirect(
+            url_for(
+                "dashboard",
+                auth="login",
+                auth_error="Invalid username or password.",
+                auth_user=username,
+            )
         )
-        return redirect(f"{url_for('dashboard')}?{query}")
 
     session["username"] = username
     return redirect(url_for("index"))
@@ -1094,25 +1093,25 @@ def register():
     password = request.form.get("password") or ""
 
     if not username or not password:
-        query = urlencode(
-            {
-                "auth": "register",
-                "auth_error": "Username and password are required.",
-                "auth_user": username,
-            }
+        return redirect(
+            url_for(
+                "dashboard",
+                auth="register",
+                auth_error="Username and password are required.",
+                auth_user=username,
+            )
         )
-        return redirect(f"{url_for('dashboard')}?{query}")
 
     created = create_user(username, password)
     if not created:
-        query = urlencode(
-            {
-                "auth": "register",
-                "auth_error": "That username is already taken.",
-                "auth_user": username,
-            }
+        return redirect(
+            url_for(
+                "dashboard",
+                auth="register",
+                auth_error="That username is already taken.",
+                auth_user=username,
+            )
         )
-        return redirect(f"{url_for('dashboard')}?{query}")
 
     session["username"] = username
     return redirect(url_for("index"))
@@ -2595,8 +2594,8 @@ def konvyadmin_page():
                 except ValueError:
                     multiplier = 0.0
 
-                if multiplier <= 0 or multiplier > 100:
-                    error = "Multiplier must be greater than 0 and less than or equal to 100."
+                if multiplier < 0.01 or multiplier > 100:
+                    error = "Multiplier must be between 0.01 and 100."
                 else:
                     set_lzt_multiplier(multiplier)
                     notice = f"Saved multiplier: {multiplier:.2f}x"
