@@ -577,6 +577,12 @@ def get_shopify_order_by_ref(order_ref: str):
         )
     if resp_id.status_code == 200:
         order = (resp_id.json() or {}).get("order")
+    elif resp_id.status_code in (400, 404):
+        app.logger.info(
+            "Shopify order-by-id lookup miss for ref %s (status=%s), falling back to order number",
+            order_ref,
+            resp_id.status_code,
+        )
     elif resp_id.status_code not in (400, 404):
         return (
             None,
