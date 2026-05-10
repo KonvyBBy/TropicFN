@@ -1,227 +1,82 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Warranty Policy - Konvy Accounts</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+{% extends "base.html" %}
+{% block title %}Warranty Policy — Konvy Accounts{% endblock %}
 
-    body {
-      font-family: Inter, system-ui, sans-serif;
-      background: radial-gradient(circle at 20% 0%, #b8efff, #f2fbff 52%, #e8fff7);
-      color: #0b2327;
-      min-height: 100vh;
-      padding: 40px 20px;
-    }
+{% block content %}
 
-    .container {
-      max-width: 800px;
-      margin: 0 auto;
-      background: rgba(255, 255, 255, 0.9);
-      border: 1px solid rgba(29, 184, 182, 0.24);
-      border-radius: 18px;
-      padding: 40px;
-      box-shadow: 0 24px 60px rgba(16, 118, 136, 0.12);
-    }
+<header class="glass-panel rounded-3xl px-5 py-8 sm:px-8 sm:py-10 md:px-10">
+  <h1 class="text-glow font-space text-2xl font-bold text-white sm:text-3xl md:text-4xl">Warranty Policy</h1>
+  <p class="mt-2 text-sm text-zinc-400">Understanding your account protection and warranty coverage.</p>
+</header>
 
-    .back-link {
-      display: inline-block;
-      color: #08a8da;
-      text-decoration: none;
-      margin-bottom: 24px;
-      font-size: 0.9rem;
-      transition: color 0.2s;
-    }
+<div class="glass-panel rounded-3xl p-5 sm:p-6 md:p-8 space-y-6">
 
-    .back-link:hover {
-      color: #067e9f;
-    }
-
-    h1 {
-      font-size: 2rem;
-      margin-bottom: 8px;
-      background: linear-gradient(135deg, #12b4ea 0%, #18da9d 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .subtitle {
-      color: #3f6e76;
-      font-size: 0.95rem;
-      margin-bottom: 32px;
-    }
-
-    h2 {
-      font-size: 1.4rem;
-      margin-top: 32px;
-      margin-bottom: 12px;
-      color: #0f3439;
-    }
-
-    h3 {
-      font-size: 1.1rem;
-      margin-top: 24px;
-      margin-bottom: 10px;
-      color: #08a8da;
-    }
-
-    p {
-      line-height: 1.8;
-      margin-bottom: 16px;
-      color: #355f67;
-    }
-
-    ul, ol {
-      margin-left: 24px;
-      margin-bottom: 16px;
-      line-height: 1.8;
-      color: #355f67;
-    }
-
-    li {
-      margin-bottom: 8px;
-    }
-
-    .highlight-box {
-      background: rgba(31, 198, 255, 0.08);
-      border: 1px solid rgba(31, 198, 255, 0.3);
-      border-radius: 12px;
-      padding: 20px;
-      margin: 24px 0;
-    }
-
-    .warning-box {
-      background: rgba(255, 224, 138, 0.3);
-      border: 1px solid rgba(232, 183, 40, 0.5);
-      border-radius: 12px;
-      padding: 20px;
-      margin: 24px 0;
-    }
-
-    .success-box {
-      background: rgba(84, 205, 141, 0.16);
-      border: 1px solid rgba(63, 176, 119, 0.4);
-      border-radius: 12px;
-      padding: 20px;
-      margin: 24px 0;
-    }
-
-    strong {
-      color: #0f3439;
-    }
-
-    .badge {
-      display: inline-block;
-      padding: 4px 12px;
-      background: rgba(84, 205, 141, 0.22);
-      border: 1px solid rgba(63, 176, 119, 0.45);
-      border-radius: 6px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: #1f7a4b;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-left: 8px;
-    }
-
-    @media (max-width: 768px) {
-      .container {
-        padding: 24px;
-      }
-
-      h1 {
-        font-size: 1.6rem;
-      }
-
-      h2 {
-        font-size: 1.2rem;
-      }
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <a href="/dashboard" class="back-link">â† Back to Dashboard</a>
-    
-    <h1>Warranty Policy</h1>
-    <p class="subtitle">Understanding your account protection and warranty coverage</p>
-
-    <div class="highlight-box">
-      <h3>âœ… What Accounts Are Covered?</h3>
-      <p><strong>All accounts that have been inactive for 11 or more days qualify for warranty protection.</strong></p>
-      <p>Look for the <span class="badge">âœ“ Warranty</span> badge on eligible accounts when browsing.</p>
-    </div>
-
-    <h2>ðŸ›¡ï¸ Warranty Coverage</h2>
-    <p>Accounts covered by warranty receive the following protections:</p>
-    <ul>
-      <li><strong>Email Access Issues:</strong> If you cannot access the email associated with the account</li>
-      <li><strong>Login Problems:</strong> If the provided credentials do not work</li>
-      <li><strong>Account Ownership Issues:</strong> If the previous owner reclaims the account</li>
-      <li><strong>Password Changes:</strong> If the password is changed by someone else</li>
-    </ul>
-
-    <h2>ðŸ“‹ How to Make a Warranty Claim</h2>
-    <ol>
-      <li><strong>Contact Support Immediately</strong> - Reach out as soon as you encounter an issue</li>
-      <li><strong>Provide Your Order Number</strong> - Include your purchase details</li>
-      <li><strong>Explain the Issue</strong> - Describe what went wrong with the account</li>
-      <li><strong>Submit Required Proof</strong> - Provide screenshots if applicable</li>
-    </ol>
-
-    <div class="success-box">
-      <h3>ðŸ’¡ Important Note</h3>
-      <p><strong>If your claim is initially denied, don't give up!</strong> Submit another request. You can continue submitting requests for up to 2 weeks after your purchase date.</p>
-    </div>
-
-    <h2>âŒ What's NOT Covered</h2>
-    <div class="warning-box">
-      <p><strong>The following situations are NOT covered by warranty:</strong></p>
-      <ul>
-        <li><strong>Tournament Play:</strong> Accounts used in competitive tournaments are automatically disqualified from warranty</li>
-        <li><strong>Security Procedure Not Followed:</strong> If you didn't follow the security steps in the video guide</li>
-        <li><strong>Account Bans:</strong> If the account gets banned due to your actions</li>
-        <li><strong>Sharing Account Details:</strong> If you share the account with others</li>
-        <li><strong>Claims After 2 Weeks:</strong> Claims must be made within 14 days of purchase</li>
-      </ul>
-    </div>
-
-    <h2>ðŸ”’ Maintaining Your Warranty</h2>
-    <p>To keep your warranty valid, you must:</p>
-    <ol>
-      <li><strong>Follow the Security Video Guide</strong> - Watch and complete all steps in the security tutorial</li>
-      <li><strong>Record Your Security Steps</strong> - Keep a screen recording of changing passwords and security settings</li>
-      <li><strong>Don't Play in Tournaments</strong> - Competitive play voids your warranty</li>
-      <li><strong>Keep Proof of Purchase</strong> - Save your order confirmation and receipts</li>
-    </ol>
-
-    <h3>ðŸŽ¥ Required: Security Video</h3>
-    <p>Before using your account, watch this required security tutorial:</p>
-    <p><a href="https://youtu.be/ykQsz5QrZkg" target="_blank" rel="noopener noreferrer" style="color: #08a8da; text-decoration: underline;">Watch the security tutorial video</a></p>
-
-    <h2>â±ï¸ Warranty Duration</h2>
-    <p>Warranty coverage begins immediately after purchase and lasts for:</p>
-    <ul>
-      <li><strong>14 Days</strong> - Full warranty protection period</li>
-      <li><strong>Claims must be submitted within this timeframe</strong></li>
-      <li><strong>Multiple submission attempts allowed if initially denied</strong></li>
-    </ul>
-
-    <div class="highlight-box">
-      <h3>ðŸ“ž Need Help?</h3>
-      <p>If you have questions about warranty coverage or need to make a claim, contact our support team with your order details. We're here to help ensure you have the best experience with your Konvy account purchase.</p>
-    </div>
-
-    <p style="margin-top: 40px; padding-top: 24px; border-top: 1px solid rgba(29,184,182,0.24); font-size: 0.85rem; color: #3f6e76;">
-      Last updated: December 2024
+  <!-- Coverage highlight -->
+  <section class="rounded-2xl border border-emerald-500/20 bg-emerald-950/20 p-5">
+    <h2 class="flex items-center gap-2 font-space text-base font-semibold text-emerald-400 sm:text-lg">
+      <i class="ri-shield-check-line"></i>What Accounts Are Covered?
+    </h2>
+    <p class="mt-2 text-sm leading-relaxed text-zinc-400">
+      <strong class="text-white">All accounts inactive for 11 or more days qualify for warranty protection.</strong>
+      Look for the <span class="inline-flex items-center rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-400">✓ Warranty</span> badge on eligible accounts when browsing.
     </p>
+  </section>
+
+  <section>
+    <h2 class="mb-3 flex items-center gap-2 font-space text-base font-semibold text-white sm:text-lg">
+      <i class="ri-shield-line text-emerald-400"></i>Warranty Coverage
+    </h2>
+    <ul class="space-y-2 text-sm leading-relaxed text-zinc-400">
+      <li class="flex items-start gap-2"><i class="ri-check-line text-emerald-400 mt-0.5 shrink-0"></i><span><strong class="text-white">Email Access Issues</strong> — if you cannot access the email associated with the account</span></li>
+      <li class="flex items-start gap-2"><i class="ri-check-line text-emerald-400 mt-0.5 shrink-0"></i><span><strong class="text-white">Login Problems</strong> — if the provided credentials do not work</span></li>
+      <li class="flex items-start gap-2"><i class="ri-check-line text-emerald-400 mt-0.5 shrink-0"></i><span><strong class="text-white">Account Ownership Issues</strong> — if the previous owner reclaims the account</span></li>
+      <li class="flex items-start gap-2"><i class="ri-check-line text-emerald-400 mt-0.5 shrink-0"></i><span><strong class="text-white">Password Changes</strong> — if the password is changed by someone else</span></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2 class="mb-3 flex items-center gap-2 font-space text-base font-semibold text-white sm:text-lg">
+      <i class="ri-file-list-line text-emerald-400"></i>How to Make a Warranty Claim
+    </h2>
+    <ol class="space-y-2 text-sm leading-relaxed text-zinc-400 list-none">
+      <li class="flex items-start gap-3"><span class="shrink-0 flex h-5 w-5 items-center justify-center rounded-full border border-emerald-500/40 bg-emerald-500/10 text-[10px] font-bold text-emerald-400">1</span><span><strong class="text-white">Contact Support Immediately</strong> — reach out as soon as you encounter an issue</span></li>
+      <li class="flex items-start gap-3"><span class="shrink-0 flex h-5 w-5 items-center justify-center rounded-full border border-emerald-500/40 bg-emerald-500/10 text-[10px] font-bold text-emerald-400">2</span><span><strong class="text-white">Provide Your Order Number</strong> — include your purchase details</span></li>
+      <li class="flex items-start gap-3"><span class="shrink-0 flex h-5 w-5 items-center justify-center rounded-full border border-emerald-500/40 bg-emerald-500/10 text-[10px] font-bold text-emerald-400">3</span><span><strong class="text-white">Explain the Issue</strong> — describe what went wrong</span></li>
+      <li class="flex items-start gap-3"><span class="shrink-0 flex h-5 w-5 items-center justify-center rounded-full border border-emerald-500/40 bg-emerald-500/10 text-[10px] font-bold text-emerald-400">4</span><span><strong class="text-white">Submit Required Proof</strong> — provide screenshots if applicable</span></li>
+    </ol>
+    <div class="mt-4 rounded-xl border border-white/10 bg-white/[0.02] p-4 text-sm text-zinc-400">
+      <i class="ri-lightbulb-line text-amber-400 mr-1"></i>
+      <strong class="text-amber-300">Tip:</strong> If your claim is initially denied, don't give up! You can re-submit for up to 2 weeks after purchase.
+    </div>
+  </section>
+
+  <section>
+    <h2 class="mb-3 flex items-center gap-2 font-space text-base font-semibold text-white sm:text-lg">
+      <i class="ri-close-circle-line text-red-400"></i>What's NOT Covered
+    </h2>
+    <ul class="space-y-2 text-sm leading-relaxed text-zinc-400">
+      <li class="flex items-start gap-2"><i class="ri-close-line text-red-400 mt-0.5 shrink-0"></i><span><strong class="text-white">Tournament Play</strong> — accounts used in competitive play are disqualified</span></li>
+      <li class="flex items-start gap-2"><i class="ri-close-line text-red-400 mt-0.5 shrink-0"></i><span><strong class="text-white">Security Procedure Not Followed</strong> — if you didn't follow the security video guide</span></li>
+      <li class="flex items-start gap-2"><i class="ri-close-line text-red-400 mt-0.5 shrink-0"></i><span><strong class="text-white">Account Bans</strong> — if banned due to your own actions</span></li>
+      <li class="flex items-start gap-2"><i class="ri-close-line text-red-400 mt-0.5 shrink-0"></i><span><strong class="text-white">Claims After 2 Weeks</strong> — claims must be submitted within 14 days of purchase</span></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2 class="mb-3 flex items-center gap-2 font-space text-base font-semibold text-white sm:text-lg">
+      <i class="ri-video-line text-emerald-400"></i>Required: Security Video
+    </h2>
+    <p class="text-sm leading-relaxed text-zinc-400 mb-3">Before using your account, watch this required security tutorial:</p>
+    <a href="https://youtu.be/ykQsz5QrZkg" target="_blank" rel="noopener noreferrer"
+      class="inline-flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-sm font-medium text-emerald-400 hover:bg-emerald-500/15 transition">
+      <i class="ri-play-circle-line"></i>Watch Security Tutorial
+    </a>
+  </section>
+
+  <div class="border-t border-white/8 pt-5 text-xs text-zinc-600">
+    Warranty coverage lasts 14 days from purchase. For questions, contact us at
+    <a href="/support" class="text-emerald-500 hover:text-emerald-400 transition">support</a>.
   </div>
-</body>
-</html>
+
+</div>
+
+{% endblock %}

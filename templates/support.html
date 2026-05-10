@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}Support — Konvy Accounts{% endblock %}
+
+{% block content %}
+
+<header class="glass-panel rounded-3xl px-5 py-8 sm:px-8 sm:py-10 md:px-10">
+  <h1 class="text-glow font-space text-2xl font-bold text-white sm:text-3xl md:text-4xl">Support Center</h1>
+  <p class="mt-2 max-w-2xl text-sm text-zinc-400 md:text-base">
+    Need help? Browse our FAQs or open a support ticket. Our team is here 24/7.
+  </p>
+</header>
+
+<!-- FAQ -->
+<section class="glass-panel rounded-3xl p-5 sm:p-6">
+  <h2 class="mb-4 font-space text-lg font-semibold text-white sm:text-xl">Frequently Asked Questions</h2>
+  <div class="space-y-2" id="faq-list">
+
+    <div class="rounded-xl border border-white/10 bg-black/25 transition">
+      <button onclick="toggleFaq(this)" class="flex w-full items-center justify-between px-4 py-3.5 text-left cursor-pointer bg-transparent border-none" type="button">
+        <span class="text-sm font-medium text-white pr-4">How does instant delivery work?</span>
+        <i class="ri-arrow-down-s-line text-zinc-400 transition-transform shrink-0"></i>
+      </button>
+      <div class="faq-body hidden border-t border-white/10 px-4 py-3">
+        <p class="text-sm leading-relaxed text-zinc-400">Once your payment is confirmed, you will receive the account credentials instantly via your dashboard. Our automated system handles everything — no waiting required.</p>
+      </div>
+    </div>
+
+    <div class="rounded-xl border border-white/10 bg-black/25 transition">
+      <button onclick="toggleFaq(this)" class="flex w-full items-center justify-between px-4 py-3.5 text-left cursor-pointer bg-transparent border-none" type="button">
+        <span class="text-sm font-medium text-white pr-4">Are the accounts safe to buy?</span>
+        <i class="ri-arrow-down-s-line text-zinc-400 transition-transform shrink-0"></i>
+      </button>
+      <div class="faq-body hidden border-t border-white/10 px-4 py-3">
+        <p class="text-sm leading-relaxed text-zinc-400">Yes! All accounts are verified before listing. Full Access (FA) accounts come with email change capability, and we provide a replacement guarantee for any issues within 24 hours.</p>
+      </div>
+    </div>
+
+    <div class="rounded-xl border border-white/10 bg-black/25 transition">
+      <button onclick="toggleFaq(this)" class="flex w-full items-center justify-between px-4 py-3.5 text-left cursor-pointer bg-transparent border-none" type="button">
+        <span class="text-sm font-medium text-white pr-4">What is the difference between FA and NFA?</span>
+        <i class="ri-arrow-down-s-line text-zinc-400 transition-transform shrink-0"></i>
+      </button>
+      <div class="faq-body hidden border-t border-white/10 px-4 py-3">
+        <p class="text-sm leading-relaxed text-zinc-400">FA (Full Access) means you get full control including email/password changes. NFA (Non-Full Access) means the account works but email changes may not be available. FA accounts cost more but are safer long-term.</p>
+      </div>
+    </div>
+
+    <div class="rounded-xl border border-white/10 bg-black/25 transition">
+      <button onclick="toggleFaq(this)" class="flex w-full items-center justify-between px-4 py-3.5 text-left cursor-pointer bg-transparent border-none" type="button">
+        <span class="text-sm font-medium text-white pr-4">Do you offer refunds?</span>
+        <i class="ri-arrow-down-s-line text-zinc-400 transition-transform shrink-0"></i>
+      </button>
+      <div class="faq-body hidden border-t border-white/10 px-4 py-3">
+        <p class="text-sm leading-relaxed text-zinc-400">We offer replacements for any defective accounts within 24 hours of purchase. Refunds are handled on a case-by-case basis for accounts that cannot be replaced.</p>
+      </div>
+    </div>
+
+    <div class="rounded-xl border border-white/10 bg-black/25 transition">
+      <button onclick="toggleFaq(this)" class="flex w-full items-center justify-between px-4 py-3.5 text-left cursor-pointer bg-transparent border-none" type="button">
+        <span class="text-sm font-medium text-white pr-4">Can I sell my account on Konvy?</span>
+        <i class="ri-arrow-down-s-line text-zinc-400 transition-transform shrink-0"></i>
+      </button>
+      <div class="faq-body hidden border-t border-white/10 px-4 py-3">
+        <p class="text-sm leading-relaxed text-zinc-400">Yes! We welcome sellers. Contact our support team to become a verified seller and start listing your accounts on our marketplace.</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- Ticket Form -->
+<section class="glass-panel rounded-3xl p-5 sm:p-6">
+  <h2 class="mb-4 font-space text-lg font-semibold text-white sm:text-xl">Open a Support Ticket</h2>
+  <form class="grid gap-4 sm:grid-cols-2" onsubmit="submitTicket(event)">
+    <div class="space-y-1.5">
+      <label class="text-xs font-medium text-zinc-400">Name</label>
+      <input type="text" placeholder="Your name"
+        class="h-12 w-full rounded-xl border border-white/15 bg-black/35 px-4 text-sm text-white placeholder:text-zinc-500 transition">
+    </div>
+    <div class="space-y-1.5">
+      <label class="text-xs font-medium text-zinc-400">Email</label>
+      <input type="email" placeholder="you@example.com"
+        class="h-12 w-full rounded-xl border border-white/15 bg-black/35 px-4 text-sm text-white placeholder:text-zinc-500 transition">
+    </div>
+    <div class="space-y-1.5 sm:col-span-2">
+      <label class="text-xs font-medium text-zinc-400">Subject</label>
+      <input type="text" placeholder="What is your issue about?"
+        class="h-12 w-full rounded-xl border border-white/15 bg-black/35 px-4 text-sm text-white placeholder:text-zinc-500 transition">
+    </div>
+    <div class="space-y-1.5 sm:col-span-2">
+      <label class="text-xs font-medium text-zinc-400">Message</label>
+      <textarea rows="4" maxlength="500" placeholder="Describe your issue in detail..." id="ticket-msg"
+        oninput="document.getElementById('msg-count').textContent=this.value.length"
+        class="w-full rounded-xl border border-white/15 bg-black/35 px-4 py-3 text-sm text-white placeholder:text-zinc-500 transition resize-none"></textarea>
+      <p class="text-[11px] text-zinc-500 text-right"><span id="msg-count">0</span>/500</p>
+    </div>
+    <div class="sm:col-span-2">
+      <button type="submit"
+        class="inline-flex h-12 items-center justify-center rounded-xl px-6 text-sm font-medium transition bg-white text-black hover:bg-zinc-200 active:scale-[0.99] whitespace-nowrap cursor-pointer">
+        <i class="ri-send-plane-line mr-2"></i>Submit Ticket
+      </button>
+    </div>
+  </form>
+</section>
+
+<!-- Contact Info Cards -->
+<section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+  <div class="glass-panel rounded-2xl p-4 text-center">
+    <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 bg-white/5">
+      <i class="ri-mail-line text-lg text-emerald-400"></i>
+    </div>
+    <h3 class="text-sm font-semibold text-white">Email Support</h3>
+    <p class="mt-1 text-xs text-zinc-400">support@konvyaccounts.com</p>
+  </div>
+  <div class="glass-panel rounded-2xl p-4 text-center">
+    <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 bg-white/5">
+      <i class="ri-discord-line text-lg text-emerald-400"></i>
+    </div>
+    <h3 class="text-sm font-semibold text-white">Discord Server</h3>
+    <p class="mt-1 text-xs text-zinc-400">discord.gg/konvy</p>
+  </div>
+  <div class="glass-panel rounded-2xl p-4 text-center sm:col-span-2 lg:col-span-1">
+    <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 bg-white/5">
+      <i class="ri-time-line text-lg text-emerald-400"></i>
+    </div>
+    <h3 class="text-sm font-semibold text-white">Response Time</h3>
+    <p class="mt-1 text-xs text-zinc-400">Usually under 2 hours</p>
+  </div>
+</section>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function toggleFaq(btn) {
+    const body = btn.nextElementSibling;
+    const icon = btn.querySelector('i');
+    body.classList.toggle('hidden');
+    icon.style.transform = body.classList.contains('hidden') ? '' : 'rotate(180deg)';
+  }
+
+  function submitTicket(e) {
+    e.preventDefault();
+    alert('Thank you! Your ticket has been submitted. We will respond within 2 hours.');
+    e.target.reset();
+    document.getElementById('msg-count').textContent = '0';
+  }
+</script>
+{% endblock %}

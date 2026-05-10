@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Register — Konvy Accounts{% endblock %}
+
+{% block content %}
+<div class="flex min-h-[70vh] items-center justify-center px-4">
+  <div class="w-full max-w-md">
+    <div class="glass-panel rounded-3xl p-6 sm:p-8">
+      <div class="mb-6 text-center">
+        <h1 class="font-space text-2xl font-bold text-white sm:text-3xl">Create Account</h1>
+        <p class="mt-2 text-sm text-zinc-400">Join Konvy Accounts today</p>
+      </div>
+
+      {% if error %}
+      <div class="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+        {{ error }}
+      </div>
+      {% endif %}
+
+      <form method="post" action="/register" class="space-y-4">
+        <div class="space-y-1.5">
+          <label class="text-xs font-medium text-zinc-400">Username</label>
+          <div class="relative">
+            <i class="ri-user-line absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500 text-sm"></i>
+            <input name="username" type="text" value="{{ username_prefill or '' }}" placeholder="Choose a username" required
+              class="h-12 w-full rounded-xl border border-white/15 bg-black/35 pl-11 pr-4 text-sm text-white placeholder:text-zinc-500 transition">
+          </div>
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-medium text-zinc-400">Password</label>
+          <div class="relative">
+            <i class="ri-lock-line absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500 text-sm"></i>
+            <input id="reg-password" name="password" type="password" placeholder="Create a password" required
+              class="h-12 w-full rounded-xl border border-white/15 bg-black/35 pl-11 pr-11 text-sm text-white placeholder:text-zinc-500 transition">
+            <button type="button" id="toggle-password"
+              class="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 cursor-pointer bg-transparent border-none p-0">
+              <i class="ri-eye-line text-sm" id="toggle-icon"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-medium text-zinc-400">Confirm Password</label>
+          <div class="relative">
+            <i class="ri-lock-line absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500 text-sm"></i>
+            <input id="confirm-password" type="password" placeholder="Confirm your password"
+              class="h-12 w-full rounded-xl border border-white/15 bg-black/35 pl-11 pr-4 text-sm text-white placeholder:text-zinc-500 transition">
+          </div>
+        </div>
+
+        <button type="submit" id="register-btn"
+          class="inline-flex h-12 w-full items-center justify-center rounded-xl px-4 text-sm font-medium transition bg-white text-black hover:bg-zinc-200 active:scale-[0.99] whitespace-nowrap cursor-pointer">
+          Create Account
+        </button>
+      </form>
+
+      <div class="mt-6 text-center text-sm text-zinc-400">
+        Already have an account?
+        <a href="/login" class="font-medium text-emerald-400 hover:text-emerald-300 transition">Sign In</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.getElementById('toggle-password').addEventListener('click', function() {
+    const input = document.getElementById('reg-password');
+    const icon = document.getElementById('toggle-icon');
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.className = 'ri-eye-off-line text-sm';
+    } else {
+      input.type = 'password';
+      icon.className = 'ri-eye-line text-sm';
+    }
+  });
+
+  document.getElementById('register-btn').addEventListener('click', function(e) {
+    const pw = document.getElementById('reg-password').value;
+    const cpw = document.getElementById('confirm-password').value;
+    if (cpw && pw !== cpw) {
+      e.preventDefault();
+      alert('Passwords do not match.');
+    }
+  });
+</script>
+{% endblock %}

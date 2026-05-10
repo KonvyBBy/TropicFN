@@ -1182,29 +1182,28 @@ def get_account_skins(item_id):
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "GET":
-        return redirect(url_for("dashboard", auth="login"))
+        error = request.args.get("error", "")
+        username_prefill = request.args.get("u", "")
+        return render_template(
+            "login.html",
+            error=error,
+            username_prefill=username_prefill,
+            logged_in=False,
+            balance="0.00",
+            active_page="login",
+        )
 
     username = (request.form.get("username") or "").strip()
     password = request.form.get("password") or ""
 
     if not verify_user(username, password):
         return redirect(
-            url_for(
-                "dashboard",
-                auth="login",
-                auth_error="Invalid username or password.",
-                auth_user=username,
-            )
+            url_for("login", error="Invalid username or password.", u=username)
         )
 
     if is_blacklisted(username):
         return redirect(
-            url_for(
-                "dashboard",
-                auth="login",
-                auth_error="Your account has been suspended.",
-                auth_user=username,
-            )
+            url_for("login", error="Your account has been suspended.", u=username)
         )
 
     session["username"] = username
@@ -1214,30 +1213,29 @@ def login():
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "GET":
-        return redirect(url_for("dashboard", auth="register"))
+        error = request.args.get("error", "")
+        username_prefill = request.args.get("u", "")
+        return render_template(
+            "register.html",
+            error=error,
+            username_prefill=username_prefill,
+            logged_in=False,
+            balance="0.00",
+            active_page="register",
+        )
 
     username = (request.form.get("username") or "").strip()
     password = request.form.get("password") or ""
 
     if not username or not password:
         return redirect(
-            url_for(
-                "dashboard",
-                auth="register",
-                auth_error="Username and password are required.",
-                auth_user=username,
-            )
+            url_for("register", error="Username and password are required.", u=username)
         )
 
     created = create_user(username, password)
     if not created:
         return redirect(
-            url_for(
-                "dashboard",
-                auth="register",
-                auth_error="That username is already taken.",
-                auth_user=username,
-            )
+            url_for("register", error="That username is already taken.", u=username)
         )
 
     session["username"] = username
@@ -2606,52 +2604,83 @@ TUTORIAL_HTML = """
 
 
 @app.route("/warranty")
-@login_required_page
 def warranty():
-    return redirect("https://konvy.vip/warranty")
+    logged_in = "username" in session
+    username = session.get("username", "Guest")
+    balance = "0.00"
+    if logged_in:
+        balance = f"{get_balance(username) / 100:.2f}"
+    return render_template(
+        "warranty.html",
+        logged_in=logged_in,
+        username=username,
+        balance=balance,
+        active_page="warranty",
+    )
+
+
+@app.route("/support")
+def support_page():
+    logged_in = "username" in session
+    username = session.get("username", "Guest")
+    balance = "0.00"
+    if logged_in:
+        balance = f"{get_balance(username) / 100:.2f}"
+    return render_template(
+        "support.html",
+        logged_in=logged_in,
+        username=username,
+        balance=balance,
+        active_page="support",
+    )
+
+
+@app.route("/terms")
+def terms_page():
+    logged_in = "username" in session
+    username = session.get("username", "Guest")
+    balance = "0.00"
+    if logged_in:
+        balance = f"{get_balance(username) / 100:.2f}"
+    return render_template(
+        "terms.html",
+        logged_in=logged_in,
+        username=username,
+        balance=balance,
+        active_page="terms",
+    )
+
 
 
 @app.route("/tutorial")
 def tutorial():
     return render_template_string(TUTORIAL_HTML)
 
-
 # Main dashboard route - now just shows search
 @app.route("/dashboard")
 def dashboard():
-    # Check if logged in
     logged_in = "username" in session
     username = session.get("username", "Guest")
-    auth_mode = request.args.get("auth")
-    auth_error = request.args.get("auth_error", "")
-    auth_username_prefill = request.args.get("auth_user", "")
-    
+
     balance_cents = 0
     purchases = []
     has_topup = False
-    
+
     if logged_in:
         balance_cents = get_balance(username)
         purchases = get_purchases(username)
         has_topup = user_has_any_topup(username)
-        auth_mode = None
-        auth_error = ""
-        auth_username_prefill = ""
-    elif auth_mode not in {"login", "register"}:
-        auth_mode = None
-    
+
     balance = f"{balance_cents / 100:.2f}"
-    
+
     return render_template(
         "dashboard.html",
         username=username,
         balance=balance,
         purchases=purchases,
         logged_in=logged_in,
-        auth_mode=auth_mode,
-        auth_error=auth_error,
-        auth_username_prefill=auth_username_prefill,
         has_topup=has_topup,
+        active_page="home",
     )
 
 # Balance page
@@ -2668,6 +2697,7 @@ def balance_page():
         balance=balance,
         logged_in=True,
         has_topup=has_topup,
+        active_page="balance",
     )
 
 # My Accounts page
@@ -2687,6 +2717,7 @@ def my_accounts_page():
         purchases=purchases,
         logged_in=True,
         has_topup=has_topup,
+        active_page="my-accounts",
     )
 
 @app.route("/transactions")
@@ -2709,13 +2740,13 @@ def transactions_page():
             entry["date_str"] = "—"
         topups.append(entry)
     has_topup = len(topups) > 0
-    return render_template("transactions.html", username=username, balance=balance, topups=topups, logged_in=True, has_topup=has_topup)
+    return render_template("transactions.html", username=username, balance=balance, topups=topups, logged_in=True, has_topup=has_topup, active_page="transactions")
 
 @app.route("/redeem")
 def redeem_page():
     if "username" in session:
         return redirect(url_for("balance_page"))
-    return redirect(url_for("dashboard", auth="login"))
+    return redirect(url_for("login"))
 
 
 @app.route("/konvyadmin", methods=["GET", "POST"])
