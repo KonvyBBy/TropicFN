@@ -89,6 +89,64 @@ document.addEventListener("DOMContentLoaded", () => {
     if (overlay) overlay.classList.remove('active');
   }
 
+  // =============== NAMING MODAL ===============
+  function showNamingModal(purchaseIndex, onDone) {
+    const existing = document.getElementById('naming-modal-overlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'naming-modal-overlay';
+    overlay.className = 'naming-modal-overlay';
+    overlay.innerHTML = `
+      <div class="naming-modal">
+        <h3>✅ Purchase Successful!</h3>
+        <p>Give this account a name so you can identify it easily.</p>
+        <div class="form-group">
+          <label class="form-label">Account Name</label>
+          <input id="naming-modal-input" type="text" class="form-input" placeholder="e.g. My Main Account" maxlength="50" />
+        </div>
+        <div class="naming-modal-actions">
+          <button id="naming-modal-submit" class="btn-naming-submit">Save Name</button>
+          <button id="naming-modal-skip" class="btn-naming-skip">Skip</button>
+        </div>
+        <div id="naming-modal-error" style="display:none;color:#ff8080;font-size:0.85rem;margin-top:0.5rem;"></div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const input = document.getElementById('naming-modal-input');
+    const errEl = document.getElementById('naming-modal-error');
+    input.focus();
+
+    async function submitName() {
+      const name = input.value.trim();
+      if (!name) {
+        errEl.textContent = 'Please enter a name.';
+        errEl.style.display = 'block';
+        return;
+      }
+      try {
+        await postJSON('/api/fortnite/name-account', { purchase_index: purchaseIndex, name });
+        overlay.remove();
+        onDone();
+      } catch (e) {
+        errEl.textContent = e.message || 'Failed to save name.';
+        errEl.style.display = 'block';
+      }
+    }
+
+    document.getElementById('naming-modal-submit').onclick = submitName;
+    document.getElementById('naming-modal-skip').onclick = () => {
+      overlay.remove();
+      onDone();
+    };
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') submitName();
+    });
+  }
+
 
   // =============== LOAD COSMETICS DATA ===============
   window.allCosmetics = [];
@@ -316,11 +374,9 @@ document.addEventListener("DOMContentLoaded", () => {
         card.className = 'account-card';
         
         card.innerHTML = `
-          <!-- Badge -->
-          <div class="full-access-badge">Full Access</div>
-
-          <!-- Header -->
-          <div class="account-header">
+          <!-- Card top: badge + price -->
+          <div class="account-card-top">
+            <div class="full-access-badge">Full Access</div>
             <div class="account-price">$${acc.user_price.toFixed(2)}</div>
           </div>
 
@@ -390,8 +446,18 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             hideProcessingOverlay();
-            alert("✅ Purchase successful! Check 'My Accounts' tab.");
-            loadMyAccounts();
+
+            // Load accounts to get current count for index
+            let currentAccounts = [];
+            try {
+              const accsRes = await postJSON("/api/fortnite/my-accounts");
+              currentAccounts = accsRes.accounts || [];
+            } catch {}
+            const newIndex = currentAccounts.length - 1;
+
+            showNamingModal(newIndex, () => {
+              loadMyAccounts();
+            });
           } catch (e) {
             hideProcessingOverlay();
             alert("❌ " + e.message);
@@ -630,6 +696,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const acc = myAccounts[accIndex];
     const item = acc.purchase_result?.item || {};
+    const accountName = acc.name || "Unnamed Account";
 
     const emailRaw = item.emailLoginData?.raw || "N/A";
     const epicRaw = item.loginData?.raw || "N/A";
@@ -640,10 +707,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     qs("my-accounts-view").innerHTML = `
+      <div class="account-name-header"></div>
       <div class="cred-block"><label>Email Login</label><code>${emailRaw}</code></div>
       <div class="cred-block"><label>Email Site</label><code>${emailSite}</code></div>
       <div class="cred-block"><label>Epic Login</label><code>${epicRaw}</code></div>
     `;
+    qs("my-accounts-view").querySelector(".account-name-header").textContent = accountName;
 
     qs("account-indicator").textContent =
       `Account ${accIndex + 1} / ${myAccounts.length}`;

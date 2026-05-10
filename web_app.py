@@ -8,6 +8,7 @@ import json
 import hmac
 import hashlib
 import base64
+import datetime
 from typing import List, Tuple, Optional, Set
 
 import requests
@@ -156,6 +157,15 @@ REDEEMED_FILE = os.path.join(DATA_DIR, "redeemed_orders.json")
 # --- Purchased accounts tracking ---
 PURCHASES_FILE = os.path.join(DATA_DIR, "purchased_accounts.json")
 
+# --- Topup history tracking ---
+TOPUP_HISTORY_FILE = os.path.join(DATA_DIR, "topup_history.json")
+
+# --- Pending topups (awaiting admin verification) ---
+PENDING_TOPUPS_FILE = os.path.join(DATA_DIR, "pending_topups.json")
+
+# --- Blacklist ---
+BLACKLIST_FILE = os.path.join(DATA_DIR, "blacklist.json")
+
 # --- Pricing ---
 PRICING_CONFIG_FILE = os.path.join(DATA_DIR, "pricing_config.json")
 DEFAULT_LZT_MULTIPLIER = float(os.environ.get("DEFAULT_LZT_MULTIPLIER", "2.0"))
@@ -274,6 +284,111 @@ def mark_redeemed(order_id: str) -> None:
     redeemed = _load_redeemed()
     redeemed.add(str(order_id))
     _save_redeemed(redeemed)
+
+
+# ===================== TOPUP HISTORY HELPERS =====================
+
+def _load_topup_history() -> dict:
+    if not os.path.exists(TOPUP_HISTORY_FILE):
+        return {}
+    try:
+        with open(TOPUP_HISTORY_FILE, "r", encoding="utf-8") as f:
+            return json.load(f) or {}
+    except Exception:
+        return {}
+
+
+def _save_topup_history(history: dict) -> None:
+    with open(TOPUP_HISTORY_FILE, "w", encoding="utf-8") as f:
+        json.dump(history, f, indent=2)
+
+
+def add_topup_record(username: str, amount_cents: int, order_id: str, status: str = "completed") -> None:
+    history = _load_topup_history()
+    user_topups = history.get(username, [])
+    user_topups.append({
+        "timestamp": int(time.time()),
+        "amount_cents": amount_cents,
+        "order_id": order_id,
+        "status": status,
+    })
+    history[username] = user_topups
+    _save_topup_history(history)
+
+
+def user_has_any_topup(username: str) -> bool:
+    history = _load_topup_history()
+    return len(history.get(username, [])) > 0
+
+
+# ===================== PENDING TOPUPS HELPERS =====================
+
+def _load_pending_topups() -> list:
+    if not os.path.exists(PENDING_TOPUPS_FILE):
+        return []
+    try:
+        with open(PENDING_TOPUPS_FILE, "r", encoding="utf-8") as f:
+            return json.load(f) or []
+    except Exception:
+        return []
+
+
+def _save_pending_topups(pending: list) -> None:
+    with open(PENDING_TOPUPS_FILE, "w", encoding="utf-8") as f:
+        json.dump(pending, f, indent=2)
+
+
+def add_pending_topup(username: str, amount_cents: int, order_id: str) -> None:
+    pending = _load_pending_topups()
+    pending.append({
+        "id": f"{username}_{order_id}_{int(time.time())}",
+        "username": username,
+        "amount_cents": amount_cents,
+        "order_id": order_id,
+        "timestamp": int(time.time()),
+        "status": "pending",
+    })
+    _save_pending_topups(pending)
+    mark_redeemed(order_id)
+
+
+# ===================== BLACKLIST HELPERS =====================
+
+def _load_blacklist() -> set:
+    if not os.path.exists(BLACKLIST_FILE):
+        return set()
+    try:
+        with open(BLACKLIST_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            return set(data) if isinstance(data, list) else set()
+    except Exception:
+        return set()
+
+
+def _save_blacklist(bl: set) -> None:
+    with open(BLACKLIST_FILE, "w", encoding="utf-8") as f:
+        json.dump(list(bl), f, indent=2)
+
+
+def is_blacklisted(username: str) -> bool:
+    return username in _load_blacklist()
+
+
+# ===================== VERIFICATION HELPERS =====================
+
+def get_user_verification_status(username: str) -> str:
+    """Returns: 'unverified', 'verified', 'verify_each', 'blacklisted'"""
+    if is_blacklisted(username):
+        return "blacklisted"
+    users = _load_users()
+    return users.get(username, {}).get("verification_status", "unverified")
+
+
+def set_user_verification_status(username: str, status: str) -> None:
+    users = _load_users()
+    if username in users:
+        users[username]["verification_status"] = status
+        _save_users(users)
 
 
 # ===================== PURCHASED ACCOUNTS HELPERS =====================
@@ -998,7 +1113,7 @@ def get_skin_icons():
             "icon": url
         })
 
-    return {"icons": icons}
+    return jsonify({"icons": icons})
 
 
 @app.route("/api/account/<int:item_id>/cosmetics/<cosmetic_type>")
@@ -1078,6 +1193,16 @@ def login():
                 "dashboard",
                 auth="login",
                 auth_error="Invalid username or password.",
+                auth_user=username,
+            )
+        )
+
+    if is_blacklisted(username):
+        return redirect(
+            url_for(
+                "dashboard",
+                auth="login",
+                auth_error="Your account has been suspended.",
                 auth_user=username,
             )
         )
@@ -2483,7 +2608,7 @@ TUTORIAL_HTML = """
 @app.route("/warranty")
 @login_required_page
 def warranty():
-    return render_template("warranty.html")
+    return redirect("https://konvy.vip/warranty")
 
 
 @app.route("/tutorial")
@@ -2503,10 +2628,12 @@ def dashboard():
     
     balance_cents = 0
     purchases = []
+    has_topup = False
     
     if logged_in:
         balance_cents = get_balance(username)
         purchases = get_purchases(username)
+        has_topup = user_has_any_topup(username)
         auth_mode = None
         auth_error = ""
         auth_username_prefill = ""
@@ -2524,6 +2651,7 @@ def dashboard():
         auth_mode=auth_mode,
         auth_error=auth_error,
         auth_username_prefill=auth_username_prefill,
+        has_topup=has_topup,
     )
 
 # Balance page
@@ -2533,12 +2661,13 @@ def balance_page():
     username = session["username"]
     balance_cents = get_balance(username)
     balance = f"{balance_cents / 100:.2f}"
-    
+    has_topup = user_has_any_topup(username)
     return render_template(
         "balance.html",
         username=username,
         balance=balance,
-        logged_in=True
+        logged_in=True,
+        has_topup=has_topup,
     )
 
 # My Accounts page
@@ -2549,14 +2678,38 @@ def my_accounts_page():
     balance_cents = get_balance(username)
     purchases = get_purchases(username)
     balance = f"{balance_cents / 100:.2f}"
+    has_topup = user_has_any_topup(username)
     
     return render_template(
         "my_accounts.html",
         username=username,
         balance=balance,
         purchases=purchases,
-        logged_in=True
+        logged_in=True,
+        has_topup=has_topup,
     )
+
+@app.route("/transactions")
+@login_required_page
+def transactions_page():
+    username = session["username"]
+    balance_cents = get_balance(username)
+    balance = f"{balance_cents / 100:.2f}"
+    history = _load_topup_history()
+    topups_raw = history.get(username, [])
+    topups_raw = sorted(topups_raw, key=lambda x: x.get("timestamp", 0), reverse=True)
+    # Format timestamps for display
+    topups = []
+    for t in topups_raw:
+        entry = dict(t)
+        ts = t.get("timestamp", 0)
+        if ts:
+            entry["date_str"] = datetime.datetime.fromtimestamp(ts, tz=datetime.timezone.utc).strftime("%b %d, %Y %H:%M UTC")
+        else:
+            entry["date_str"] = "—"
+        topups.append(entry)
+    has_topup = len(topups) > 0
+    return render_template("transactions.html", username=username, balance=balance, topups=topups, logged_in=True, has_topup=has_topup)
 
 @app.route("/redeem")
 def redeem_page():
@@ -2609,6 +2762,195 @@ def konvyadmin_page():
         error=error,
         notice=notice,
     )
+
+# ===================== ADMIN API ROUTES =====================
+
+@app.route("/api/admin/pending-topups", methods=["GET", "POST"])
+def api_admin_pending_topups():
+    if not session.get("is_konvy_admin"):
+        return jsonify({"error": "Unauthorized"}), 403
+
+    if request.method == "GET":
+        pending = _load_pending_topups()
+        return jsonify({"pending": pending})
+
+    data = request.json or {}
+    action = data.get("action")
+    topup_id = data.get("id")
+
+    pending = _load_pending_topups()
+    topup = next((t for t in pending if t["id"] == topup_id), None)
+
+    if not topup:
+        return jsonify({"error": "Topup not found"}), 404
+
+    username = topup["username"]
+    amount_cents = topup["amount_cents"]
+    order_id = topup["order_id"]
+
+    if action == "approve":
+        add_balance(username, amount_cents)
+        set_user_verification_status(username, "verified")
+        history = _load_topup_history()
+        for rec in history.get(username, []):
+            if rec.get("order_id") == order_id:
+                rec["status"] = "completed"
+        _save_topup_history(history)
+        pending = [t for t in pending if t["id"] != topup_id]
+        _save_pending_topups(pending)
+        return jsonify({"ok": True, "message": f"Approved and verified {username}"})
+
+    elif action == "approve_verify_again":
+        add_balance(username, amount_cents)
+        set_user_verification_status(username, "verify_each")
+        history = _load_topup_history()
+        for rec in history.get(username, []):
+            if rec.get("order_id") == order_id:
+                rec["status"] = "completed"
+        _save_topup_history(history)
+        pending = [t for t in pending if t["id"] != topup_id]
+        _save_pending_topups(pending)
+        return jsonify({"ok": True, "message": f"Approved (verify each time) {username}"})
+
+    elif action == "deny":
+        bl = _load_blacklist()
+        bl.add(username)
+        _save_blacklist(bl)
+        set_user_verification_status(username, "blacklisted")
+        history = _load_topup_history()
+        for rec in history.get(username, []):
+            if rec.get("order_id") == order_id:
+                rec["status"] = "denied"
+        _save_topup_history(history)
+        pending = [t for t in pending if t["id"] != topup_id]
+        _save_pending_topups(pending)
+        return jsonify({"ok": True, "message": f"Denied and blacklisted {username}"})
+
+    return jsonify({"error": "Unknown action"}), 400
+
+
+@app.route("/api/admin/users", methods=["GET"])
+def api_admin_users():
+    if not session.get("is_konvy_admin"):
+        return jsonify({"error": "Unauthorized"}), 403
+
+    users = _load_users()
+    result = []
+    for uname, info in users.items():
+        balance_cents = get_balance(uname)
+        result.append({
+            "username": uname,
+            "balance": balance_cents / 100,
+            "verification_status": info.get("verification_status", "unverified"),
+            "is_blacklisted": is_blacklisted(uname),
+        })
+    return jsonify({"users": result})
+
+
+@app.route("/api/admin/set-balance", methods=["POST"])
+def api_admin_set_balance():
+    if not session.get("is_konvy_admin"):
+        return jsonify({"error": "Unauthorized"}), 403
+
+    data = request.json or {}
+    uname = data.get("username", "").strip()
+    new_balance_dollars = float(data.get("balance", 0))
+
+    if not uname:
+        return jsonify({"error": "Username required"}), 400
+
+    users = _load_users()
+    if uname not in users:
+        return jsonify({"error": "User not found"}), 404
+
+    current = get_balance(uname)
+    new_cents = int(round(new_balance_dollars * 100))
+    delta = new_cents - current
+    add_balance(uname, delta)
+
+    return jsonify({"ok": True, "new_balance": get_balance(uname) / 100})
+
+
+@app.route("/api/admin/set-verification", methods=["POST"])
+def api_admin_set_verification():
+    if not session.get("is_konvy_admin"):
+        return jsonify({"error": "Unauthorized"}), 403
+
+    data = request.json or {}
+    uname = data.get("username", "").strip()
+    status = data.get("status", "").strip()
+
+    valid_statuses = ["unverified", "verified", "verify_each", "blacklisted"]
+    if status not in valid_statuses:
+        return jsonify({"error": "Invalid status"}), 400
+
+    users = _load_users()
+    if uname not in users:
+        return jsonify({"error": "User not found"}), 404
+
+    bl = _load_blacklist()
+    if status == "blacklisted":
+        bl.add(uname)
+    else:
+        bl.discard(uname)
+    _save_blacklist(bl)
+
+    set_user_verification_status(uname, status)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/admin/blacklist", methods=["GET", "POST"])
+def api_admin_blacklist():
+    if not session.get("is_konvy_admin"):
+        return jsonify({"error": "Unauthorized"}), 403
+
+    if request.method == "GET":
+        bl = _load_blacklist()
+        return jsonify({"blacklist": list(bl)})
+
+    data = request.json or {}
+    action = data.get("action")
+    uname = data.get("username", "").strip()
+
+    bl = _load_blacklist()
+    if action == "remove":
+        bl.discard(uname)
+        _save_blacklist(bl)
+        set_user_verification_status(uname, "unverified")
+        return jsonify({"ok": True})
+    elif action == "add":
+        bl.add(uname)
+        _save_blacklist(bl)
+        set_user_verification_status(uname, "blacklisted")
+        return jsonify({"ok": True})
+
+    return jsonify({"error": "Unknown action"}), 400
+
+
+@app.route("/api/fortnite/name-account", methods=["POST"])
+@login_required_api
+def api_name_account():
+    data = request.json or {}
+    username = session["username"]
+    purchase_index = int(data.get("purchase_index", -1))
+    name = (data.get("name") or "").strip()[:50]
+
+    if not name:
+        return jsonify({"error": "Name required"}), 400
+
+    purchases = _load_purchases()
+    user_list = purchases.get(username, [])
+
+    if purchase_index < 0 or purchase_index >= len(user_list):
+        return jsonify({"error": "Invalid purchase index"}), 400
+
+    user_list[purchase_index]["name"] = name
+    purchases[username] = user_list
+    _save_purchases(purchases)
+
+    return jsonify({"ok": True, "name": name})
+
+
 
 
 
@@ -2707,8 +3049,25 @@ def api_redeem():
     if is_redeemed(order_id_str):
         return jsonify({"error": "Order already redeemed"}), 400
 
+    verification_status = get_user_verification_status(username)
+
+    if verification_status == "blacklisted":
+        return jsonify({"error": "Your account has been suspended."}), 403
+
+    if verification_status in ("unverified", "verify_each"):
+        add_pending_topup(username, amount_cents, order_id_str)
+        add_topup_record(username, amount_cents, order_id_str, "pending")
+        return jsonify({
+            "message": (
+                f"Order #{order_number_raw} submitted for verification. "
+                "Your balance will be credited after admin review."
+            ),
+            "pending": True,
+        })
+
     add_balance(username, amount_cents)
     mark_redeemed(order_id_str)
+    add_topup_record(username, amount_cents, order_id_str, "completed")
 
     dollars_added = amount_cents / 100
     new_balance = get_balance(username) / 100
@@ -2716,7 +3075,7 @@ def api_redeem():
     return jsonify(
         {
             "message": (
-                f"Redeemed order #{order_number}: added ${dollars_added:.2f}. "
+                f"Redeemed order #{order_number_raw}: added ${dollars_added:.2f}. "
                 f"New balance: ${new_balance:.2f}"
             )
         }
@@ -2796,8 +3155,24 @@ def shopify_order_paid_webhook():
 
     amount_cents = int(round(amount_dollars * 100))
 
+    verification_status = get_user_verification_status(username)
+
+    if verification_status == "blacklisted":
+        app.logger.info("Shopify webhook order %s: user %r is blacklisted; skipping", order_id_str, username)
+        return "", 200
+
+    if verification_status in ("unverified", "verify_each"):
+        add_pending_topup(username, amount_cents, order_id_str)
+        add_topup_record(username, amount_cents, order_id_str, "pending")
+        app.logger.info(
+            "Shopify webhook: queued %d cents for user %r (order %s) for admin verification",
+            amount_cents, username, order_id_str,
+        )
+        return "", 200
+
     add_balance(username, amount_cents)
     mark_redeemed(order_id_str)
+    add_topup_record(username, amount_cents, order_id_str, "completed")
 
     app.logger.info(
         "Shopify webhook: credited %d cents to user %r for order %s",
@@ -2826,8 +3201,9 @@ def api_fortnite_search():
         try:
             result = find_item_by_name(name)
         except Exception as e:
+            app.logger.error("Error resolving item '%s': %s", name, e)
             return jsonify(
-                {"error": f"Error while resolving item '{name}': {e}"}
+                {"error": f"Error while resolving item '{name}'"}
             ), 500
 
         if not result:
@@ -2854,7 +3230,8 @@ def api_fortnite_search():
             min_skins=min_skins,
         )
     except Exception as e:
-        return jsonify({"error": f"Error fetching accounts: {e}"}), 500
+        app.logger.error("Error fetching accounts: %s", e)
+        return jsonify({"error": "Error fetching accounts"}), 500
 
     if not accounts:
         return jsonify({"accounts": [], "not_found": not_found})
@@ -2923,7 +3300,8 @@ def api_fortnite_buy():
     try:
         purchase_result = fast_buy_account(item_id, base_price)
     except Exception as e:
-        return jsonify({"error": "fast_buy_failed", "message": str(e)}), 500
+        app.logger.error("fast_buy_account failed for item %s: %s", item_id, e)
+        return jsonify({"error": "fast_buy_failed", "message": "Purchase failed"}), 500
 
     # STEP 2: optional, try to fetch latest order
     try:
