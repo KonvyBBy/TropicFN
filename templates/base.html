@@ -111,10 +111,84 @@
     .btn-naming-submit:hover { background: #059669; }
     .btn-naming-skip { flex: 1; background: rgba(255,255,255,0.05); color: #a1a1aa; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 10px; font-size: 0.875rem; cursor: pointer; }
 
+    /* Pending topup banner */
+    #pending-topup-banner { display: none; position: sticky; top: 0; z-index: 50; width: 100%; }
+    #pending-topup-banner.visible { display: block; }
+    .pending-banner-inner {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 16px;
+      background: rgba(251, 191, 36, 0.12);
+      border-bottom: 1px solid rgba(251, 191, 36, 0.3);
+      animation: banner-pulse 2.5s ease-in-out infinite;
+    }
+    @keyframes banner-pulse {
+      0%, 100% { background: rgba(251, 191, 36, 0.10); border-color: rgba(251, 191, 36, 0.25); }
+      50% { background: rgba(251, 191, 36, 0.20); border-color: rgba(251, 191, 36, 0.55); }
+    }
+    .pending-banner-icon { font-size: 1.1rem; flex-shrink: 0; animation: banner-icon-pulse 1.4s ease-in-out infinite; }
+    @keyframes banner-icon-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .pending-banner-text { font-size: 0.82rem; color: #fde68a; flex: 1; line-height: 1.4; }
+    .pending-banner-text strong { color: #fbbf24; }
+
+    /* Notification bell */
+    .notif-bell-wrapper { position: relative; }
+    .notif-bell-btn {
+      position: relative; display: inline-flex; align-items: center; justify-content: center;
+      width: 32px; height: 32px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.05); color: #a1a1aa; cursor: pointer; transition: all 0.15s;
+      font-size: 1rem;
+    }
+    .notif-bell-btn:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
+    @media (min-width: 640px) { .notif-bell-btn { width: 40px; height: 40px; } }
+    .notif-badge {
+      position: absolute; top: -4px; right: -4px; min-width: 16px; height: 16px;
+      background: #ef4444; border-radius: 99px; font-size: 0.62rem; font-weight: 700;
+      color: #fff; display: none; align-items: center; justify-content: center; padding: 0 4px;
+      border: 1.5px solid #0a0a0a;
+    }
+    .notif-badge.visible { display: flex; }
+
+    /* Notification dropdown */
+    .notif-dropdown {
+      display: none; position: absolute; top: calc(100% + 8px); right: 0;
+      width: 300px; background: #18181b; border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.6); z-index: 200; overflow: hidden;
+    }
+    .notif-dropdown.open { display: block; }
+    .notif-dropdown-header { padding: 14px 16px 10px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: space-between; }
+    .notif-dropdown-header h3 { font-size: 0.85rem; font-weight: 600; color: #fff; }
+    .notif-mark-all { font-size: 0.72rem; color: #10b981; cursor: pointer; background: none; border: none; padding: 0; }
+    .notif-mark-all:hover { text-decoration: underline; }
+    .notif-list { max-height: 300px; overflow-y: auto; }
+    .notif-empty { padding: 24px 16px; text-align: center; font-size: 0.82rem; color: #52525b; }
+    .notif-item {
+      display: flex; align-items: flex-start; gap: 10px; padding: 12px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.12s;
+    }
+    .notif-item:last-child { border-bottom: none; }
+    .notif-item:hover { background: rgba(255,255,255,0.04); }
+    .notif-item-icon { width: 32px; height: 32px; border-radius: 9px; background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.25); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.9rem; }
+    .notif-item-body { flex: 1; min-width: 0; }
+    .notif-item-title { font-size: 0.8rem; font-weight: 600; color: #e4e4e7; }
+    .notif-item-desc { font-size: 0.75rem; color: #71717a; margin-top: 2px; line-height: 1.4; }
+    .notif-dismiss { background: none; border: none; color: #52525b; cursor: pointer; font-size: 0.75rem; padding: 2px 4px; border-radius: 4px; flex-shrink: 0; transition: color 0.12s; }
+    .notif-dismiss:hover { color: #ef4444; }
+
     {% block extra_styles %}{% endblock %}
   </style>
 </head>
 <body class="bg-grain relative min-h-screen overflow-x-hidden">
+
+  <!-- Pending topup animated banner -->
+  <div id="pending-topup-banner">
+    <div class="pending-banner-inner">
+      <span class="pending-banner-icon">⚠️</span>
+      <p class="pending-banner-text" id="pending-banner-msg">
+        <strong>Pending Top-Up:</strong> Your top-up is pending. Please wait for admin to verify it.
+      </p>
+    </div>
+  </div>
+
   <!-- Ambient glow orbs -->
   <div class="absolute inset-0 -z-10 opacity-70 pointer-events-none overflow-hidden">
     <div class="absolute -left-40 top-16 h-72 w-72 rounded-full bg-white/10 blur-[120px]"></div>
@@ -139,7 +213,6 @@
             <a href="/transactions" class="transition hover:text-emerald-300 {% if active_page == 'transactions' %}text-emerald-400 font-medium{% endif %}">Transaction History</a>
             <a href="/my-accounts" class="transition hover:text-emerald-300 {% if active_page == 'my-accounts' %}text-emerald-400 font-medium{% endif %}">My Accounts</a>
             {% endif %}
-            <a href="/support" class="transition hover:text-emerald-300 {% if active_page == 'support' %}text-emerald-400 font-medium{% endif %}">Support</a>
           </nav>
         </div>
 
@@ -148,6 +221,22 @@
           <div class="hidden items-center gap-2 sm:flex">
             <span class="text-xs text-zinc-400">{{ username }}</span>
             <span class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-xs font-medium text-emerald-400">${{ balance }}</span>
+          </div>
+          <!-- Notification bell -->
+          <div class="notif-bell-wrapper">
+            <button class="notif-bell-btn" id="notif-bell-btn" title="Notifications">
+              <i class="ri-notification-3-line"></i>
+              <span class="notif-badge" id="notif-badge"></span>
+            </button>
+            <div class="notif-dropdown" id="notif-dropdown">
+              <div class="notif-dropdown-header">
+                <h3>Notifications</h3>
+                <button class="notif-mark-all" id="notif-mark-all">Mark all read</button>
+              </div>
+              <div class="notif-list" id="notif-list">
+                <div class="notif-empty">No new notifications</div>
+              </div>
+            </div>
           </div>
           <a href="/balance" class="inline-flex items-center justify-center rounded-xl font-medium transition border border-white/15 bg-white/5 text-white hover:border-emerald-400/50 hover:text-emerald-300 h-8 px-2.5 text-[11px] sm:h-10 sm:px-3 sm:text-sm whitespace-nowrap">
             Add Funds
@@ -173,7 +262,6 @@
         <a href="/transactions" class="whitespace-nowrap rounded-lg border border-white/15 px-3 py-1.5 transition {% if active_page == 'transactions' %}bg-emerald-500/15 text-emerald-400 border-emerald-500/30{% else %}bg-black/35 text-zinc-300 hover:text-white{% endif %}">History</a>
         <a href="/my-accounts" class="whitespace-nowrap rounded-lg border border-white/15 px-3 py-1.5 transition {% if active_page == 'my-accounts' %}bg-emerald-500/15 text-emerald-400 border-emerald-500/30{% else %}bg-black/35 text-zinc-300 hover:text-white{% endif %}">My Accounts</a>
         {% endif %}
-        <a href="/support" class="whitespace-nowrap rounded-lg border border-white/15 px-3 py-1.5 transition {% if active_page == 'support' %}bg-emerald-500/15 text-emerald-400 border-emerald-500/30{% else %}bg-black/35 text-zinc-300 hover:text-white{% endif %}">Support</a>
       </nav>
     </header>
 
@@ -208,7 +296,6 @@
         <div class="space-y-3">
           <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-300">Company</h3>
           <nav class="flex flex-col gap-2 text-xs text-zinc-500">
-            <a href="/support" class="transition hover:text-emerald-400">Support</a>
             <a href="/warranty" class="transition hover:text-emerald-400">Warranty</a>
             <a href="/terms" class="transition hover:text-emerald-400">Terms of Service</a>
           </nav>
@@ -229,5 +316,114 @@
   </footer>
 
   {% block scripts %}{% endblock %}
+
+  {% if logged_in %}
+  <script>
+    (function() {
+      // ── Pending topup banner ──
+      async function checkPendingTopups() {
+        try {
+          const res = await fetch('/api/user/pending-topups');
+          if (!res.ok) return;
+          const data = await res.json();
+          const pending = data.pending || [];
+          if (pending.length > 0) {
+            const banner = document.getElementById('pending-topup-banner');
+            const msg = document.getElementById('pending-banner-msg');
+            const total = pending.reduce((s, t) => s + (t.amount_cents || 0), 0);
+            const fmt = '$' + (total / 100).toFixed(2);
+            msg.innerHTML = '<strong>⚠️ Pending Top-Up:</strong> Your top-up of <strong>' + fmt + '</strong> is pending. Please wait for admin to verify it.';
+            banner.classList.add('visible');
+          }
+        } catch(e) {}
+      }
+
+      // ── Notifications ──
+      async function loadNotifications() {
+        try {
+          const res = await fetch('/api/user/notifications');
+          if (!res.ok) return;
+          const data = await res.json();
+          const notifs = data.notifications || [];
+          const badge = document.getElementById('notif-badge');
+          const list = document.getElementById('notif-list');
+          if (!badge || !list) return;
+
+          if (notifs.length > 0) {
+            badge.textContent = notifs.length > 9 ? '9+' : notifs.length;
+            badge.classList.add('visible');
+            list.innerHTML = notifs.map(n => {
+              const amt = '$' + (n.amount_cents / 100).toFixed(2);
+              return `
+                <div class="notif-item" data-id="${n.id}">
+                  <div class="notif-item-icon">✅</div>
+                  <div class="notif-item-body">
+                    <div class="notif-item-title">Top-Up Approved</div>
+                    <div class="notif-item-desc">Your top-up of <strong style="color:#e4e4e7">${amt}</strong> was approved. Please refresh your balance to see it.</div>
+                  </div>
+                  <button class="notif-dismiss" data-id="${n.id}" title="Dismiss">✕</button>
+                </div>`;
+            }).join('');
+          } else {
+            badge.classList.remove('visible');
+            list.innerHTML = '<div class="notif-empty">No new notifications</div>';
+          }
+        } catch(e) {}
+      }
+
+      async function dismissNotif(id) {
+        try {
+          await fetch('/api/user/notifications/dismiss', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({id})
+          });
+          await loadNotifications();
+        } catch(e) {}
+      }
+
+      // Bell toggle
+      const bellBtn = document.getElementById('notif-bell-btn');
+      const dropdown = document.getElementById('notif-dropdown');
+      if (bellBtn && dropdown) {
+        bellBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          dropdown.classList.toggle('open');
+        });
+        document.addEventListener('click', (e) => {
+          if (!dropdown.contains(e.target) && e.target !== bellBtn) {
+            dropdown.classList.remove('open');
+          }
+        });
+      }
+
+      // Dismiss individual
+      document.getElementById('notif-list')?.addEventListener('click', (e) => {
+        const btn = e.target.closest('.notif-dismiss');
+        if (btn) dismissNotif(btn.dataset.id);
+      });
+
+      // Mark all read
+      document.getElementById('notif-mark-all')?.addEventListener('click', async () => {
+        try {
+          const res = await fetch('/api/user/notifications');
+          if (!res.ok) return;
+          const data = await res.json();
+          for (const n of (data.notifications || [])) {
+            await fetch('/api/user/notifications/dismiss', {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({id: n.id})
+            });
+          }
+          await loadNotifications();
+        } catch(e) {}
+      });
+
+      checkPendingTopups();
+      loadNotifications();
+    })();
+  </script>
+  {% endif %}
 </body>
 </html>
