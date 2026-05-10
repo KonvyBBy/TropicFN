@@ -398,6 +398,7 @@ def dismiss_notification(username: str, notif_id: str) -> bool:
         if n["id"] == notif_id:
             n["seen"] = True
             found = True
+            break
     if found:
         data[username] = user_notifs
         _save_topup_notifications(data)
@@ -3108,6 +3109,18 @@ def api_user_notifications_dismiss():
         return jsonify({"error": "id required"}), 400
     ok = dismiss_notification(username, notif_id)
     return jsonify({"ok": ok})
+
+
+@app.route("/api/user/notifications/dismiss-all", methods=["POST"])
+@login_required_api
+def api_user_notifications_dismiss_all():
+    username = session["username"]
+    notifs = get_user_notifications(username)
+    notif_data = _load_topup_notifications()
+    for n in notif_data.get(username, []):
+        n["seen"] = True
+    _save_topup_notifications(notif_data)
+    return jsonify({"ok": True, "dismissed": len(notifs)})
 
 
 @app.route("/api/redeem", methods=["POST"])

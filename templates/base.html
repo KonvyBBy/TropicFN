@@ -406,16 +406,7 @@
       // Mark all read
       document.getElementById('notif-mark-all')?.addEventListener('click', async () => {
         try {
-          const res = await fetch('/api/user/notifications');
-          if (!res.ok) return;
-          const data = await res.json();
-          for (const n of (data.notifications || [])) {
-            await fetch('/api/user/notifications/dismiss', {
-              method: 'POST',
-              headers: {'Content-Type': 'application/json'},
-              body: JSON.stringify({id: n.id})
-            });
-          }
+          await fetch('/api/user/notifications/dismiss-all', { method: 'POST' });
           await loadNotifications();
         } catch(e) {}
       });
