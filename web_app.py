@@ -163,6 +163,9 @@ TOPUP_HISTORY_FILE = os.path.join(DATA_DIR, "topup_history.json")
 # --- Pending topups (awaiting admin verification) ---
 PENDING_TOPUPS_FILE = os.path.join(DATA_DIR, "pending_topups.json")
 
+# --- Topup notifications (approved topups shown to user) ---
+TOPUP_NOTIFICATIONS_FILE = os.path.join(DATA_DIR, "topup_notifications.json")
+
 # --- Blacklist ---
 BLACKLIST_FILE = os.path.join(DATA_DIR, "blacklist.json")
 
@@ -350,6 +353,56 @@ def add_pending_topup(username: str, amount_cents: int, order_id: str) -> None:
     })
     _save_pending_topups(pending)
     mark_redeemed(order_id)
+
+
+# ===================== TOPUP NOTIFICATIONS HELPERS =====================
+
+def _load_topup_notifications() -> dict:
+    if not os.path.exists(TOPUP_NOTIFICATIONS_FILE):
+        return {}
+    try:
+        with open(TOPUP_NOTIFICATIONS_FILE, "r", encoding="utf-8") as f:
+            return json.load(f) or {}
+    except Exception:
+        return {}
+
+
+def _save_topup_notifications(data: dict) -> None:
+    with open(TOPUP_NOTIFICATIONS_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+
+
+def add_topup_notification(username: str, amount_cents: int, notif_id: str) -> None:
+    data = _load_topup_notifications()
+    user_notifs = data.get(username, [])
+    user_notifs.append({
+        "id": notif_id,
+        "amount_cents": amount_cents,
+        "timestamp": int(time.time()),
+        "seen": False,
+    })
+    data[username] = user_notifs
+    _save_topup_notifications(data)
+
+
+def get_user_notifications(username: str) -> list:
+    data = _load_topup_notifications()
+    return [n for n in data.get(username, []) if not n.get("seen", False)]
+
+
+def dismiss_notification(username: str, notif_id: str) -> bool:
+    data = _load_topup_notifications()
+    user_notifs = data.get(username, [])
+    found = False
+    for n in user_notifs:
+        if n["id"] == notif_id:
+            n["seen"] = True
+            found = True
+            break
+    if found:
+        data[username] = user_notifs
+        _save_topup_notifications(data)
+    return found
 
 
 # ===================== BLACKLIST HELPERS =====================
@@ -2829,6 +2882,7 @@ def api_admin_pending_topups():
         _save_topup_history(history)
         pending = [t for t in pending if t["id"] != topup_id]
         _save_pending_topups(pending)
+        add_topup_notification(username, amount_cents, topup_id)
         return jsonify({"ok": True, "message": f"Approved and verified {username}"})
 
     elif action == "approve_verify_again":
@@ -2841,6 +2895,7 @@ def api_admin_pending_topups():
         _save_topup_history(history)
         pending = [t for t in pending if t["id"] != topup_id]
         _save_pending_topups(pending)
+        add_topup_notification(username, amount_cents, topup_id)
         return jsonify({"ok": True, "message": f"Approved (verify each time) {username}"})
 
     elif action == "deny":
@@ -3025,6 +3080,47 @@ def api_topup():
     )
 
     return jsonify({"checkout_url": checkout_url})
+
+
+@app.route("/api/user/pending-topups", methods=["GET"])
+@login_required_api
+def api_user_pending_topups():
+    username = session["username"]
+    pending = _load_pending_topups()
+    user_pending = [t for t in pending if t["username"] == username]
+    return jsonify({"pending": user_pending})
+
+
+@app.route("/api/user/notifications", methods=["GET"])
+@login_required_api
+def api_user_notifications_get():
+    username = session["username"]
+    notifs = get_user_notifications(username)
+    return jsonify({"notifications": notifs})
+
+
+@app.route("/api/user/notifications/dismiss", methods=["POST"])
+@login_required_api
+def api_user_notifications_dismiss():
+    username = session["username"]
+    data = request.json or {}
+    notif_id = data.get("id")
+    if not notif_id:
+        return jsonify({"error": "id required"}), 400
+    ok = dismiss_notification(username, notif_id)
+    return jsonify({"ok": ok})
+
+
+@app.route("/api/user/notifications/dismiss-all", methods=["POST"])
+@login_required_api
+def api_user_notifications_dismiss_all():
+    username = session["username"]
+    notifs = get_user_notifications(username)
+    notif_data = _load_topup_notifications()
+    for n in notif_data.get(username, []):
+        n["seen"] = True
+    _save_topup_notifications(notif_data)
+    return jsonify({"ok": True, "dismissed": len(notifs)})
 
 
 @app.route("/api/redeem", methods=["POST"])
