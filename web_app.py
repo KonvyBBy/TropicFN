@@ -3311,92 +3311,97 @@ def shopify_order_paid_webhook():
 
 @app.route("/api/fortnite/search", methods=["POST"])
 def api_fortnite_search():
-    data = request.json or {}
-    item = data.get("item", "")
-    days = int(data.get("days") or 0)
-    skins = int(data.get("skins") or 0)
-    budget = float(data.get("budget") or 999999)  # Changed from min/max to single budget
-
-    raw_items = [s.strip() for s in item.split(",") if s.strip()]
-    if not raw_items:
-        return jsonify({"error": "You must provide at least one item name."}), 400
-
-    item_results = []
-    not_found = []
-
-    for name in raw_items:
-        try:
-            result = find_item_by_name(name)
-        except Exception as e:
-            app.logger.error("Error resolving item '%s': %s", name, e)
-            return jsonify(
-                {"error": "Error resolving one or more items. Please try again."}
-            ), 500
-
-        if not result:
-            not_found.append(name)
-        else:
-            item_results.append(result)
-
-    if not item_results:
-        return jsonify(
-            {"error": "No items found on marketplace.", "not_found": not_found}
-        ), 404
-
-    item_filters: List[Tuple[str, str]] = []
-    for param_name, query_id, raw_id, matched_title, item_type in item_results:
-        item_filters.append((param_name, query_id))
-
-    min_days = days if days >= 0 else 0
-    min_skins = skins if skins > 0 else None
-
     try:
-        accounts, base_params = fetch_cheapest_accounts(
-            item_filters=item_filters,
-            min_days=min_days,
-            min_skins=min_skins,
-        )
-    except Exception as e:
-        app.logger.error("Error fetching accounts: %s", e)
-        return jsonify({"error": "Error fetching accounts"}), 500
+        data = request.json or {}
+        item = data.get("item", "")
+        days = int(data.get("days") or 0)
+        skins = int(data.get("skins") or 0)
+        budget = float(data.get("budget") or 999999)
 
-    if not accounts:
-        return jsonify({"accounts": [], "not_found": not_found})
+        raw_items = [s.strip() for s in item.split(",") if s.strip()]
+        if not raw_items:
+            return jsonify({"error": "You must provide at least one item name."}), 400
 
-    result_accounts = []
-    for acc in accounts:
-        price = acc.get("price")
+        item_results = []
+        not_found = []
+
+        for name in raw_items:
+            try:
+                result = find_item_by_name(name)
+            except Exception as e:
+                app.logger.error("Error resolving item '%s': %s", name, e)
+                return jsonify(
+                    {"error": "Error resolving one or more items. Please try again."}
+                ), 500
+
+            if not result:
+                not_found.append(name)
+            else:
+                item_results.append(result)
+
+        if not item_results:
+            return jsonify(
+                {"error": "No items found on marketplace.", "not_found": not_found}
+            ), 404
+
+        item_filters: List[Tuple[str, str]] = []
+        for param_name, query_id, raw_id, matched_title, item_type in item_results:
+            item_filters.append((param_name, query_id))
+
+        min_days = days if days >= 0 else 0
+        min_skins = skins if skins > 0 else None
+
         try:
-            base_price = float(price)
-        except Exception:
-            base_price = 0.0
+            accounts, base_params = fetch_cheapest_accounts(
+                item_filters=item_filters,
+                min_days=min_days,
+                min_skins=min_skins,
+            )
+        except Exception as e:
+            app.logger.error("Error fetching accounts: %s", e)
+            return jsonify({"error": "Error fetching accounts. Please try again."}), 500
 
-        user_price = base_price * get_lzt_multiplier_for_pricing()
-        
-# Filter by budget
-        if user_price > budget:
-            continue
-        
-        days_ago = compute_days_ago(acc)
-        last_played = f"{days_ago} days ago" if days_ago is not None else "N/A"
+        if not accounts:
+            return jsonify({"accounts": [], "not_found": not_found})
 
-        result_accounts.append(
-            {
-                "item_id": acc.get("item_id"),
-                "base_price": base_price,
-                "user_price": user_price,
-                "level": acc.get("fortnite_level") or 0,
-                "skins": acc.get("fortnite_skin_count") or 0,
-                "pickaxes": acc.get("fortnite_pickaxe_count") or 0,
-                "emotes": acc.get("fortnite_dance_count") or 0,
-                "gliders": acc.get("fortnite_glider_count") or 0,
-                "vbucks": acc.get("fortnite_balance") or 0,
-                "last_played": last_played,
-                "days_ago": days_ago,
-            }
-        )
+        result_accounts = []
+        for acc in accounts:
+            price = acc.get("price")
+            try:
+                base_price = float(price)
+            except Exception:
+                base_price = 0.0
 
-    return jsonify({"accounts": result_accounts, "not_found": not_found})
+            user_price = base_price * get_lzt_multiplier_for_pricing()
+
+            # Filter by budget
+            if user_price > budget:
+                continue
+
+            days_ago = compute_days_ago(acc)
+            last_played = f"{days_ago} days ago" if days_ago is not None else "N/A"
+
+            result_accounts.append(
+                {
+                    "item_id": acc.get("item_id"),
+                    "base_price": base_price,
+                    "user_price": user_price,
+                    "level": acc.get("fortnite_level") or 0,
+                    "skins": acc.get("fortnite_skin_count") or 0,
+                    "pickaxes": acc.get("fortnite_pickaxe_count") or 0,
+                    "emotes": acc.get("fortnite_dance_count") or 0,
+                    "gliders": acc.get("fortnite_glider_count") or 0,
+                    "vbucks": acc.get("fortnite_balance") or 0,
+                    "last_played": last_played,
+                    "days_ago": days_ago,
+                }
+            )
+
+        return jsonify({"accounts": result_accounts, "not_found": not_found})
+
+    except Exception as e:
+        app.logger.error("Unhandled error in api_fortnite_search: %s", e)
+        return jsonify({"error": "An unexpected error occurred. Please try again."}), 500
 
 
 @app.route("/api/fortnite/buy", methods=["POST"])
