@@ -10,7 +10,8 @@ document.addEventListener("DOMContentLoaded", () => {
     let json;
     try {
       json = await res.json();
-    } catch {
+    } catch (e) {
+      console.error("Failed to parse server response as JSON:", e);
       throw new Error(`Server error (${res.status}). Please try again later.`);
     }
     if (!res.ok) throw new Error(json.error || "Request failed");
