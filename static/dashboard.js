@@ -7,7 +7,12 @@ document.addEventListener("DOMContentLoaded", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    const json = await res.json();
+    let json;
+    try {
+      json = await res.json();
+    } catch {
+      throw new Error(`Server error (${res.status}). Please try again later.`);
+    }
     if (!res.ok) throw new Error(json.error || "Request failed");
     return json;
   }
