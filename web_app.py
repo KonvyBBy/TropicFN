@@ -58,6 +58,14 @@ PURCHASE_DELAY_AFTER_CHECK_SECONDS = 5
 ACCOUNT_UNAVAILABLE_MESSAGE = "Account is no longer available. Please choose another account."
 PRICE_CHANGED_MESSAGE = "The account price changed while we were checking it. Please try again."
 ACCOUNT_UNAVAILABLE_KEYWORDS = ("sold", "not found", "unavailable", "deleted", "archived")
+PRICE_CHANGED_KEYWORDS = (
+    "price changed",
+    "changed price",
+    "different price",
+    "current price",
+    "actual price",
+    "price mismatch",
+)
 
 
 class PurchaseFlowError(Exception):
@@ -66,6 +74,22 @@ class PurchaseFlowError(Exception):
         self.code = code
         self.message = message
         self.status_code = status_code
+
+
+def _is_price_changed_error(error_text: str) -> bool:
+    if not error_text:
+        return False
+
+    if any(keyword in error_text for keyword in PRICE_CHANGED_KEYWORDS):
+        return True
+
+    if "price" not in error_text:
+        return False
+
+    return any(
+        keyword in error_text
+        for keyword in ("change", "changed", "different", "current", "actual", "mismatch", "match")
+    )
 
 def fortnite_api_get_outfit_icon_url_by_name(name: str):
     """
@@ -1098,7 +1122,7 @@ def confirm_buy_account(item_id: int, price: float):
                 ACCOUNT_UNAVAILABLE_MESSAGE,
                 409,
             )
-        if "price" in error_text:
+        if _is_price_changed_error(error_text):
             raise PurchaseFlowError(
                 "price_changed",
                 PRICE_CHANGED_MESSAGE,
