@@ -20,6 +20,9 @@
     }
   </script>
   <style>
+    :root {
+      --market-preview-grid-accent: rgba(142, 74, 255, 0.55);
+    }
     html, body { margin: 0; padding: 0; background-color: #07091a; color: #eaeef8; font-family: 'Manrope', sans-serif; min-height: 100vh; overflow-x: hidden; }
 
     .font-space { font-family: 'Space Grotesk', sans-serif; }
@@ -290,8 +293,9 @@
       gap: 2px;
       border-top: 1px solid rgba(255,255,255,0.08);
       border-bottom: 1px solid rgba(255,255,255,0.08);
-      background: rgba(142, 74, 255, 0.55);
+      background: var(--market-preview-grid-accent);
       padding: 0 1px;
+      cursor: pointer;
     }
     .market-preview-tile {
       position: relative;
@@ -357,7 +361,25 @@
     .market-card-actions {
       padding: 0 12px 12px;
       margin-top: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
+    .market-preview-btn {
+      width: 100%;
+      background: #151d3d;
+      color: #c8d4ff;
+      border: 1px solid #2f3a6b;
+      border-radius: 10px;
+      padding: 9px 10px;
+      font-size: .72rem;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all .15s ease;
+    }
+    .market-preview-btn:hover { border-color: #5b6ac0; color: #eef2ff; }
     .market-buy-btn {
       width: 100%;
       background: linear-gradient(135deg,#00ff87,#00c864);

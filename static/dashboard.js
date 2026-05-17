@@ -404,7 +404,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const res = await fetch("/api/skins/icons", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ names: missing, type: "outfit" }),
+          body: JSON.stringify({ names: missing }),
         });
         const data = await res.json();
         const icons = Array.isArray(data.icons) ? data.icons : [];
@@ -419,8 +419,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const name = tile.dataset.cosmeticName || '';
       const icon = previewIconCache.get(name);
       if (!icon) return;
-      if (tile.dataset.hydrated === '1') return;
-      tile.dataset.hydrated = '1';
+      if (tile.hasAttribute('data-hydrated')) return;
+      tile.setAttribute('data-hydrated', '');
       tile.innerHTML = `<img src="${escapeHtml(icon)}" alt="${escapeHtml(name)}" loading="lazy">`;
       tile.classList.add('has-image');
     });
@@ -517,11 +517,22 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
 
         <div class="market-card-actions">
+          <button type="button" class="preview-btn market-preview-btn" data-item-id="${acc.item_id}">
+            Preview Cosmetics
+          </button>
           <button class="buy-btn market-buy-btn" data-item-id="${acc.item_id}" data-base-price="${acc.base_price}">
             Buy Account
           </button>
         </div>
       `;
+
+      const previewBtn = card.querySelector(".preview-btn");
+      previewBtn.onclick = () => {
+        showCosmeticTypeDialog(acc.item_id);
+      };
+      card.querySelector(".market-preview-grid")?.addEventListener("click", () => {
+        showCosmeticTypeDialog(acc.item_id);
+      });
 
       const buyBtn = card.querySelector(".buy-btn");
       buyBtn.onclick = async () => {
