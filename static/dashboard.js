@@ -479,7 +479,7 @@ document.addEventListener("DOMContentLoaded", () => {
       card.innerHTML = `
         <div class="sx-card-imgs">
           <div class="sx-imgs-grid">${tiles}</div>
-          <span class="sx-price-badge">${formattedPrice} €</span>
+          <span class="sx-price-badge">$${formattedPrice}</span>
           <div class="sx-img-bar"></div>
         </div>
         <div class="sx-card-body">

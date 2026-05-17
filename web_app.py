@@ -986,30 +986,44 @@ def fetch_cheapest_accounts(
 
 def fast_buy_account(item_id: int, price: float):
     """
-    Uses docs: POST /{item_id}/fast-buy with {price}.
+    Purchase an account using POST /{item_id}/confirm-buy.
+    Requires price (integer, current market price) and optionally balance_id.
     """
-    url = f"https://prod-api.lzt.market/{item_id}/fast-buy"
+    url = f"https://prod-api.lzt.market/{item_id}/confirm-buy"
     headers_fb = {
         "accept": "application/json",
         "content-type": "application/json",
         "authorization": f"Bearer {MARKET_API_TOKEN}",
     }
-    payload = {"price": float(price)}
-    resp = requests.post(url, headers=headers_fb, json=payload, timeout=60)
-
-    if resp.status_code == 403:
+    # price must be an integer (current market price in the account's listed currency)
+    payload: dict = {"price": int(round(float(price)))}
+    balance_id = os.environ.get("LZT_BALANCE_ID")
+    if balance_id:
         try:
-            data = resp.json()
-            errors = " ".join(data.get("errors", []))
-            if "sold" in errors.lower():
-                raise RuntimeError("This listing has already been sold.")
-        except Exception:
+            payload["balance_id"] = int(balance_id)
+        except (ValueError, TypeError):
             pass
 
-    if not resp.ok:
-        raise RuntimeError(f"Fast-buy failed: {resp.status_code} - {resp.text[:300]}")
+    resp = requests.post(url, headers=headers_fb, json=payload, timeout=60)
 
-    return resp.json()
+    # Try to parse JSON response; fall back to raising with raw text
+    try:
+        data = resp.json()
+    except Exception:
+        raise RuntimeError(f"Confirm-buy returned non-JSON: {resp.status_code} - {resp.text[:300]}")
+
+    if resp.status_code == 403:
+        errors = " ".join(data.get("errors", []) if isinstance(data, dict) else [])
+        if "sold" in errors.lower():
+            raise RuntimeError("This listing has already been sold.")
+
+    if not resp.ok:
+        err_msg = ""
+        if isinstance(data, dict):
+            err_msg = " ".join(data.get("errors", [])) or data.get("message", "")
+        raise RuntimeError(f"Confirm-buy failed ({resp.status_code}): {err_msg or resp.text[:300]}")
+
+    return data
 
 
 def get_latest_order():
