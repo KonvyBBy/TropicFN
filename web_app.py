@@ -58,6 +58,10 @@ PURCHASE_DELAY_AFTER_CHECK_SECONDS = 5
 FAST_BUY_MAX_ATTEMPTS = 100
 # Sub-second pause between retries to avoid hammering the API.
 FAST_BUY_RETRY_DELAY_SECONDS = 0.1
+# Delay when the marketplace signals rate-limiting (429).
+FAST_BUY_RATE_LIMIT_DELAY_SECONDS = 5.0
+# Delay when the marketplace returns a 5xx server error.
+FAST_BUY_SERVER_ERROR_DELAY_SECONDS = 2.0
 ACCOUNT_UNAVAILABLE_MESSAGE = "Account is no longer available. Please choose another account."
 PRICE_CHANGED_MESSAGE = "The account price changed while we were checking it. Please try again."
 ACCOUNT_UNAVAILABLE_KEYWORDS = ("sold", "not found", "unavailable", "deleted", "archived")
@@ -74,6 +78,17 @@ BALANCE_ERROR_KEYWORDS = (
     "insufficient balance",
     "not enough balance",
     "balance required",
+    "insufficient_funds",
+    "insufficient funds",
+)
+# Error text patterns that indicate a transient failure worth retrying.
+FAST_BUY_RETRYABLE_KEYWORDS = (
+    "too many requests",
+    "rate_limit",
+    "item_locked",
+    "account_locked",
+    "try again later",
+    "try later",
 )
 
 
@@ -1096,10 +1111,18 @@ def confirm_buy_account(item_id: int, price: float):
     for attempt in range(FAST_BUY_MAX_ATTEMPTS):
         resp = requests.post(url, headers=headers_fb, json=payload, timeout=60)
 
-        # Try to parse JSON response; fall back to raising with raw text
+        # Try to parse JSON response; retry on 5xx non-JSON (e.g. nginx error pages),
+        # otherwise fall back to raising with raw text.
         try:
             data = resp.json()
         except (ValueError, requests.exceptions.JSONDecodeError):
+            if resp.status_code >= 500 and attempt < FAST_BUY_MAX_ATTEMPTS - 1:
+                app.logger.warning(
+                    "Fast-buy got non-JSON 5xx (status=%s) for item %s, retrying (attempt %s/%s)",
+                    resp.status_code, item_id, attempt + 1, FAST_BUY_MAX_ATTEMPTS,
+                )
+                time.sleep(FAST_BUY_SERVER_ERROR_DELAY_SECONDS)
+                continue
             raise RuntimeError(f"Fast-buy returned non-JSON: {resp.status_code} - {resp.text[:300]}")
 
         error_parts: List[str] = []
@@ -1121,6 +1144,7 @@ def confirm_buy_account(item_id: int, price: float):
         error_parts = list(dict.fromkeys(error_parts))
         error_text = " | ".join(error_parts).lower()
 
+        # --- Retry on API-signaled transient conditions ---
         if "retry_request" in error_text:
             if attempt < FAST_BUY_MAX_ATTEMPTS - 1:
                 time.sleep(FAST_BUY_RETRY_DELAY_SECONDS)
@@ -1129,6 +1153,46 @@ def confirm_buy_account(item_id: int, price: float):
                 f"Fast-buy exhausted all {FAST_BUY_MAX_ATTEMPTS} attempts due to retry_request responses"
             )
 
+        if any(keyword in error_text for keyword in FAST_BUY_RETRYABLE_KEYWORDS):
+            if attempt < FAST_BUY_MAX_ATTEMPTS - 1:
+                app.logger.info(
+                    "Fast-buy got retryable error for item %s (attempt %s/%s): %s",
+                    item_id, attempt + 1, FAST_BUY_MAX_ATTEMPTS, error_text[:200],
+                )
+                time.sleep(FAST_BUY_RETRY_DELAY_SECONDS)
+                continue
+
+        # --- Retry on HTTP-level transient conditions ---
+        if resp.status_code == 429:
+            if attempt < FAST_BUY_MAX_ATTEMPTS - 1:
+                retry_after = FAST_BUY_RATE_LIMIT_DELAY_SECONDS
+                try:
+                    retry_after = float(resp.headers.get("Retry-After", FAST_BUY_RATE_LIMIT_DELAY_SECONDS))
+                except (ValueError, TypeError):
+                    pass
+                app.logger.info(
+                    "Fast-buy rate-limited for item %s (attempt %s/%s), waiting %.1fs",
+                    item_id, attempt + 1, FAST_BUY_MAX_ATTEMPTS, retry_after,
+                )
+                time.sleep(min(retry_after, 30))
+                continue
+            raise PurchaseFlowError(
+                "rate_limited",
+                "Marketplace is rate limiting purchases. Please wait a moment and try again.",
+                429,
+            )
+
+        if resp.status_code >= 500:
+            if attempt < FAST_BUY_MAX_ATTEMPTS - 1:
+                app.logger.warning(
+                    "Fast-buy got %s server error for item %s (attempt %s/%s): %s",
+                    resp.status_code, item_id, attempt + 1, FAST_BUY_MAX_ATTEMPTS,
+                    error_text[:200],
+                )
+                time.sleep(FAST_BUY_SERVER_ERROR_DELAY_SECONDS)
+                continue
+
+        # --- Terminal error classification ---
         if resp.status_code == 404:
             raise PurchaseFlowError(
                 "account_unavailable",
@@ -1149,6 +1213,11 @@ def confirm_buy_account(item_id: int, price: float):
                     PRICE_CHANGED_MESSAGE,
                     409,
                 )
+            raise PurchaseFlowError(
+                "market_access_denied",
+                "Marketplace denied access to this account. Please try another.",
+                403,
+            )
 
         if resp.status_code == 401:
             raise PurchaseFlowError(
@@ -1164,7 +1233,7 @@ def confirm_buy_account(item_id: int, price: float):
             keyword in combined_balance_signal
             for keyword in BALANCE_ERROR_KEYWORDS
         )
-        if resp.status_code == 422 and has_balance_error:
+        if resp.status_code in (400, 422) and has_balance_error:
             raise PurchaseFlowError(
                 "market_balance_required",
                 "Marketplace balance is not configured correctly. Please contact support.",
