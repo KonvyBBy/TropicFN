@@ -303,7 +303,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const fd = new FormData(searchForm);
     const budgetInput = document.getElementById('budget-input');
     const priceMinInput = document.getElementById('price-min');
-    const budget = budgetInput.value ? parseFloat(budgetInput.value) : 999999;
+    const budget = budgetInput.value ? parseFloat(budgetInput.value) : null;
     const pmin = priceMinInput?.value ? Number(priceMinInput.value) : 0;
     const skins = Number(fd.get('skins') || 0);
     const days = Number(fd.get('days') || 0);
@@ -328,9 +328,9 @@ document.addEventListener("DOMContentLoaded", () => {
         item: items.join(', '),
         days,
         skins,
-        budget: budgetInput.value ? budget : undefined,
+        budget: budget,
         pmin: pmin > 0 ? pmin : undefined,
-        pmax: budgetInput.value ? budget : undefined,
+        pmax: budget ?? undefined,
         vbmin: vbmin > 0 ? vbmin : undefined,
         vbmax: vbmax > 0 ? vbmax : undefined,
       });

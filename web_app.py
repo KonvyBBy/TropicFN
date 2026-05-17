@@ -563,14 +563,14 @@ FORTNITE_MARKET_PARAM_KEYS = {
 def _as_float(value: Any) -> Optional[float]:
     try:
         return float(value)
-    except Exception:
+    except (TypeError, ValueError):
         return None
 
 
 def _as_int(value: Any) -> Optional[int]:
     try:
         return int(value)
-    except Exception:
+    except (TypeError, ValueError):
         return None
 
 
@@ -3563,7 +3563,6 @@ if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
-
 
 
 
