@@ -340,7 +340,6 @@
           <h2 class="text-xs font-bold uppercase tracking-[0.16em]" style="color:#00ff87;">Filters</h2>
           <div class="flex items-center gap-1.5">
             <button type="reset" form="search-form" class="project-btn rounded-lg px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide">Reset</button>
-            <button type="button" id="add-item-btn" class="project-btn rounded-lg px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide">+ Add</button>
           </div>
         </div>
         <form id="search-form" class="filters-scroll space-y-2.5 p-3">
@@ -350,22 +349,6 @@
               <div class="grid grid-cols-2 gap-2">
                 <input id="price-min" name="pmin" type="number" min="0" placeholder="Price from €" aria-label="Minimum price in euros" class="project-input h-9 rounded-lg px-2 text-xs">
                 <input id="price-max" name="pmax" type="number" min="0" placeholder="up to €" aria-label="Maximum price in euros" class="project-input h-9 rounded-lg px-2 text-xs">
-              </div>
-            </div>
-          </div>
-
-          <div class="filter-section" data-open="true">
-            <button type="button" class="filter-head section-toggle">Search Items <span class="toggle-icon"></span></button>
-            <div class="filter-body space-y-2">
-              <input name="title" type="text" placeholder="Search by title" aria-label="Search by title" class="project-input h-9 w-full rounded-lg px-3 text-xs">
-              <div id="items-container" class="space-y-2">
-                <div class="item-input-row">
-                  <div class="autocomplete-wrapper" style="position:relative;">
-                    <input type="text" class="item-search-input project-input h-9 w-full rounded-lg px-3 text-xs" placeholder="Search skin, emote, glider..." autocomplete="off">
-                    <div class="autocomplete-dropdown"></div>
-                  </div>
-                  <button type="button" class="remove-item-btn project-btn mt-2 hidden rounded-lg px-3 py-1 text-xs">- Remove</button>
-                </div>
               </div>
             </div>
           </div>
@@ -389,34 +372,28 @@
           </div>
 
           <div class="filter-section" data-open="true">
-            <button type="button" class="filter-head section-toggle">Linkability <span class="toggle-icon"></span></button>
-            <div class="filter-body space-y-2">
-              <label class="mb-1 block text-[10px] font-bold uppercase tracking-[.12em] project-muted">XBOX linkable</label>
-              <select name="xbox_linkable" class="project-input h-9 w-full rounded-lg px-2 text-xs">
-                <option value="">No matter</option>
-                <option value="maybe">Maybe</option>
-                <option value="no">No</option>
-              </select>
-              <label class="mb-1 block text-[10px] font-bold uppercase tracking-[.12em] project-muted">PSN linkable</label>
-              <select name="psn_linkable" class="project-input h-9 w-full rounded-lg px-2 text-xs">
-                <option value="">No matter</option>
-                <option value="maybe">Maybe</option>
-                <option value="no">No</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="filter-section" data-open="true">
             <button type="button" class="filter-head section-toggle">Select Cosmetics <span class="toggle-icon"></span></button>
             <div class="filter-body space-y-2">
               <label class="mb-1 block text-[10px] font-bold uppercase tracking-[.12em] project-muted">Select outfits</label>
-              <input name="skin[]" type="text" placeholder="Search select outfits..." class="project-input h-9 w-full rounded-lg px-3 text-xs">
+              <div class="autocomplete-wrapper" style="position:relative;">
+                <input name="skin[]" type="text" data-cosmetic-type="outfit" placeholder="Search select outfits..." class="cosmetic-search-input project-input h-9 w-full rounded-lg px-3 text-xs" autocomplete="off">
+                <div class="autocomplete-dropdown"></div>
+              </div>
               <label class="mb-1 block text-[10px] font-bold uppercase tracking-[.12em] project-muted">Select pickaxes</label>
-              <input name="pickaxe[]" type="text" placeholder="Search select pickaxes..." class="project-input h-9 w-full rounded-lg px-3 text-xs">
+              <div class="autocomplete-wrapper" style="position:relative;">
+                <input name="pickaxe[]" type="text" data-cosmetic-type="pickaxe" placeholder="Search select pickaxes..." class="cosmetic-search-input project-input h-9 w-full rounded-lg px-3 text-xs" autocomplete="off">
+                <div class="autocomplete-dropdown"></div>
+              </div>
               <label class="mb-1 block text-[10px] font-bold uppercase tracking-[.12em] project-muted">Select emotes</label>
-              <input name="dance[]" type="text" placeholder="Search select emotes..." class="project-input h-9 w-full rounded-lg px-3 text-xs">
+              <div class="autocomplete-wrapper" style="position:relative;">
+                <input name="dance[]" type="text" data-cosmetic-type="emote" placeholder="Search select emotes..." class="cosmetic-search-input project-input h-9 w-full rounded-lg px-3 text-xs" autocomplete="off">
+                <div class="autocomplete-dropdown"></div>
+              </div>
               <label class="mb-1 block text-[10px] font-bold uppercase tracking-[.12em] project-muted">Select gliders</label>
-              <input name="glider[]" type="text" placeholder="Search select gliders..." class="project-input h-9 w-full rounded-lg px-3 text-xs">
+              <div class="autocomplete-wrapper" style="position:relative;">
+                <input name="glider[]" type="text" data-cosmetic-type="glider" placeholder="Search select gliders..." class="cosmetic-search-input project-input h-9 w-full rounded-lg px-3 text-xs" autocomplete="off">
+                <div class="autocomplete-dropdown"></div>
+              </div>
             </div>
           </div>
 
@@ -555,6 +532,8 @@
         <div class="loader-text">Loading Preview...</div>
         <div class="loader-progress"><span id="skins-loaded">0</span> / <span id="skins-total">0</span></div>
         <div class="loader-count">Loading cosmetics in optimized batches</div>
+      </div>
+    </div>
   </div>
 
   <div id="auth-modal-overlay" class="auth-modal-overlay" aria-hidden="true">

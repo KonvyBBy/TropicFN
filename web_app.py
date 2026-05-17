@@ -150,6 +150,8 @@ if not SHOPIFY_WEBHOOK_SECRET:
 # --- Fortnite browse limits ---
 MAX_ACCOUNTS = 50
 MAX_PAGES = 10
+MARKET_API_TIMEOUT = 12
+MAX_PREVIEW_COSMETICS = 8
 
 # --- Redeemed orders tracking ---
 REDEEMED_FILE = os.path.join(DATA_DIR, "redeemed_orders.json")
@@ -662,7 +664,12 @@ def find_item_by_name(item_name: str, max_pages: int = 20):
             "order_by": "pdate_to_down",
             "page": page,
         }
-        resp = requests.get(MARKET_API_URL, headers=market_headers, params=params)
+        resp = requests.get(
+            MARKET_API_URL,
+            headers=market_headers,
+            params=params,
+            timeout=MARKET_API_TIMEOUT,
+        )
 
         if resp.status_code == 401:
             raise RuntimeError("Marketplace API token invalid/expired (401).")
@@ -765,7 +772,12 @@ def fetch_cheapest_accounts(
         params = dict(base_params)
         params["page"] = page
 
-        resp = requests.get(MARKET_API_URL, headers=market_headers, params=params)
+        resp = requests.get(
+            MARKET_API_URL,
+            headers=market_headers,
+            params=params,
+            timeout=MARKET_API_TIMEOUT,
+        )
 
         if resp.status_code == 401:
             raise RuntimeError("Marketplace API token invalid/expired (401) on listing.")
@@ -3515,10 +3527,27 @@ def api_fortnite_search():
                     continue
 
             last_played = f"{days_ago} days ago" if days_ago is not None else "N/A"
+            preview_cosmetics: List[str] = []
+            for field_name in ("fortniteSkins", "fortnitePickaxe", "fortniteDance", "fortniteGliders"):
+                values = acc.get(field_name) or []
+                if not isinstance(values, list):
+                    continue
+                for cosmetic in values:
+                    if isinstance(cosmetic, dict):
+                        name = cosmetic.get("title") or cosmetic.get("name")
+                    else:
+                        name = str(cosmetic)
+                    if name:
+                        preview_cosmetics.append(str(name))
+                    if len(preview_cosmetics) >= MAX_PREVIEW_COSMETICS:
+                        break
+                if len(preview_cosmetics) >= MAX_PREVIEW_COSMETICS:
+                    break
 
             result_accounts.append(
                 {
                     "item_id": acc.get("item_id"),
+                    "title": acc.get("title") or acc.get("title_en") or "",
                     "base_price": base_price,
                     "user_price": user_price,
                     "level": acc.get("fortnite_level") or 0,
@@ -3529,6 +3558,7 @@ def api_fortnite_search():
                     "vbucks": acc.get("fortnite_balance") or 0,
                     "last_played": last_played,
                     "days_ago": days_ago,
+                    "preview_cosmetics": preview_cosmetics,
                 }
             )
 
@@ -3609,8 +3639,6 @@ if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
-
-
 
 
 
