@@ -1,160 +1,135 @@
 {% extends "base.html" %}
 {% block title %}Marketplace — Konvy Accounts{% endblock %}
 
+{% block extra_styles %}
+.bg-grid-pattern {
+  background-image:
+    linear-gradient(rgba(0,255,135,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,255,135,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+.new-card {
+  background: #0d1128;
+  border: 1px solid #1e2540;
+}
+.new-muted { color: #a8b2d4; }
+.new-input {
+  background: #131831;
+  border: 1px solid #1e2540;
+  color: #eaeef8;
+}
+.new-input::placeholder { color: #556080; }
+.new-input:focus { border-color: rgba(0,255,135,0.45) !important; }
+.new-pill {
+  background: rgba(0,255,135,0.12);
+  border: 1px solid rgba(0,255,135,0.24);
+  color: #00ff87;
+}
+{% endblock %}
+
 {% block content %}
-
-<!-- Hero Section -->
-<header class="glass-panel relative overflow-hidden rounded-3xl px-5 py-8 sm:px-8 sm:py-10 md:px-10 md:py-12">
-  <div class="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-emerald-500/5 blur-[80px]"></div>
-  <div class="absolute -bottom-20 -left-20 h-40 w-40 rounded-full bg-white/[0.02] blur-[60px]"></div>
-
-  <div class="relative z-10 max-w-2xl">
-    <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5">
-      <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-      <span class="text-[11px] font-medium text-emerald-300">Live marketplace — new accounts daily</span>
-    </div>
-
-    <h1 class="font-space text-3xl font-bold leading-tight text-white sm:text-4xl md:text-5xl">
-      Premium Fortnite
-      <span class="block text-emerald-400">Account Marketplace</span>
-    </h1>
-
-    <p class="mt-4 max-w-lg text-sm leading-relaxed text-zinc-400 sm:text-base">
-      {% if logged_in %}
-        Welcome back, <span class="text-white font-medium">{{ username }}</span>! Search for accounts with your favourite skins below.
-      {% else %}
-        Browse verified accounts with rare skins, high levels, and stacked inventories. Instant delivery with balance payments.
-      {% endif %}
-    </p>
-
-    <div class="mt-6 flex flex-wrap gap-3">
-      {% if logged_in %}
-      <a href="/balance">
-        <button class="inline-flex h-11 items-center justify-center rounded-xl px-5 text-sm font-medium transition bg-emerald-500 text-black hover:bg-emerald-400 active:scale-[0.99] whitespace-nowrap cursor-pointer">
-          Add Funds <i class="ri-wallet-line ml-2"></i>
-        </button>
-      </a>
-      <a href="/my-accounts">
-        <button class="inline-flex h-11 items-center justify-center rounded-xl border border-white/15 bg-white/5 px-5 text-sm font-medium text-zinc-300 transition hover:border-white/30 hover:text-white whitespace-nowrap cursor-pointer">
-          My Accounts
-        </button>
-      </a>
-      {% else %}
-      <a href="/register">
-        <button class="inline-flex h-11 items-center justify-center rounded-xl px-5 text-sm font-medium transition bg-emerald-500 text-black hover:bg-emerald-400 active:scale-[0.99] whitespace-nowrap cursor-pointer">
-          Get Started <i class="ri-arrow-right-line ml-2"></i>
-        </button>
-      </a>
-      <a href="/login">
-        <button class="inline-flex h-11 items-center justify-center rounded-xl border border-white/15 bg-white/5 px-5 text-sm font-medium text-zinc-300 transition hover:border-white/30 hover:text-white whitespace-nowrap cursor-pointer">
-          Sign In
-        </button>
-      </a>
-      {% endif %}
-    </div>
-
-    {% if logged_in %}
-    <div class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-      <div class="glass-panel rounded-xl p-3 text-center">
-        <div class="text-lg font-bold text-white font-space">${{ balance }}</div>
-        <div class="text-[11px] text-zinc-500 mt-0.5">Balance</div>
-      </div>
-      <div class="glass-panel rounded-xl p-3 text-center">
-        <div class="text-lg font-bold text-white font-space">{{ purchases|length }}</div>
-        <div class="text-[11px] text-zinc-500 mt-0.5">Accounts</div>
-      </div>
-    </div>
-    {% endif %}
+<div class="min-h-screen bg-grid-pattern" style="background-color:#07091a; color:#eaeef8; margin:-1rem; padding:1rem; border-radius:1rem;">
+  <div class="relative mb-4 rounded-xl border px-4 py-2 text-center text-xs font-semibold" style="background:rgba(0,255,135,0.08);border-color:rgba(0,255,135,0.22);color:#00ff87;">
+    🎮 New visual layout is live — all existing search and buy logic is still active.
   </div>
-</header>
 
-<!-- Announcement Banner -->
-<section class="flex items-center gap-3 rounded-2xl border border-emerald-500/15 bg-emerald-950/20 px-4 py-3 sm:px-5 sm:py-3.5">
-  <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-500/15">
-    <i class="ri-megaphone-line text-xs text-emerald-400"></i>
-  </span>
-  <p class="text-sm text-emerald-100">
-    <span class="font-semibold text-emerald-300">NEW ACCOUNTS DAILY</span>
-    <span class="text-emerald-100/70"> — check back every day for fresh verified listings</span>
-  </p>
-</section>
+  <div class="mb-4 flex items-center justify-between gap-3 rounded-xl border px-4 py-3" style="background:#0d1128;border-color:#1e2540;">
+    <div class="flex items-center gap-3 min-w-0">
+      <div class="h-9 w-9 shrink-0 rounded-lg flex items-center justify-center" style="background:rgba(0,255,135,0.12);border:1px solid rgba(0,255,135,0.35)">
+        <span class="font-space text-sm font-bold" style="color:#00ff87;">X</span>
+      </div>
+      <div class="min-w-0">
+        <p class="font-space text-sm font-bold text-white truncate">ACCOUNTX MARKETPLACE</p>
+        <p class="text-[11px] new-muted truncate">Fortnite accounts • live data</p>
+      </div>
+    </div>
 
-<!-- Search / Filter Section -->
-<section class="glass-panel rounded-3xl p-4 sm:p-5 md:p-6" id="search">
-  <div class="flex flex-col gap-4">
-    <form id="search-form" class="flex flex-col gap-4">
-      <!-- Main search row -->
-      <div class="flex flex-col gap-3 sm:flex-row">
-        <div class="relative flex-1">
-          <i class="ri-search-line absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 text-sm"></i>
-          <div id="items-container">
+    <div class="flex items-center gap-2 shrink-0">
+      {% if logged_in %}
+      <a href="/balance" class="rounded-lg px-3 py-1.5 text-xs font-semibold" style="background:#131831;border:1px solid #1e2540;color:#eaeef8;">Balance: ${{ balance }}</a>
+      <a href="/my-accounts" class="rounded-lg px-3 py-1.5 text-xs font-semibold" style="background:#131831;border:1px solid #1e2540;color:#eaeef8;">My Accounts</a>
+      {% else %}
+      <a href="/login" class="rounded-lg px-3 py-1.5 text-xs font-semibold" style="background:#131831;border:1px solid #1e2540;color:#eaeef8;">Sign In</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="flex flex-col gap-4 lg:flex-row">
+    <aside class="w-full lg:w-80 shrink-0">
+      <div class="new-card rounded-2xl">
+        <div class="flex items-center justify-between border-b px-4 py-3" style="border-color:#1e2540;">
+          <h2 class="text-xs font-bold uppercase tracking-[0.16em]" style="color:#00ff87;">Filters</h2>
+          <button type="button" id="add-item-btn" class="rounded-lg px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide" style="background:#131831;border:1px solid #1e2540;color:#eaeef8;">+ Add</button>
+        </div>
+
+        <form id="search-form" class="space-y-3 p-3">
+          <div id="items-container" class="space-y-2">
             <div class="item-input-row">
               <div class="autocomplete-wrapper" style="position:relative;">
-                <input type="text" class="form-input item-search-input h-12 w-full rounded-xl border border-white/15 bg-black/35 pl-11 pr-4 text-sm text-white placeholder:text-zinc-400 transition"
-                  placeholder="Search by skin, emote, glider..." autocomplete="off">
+                <input
+                  type="text"
+                  class="item-search-input new-input h-10 w-full rounded-lg px-3 text-sm"
+                  placeholder="Search by skin, emote, glider..."
+                  autocomplete="off"
+                >
                 <div class="autocomplete-dropdown"></div>
               </div>
-              <button type="button" class="btn-icon-remove remove-item-btn" style="display:none; margin-top:8px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); border-radius:8px; color:#a1a1aa; padding:8px 12px; cursor:pointer; font-size:0.8rem; white-space:nowrap;">✕ Remove</button>
+              <button type="button" class="remove-item-btn mt-2 hidden rounded-lg px-3 py-1.5 text-xs font-semibold" style="background:#131831;border:1px solid #1e2540;color:#a8b2d4;">Remove</button>
             </div>
           </div>
-        </div>
-        <div class="flex gap-2">
-          <button type="submit" class="inline-flex h-12 items-center justify-center rounded-xl px-5 text-sm font-medium transition bg-emerald-500 text-black hover:bg-emerald-400 active:scale-[0.99] whitespace-nowrap cursor-pointer">
-            <i class="ri-search-line mr-2"></i>Search
+
+          <div class="grid grid-cols-1 gap-2">
+            <label class="space-y-1">
+              <span class="text-[10px] font-bold uppercase tracking-[0.14em] new-muted">Max Budget</span>
+              <input id="budget-input" name="budget" type="number" min="0" placeholder="No limit" class="new-input h-10 w-full rounded-lg px-3 text-sm">
+            </label>
+            <label class="space-y-1">
+              <span class="text-[10px] font-bold uppercase tracking-[0.14em] new-muted">Days Offline</span>
+              <input name="days" type="number" min="0" value="0" placeholder="Any" class="new-input h-10 w-full rounded-lg px-3 text-sm">
+            </label>
+            <label class="space-y-1">
+              <span class="text-[10px] font-bold uppercase tracking-[0.14em] new-muted">Minimum Skins</span>
+              <input name="skins" type="number" min="0" value="0" placeholder="Any" class="new-input h-10 w-full rounded-lg px-3 text-sm">
+            </label>
+          </div>
+
+          <button type="submit" class="w-full rounded-xl px-4 py-2.5 text-xs font-bold uppercase tracking-[0.12em]" style="background:linear-gradient(135deg,#00ff87,#00c864);color:#041208;">
+            Search Accounts
           </button>
-          <button type="button" id="add-item-btn" class="inline-flex items-center justify-center rounded-xl px-4 text-sm font-medium transition border border-white/15 bg-white/5 text-white hover:border-white/30 hover:bg-white/10 h-12 gap-2 whitespace-nowrap cursor-pointer">
-            <i class="ri-add-line"></i>Add
-          </button>
-        </div>
+        </form>
+      </div>
+    </aside>
+
+    <main class="min-w-0 flex-1">
+      <div class="mb-3 flex flex-wrap items-center gap-2">
+        <span class="new-pill rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em]">Live Marketplace</span>
+        {% if logged_in %}
+        <span class="rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em]" style="background:#131831;border:1px solid #1e2540;color:#eaeef8;">Welcome {{ username }}</span>
+        {% endif %}
       </div>
 
-      <!-- Filters -->
-      <div class="rounded-2xl border border-white/10 bg-black/20 p-3 sm:p-4">
-        <p class="mb-3 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">Filter Options</p>
-        <div class="grid gap-3 sm:grid-cols-3">
-          <label class="space-y-1.5 text-xs text-zinc-400">
-            <span class="flex items-center gap-1.5"><i class="ri-money-dollar-circle-line text-zinc-500"></i>Max Budget</span>
-            <input id="budget-input" name="budget" type="number" min="0" placeholder="No limit"
-              class="h-11 w-full rounded-xl border border-white/15 bg-black/35 px-4 text-sm text-white placeholder:text-zinc-500 transition">
-          </label>
-          <label class="space-y-1.5 text-xs text-zinc-400">
-            <span class="flex items-center gap-1.5"><i class="ri-time-line text-zinc-500"></i>Days Offline</span>
-            <input name="days" type="number" min="0" placeholder="Any" value="0"
-              class="h-11 w-full rounded-xl border border-white/15 bg-black/35 px-4 text-sm text-white placeholder:text-zinc-500 transition">
-          </label>
-          <label class="space-y-1.5 text-xs text-zinc-400">
-            <span class="flex items-center gap-1.5"><i class="ri-t-shirt-line text-zinc-500"></i>Minimum Skins</span>
-            <input name="skins" type="number" min="0" placeholder="Any" value="0"
-              class="h-11 w-full rounded-xl border border-white/15 bg-black/35 px-4 text-sm text-white placeholder:text-zinc-500 transition">
-          </label>
-        </div>
+      <div id="search-results-wrapper" class="new-card rounded-2xl p-3 sm:p-4">
+        <div id="search-results" class="grid gap-3 md:grid-cols-2 xl:grid-cols-3"></div>
       </div>
-    </form>
-
-    <!-- Results -->
-    <div id="search-results-wrapper">
-      <div id="search-results" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3"></div>
-    </div>
+    </main>
   </div>
-</section>
 
-<!-- Skins Preview Modal -->
-<div id="skins-modal" class="skins-modal">
-  <div class="skins-modal-content">
-    <div class="skins-modal-header">
-      <h2>Account Preview</h2>
-      <button class="modal-close-btn" onclick="closeSkinsModal()">✕</button>
-    </div>
-    <div id="skins-grid" class="skins-grid"></div>
-    <div id="skins-loader" class="skins-loader">
-      <div class="loader-spinner"></div>
-      <div class="loader-text">Loading Preview...</div>
-      <div class="loader-progress"><span id="skins-loaded">0</span> / <span id="skins-total">0</span></div>
-      <div class="loader-count">Loading cosmetics in optimized batches</div>
+  <div id="skins-modal" class="skins-modal">
+    <div class="skins-modal-content">
+      <div class="skins-modal-header">
+        <h2>Account Preview</h2>
+        <button class="modal-close-btn" onclick="closeSkinsModal()">✕</button>
+      </div>
+      <div id="skins-grid" class="skins-grid"></div>
+      <div id="skins-loader" class="skins-loader">
+        <div class="loader-spinner"></div>
+        <div class="loader-text">Loading Preview...</div>
+        <div class="loader-progress"><span id="skins-loaded">0</span> / <span id="skins-total">0</span></div>
+        <div class="loader-count">Loading cosmetics in optimized batches</div>
+      </div>
     </div>
   </div>
 </div>
-
 {% endblock %}
 
 {% block scripts %}
