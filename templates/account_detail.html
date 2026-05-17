@@ -247,8 +247,14 @@
     if (code === 'price_changed') {
       return 'The account price changed while it was being checked. Please try again.';
     }
+    if (code === 'market_auth_failed') {
+      return 'Marketplace API token is invalid or expired. Please contact support.';
+    }
+    if (code === 'market_balance_required') {
+      return 'Marketplace balance is not configured correctly. Please contact support.';
+    }
     if (code === 'confirm_buy_failed') {
-      return 'Purchase failed. Please try again.';
+      return fallbackMessage || 'Purchase failed. Please try again.';
     }
     return fallbackMessage || 'Purchase failed. Please try again.';
   }

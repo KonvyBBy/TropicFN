@@ -1142,8 +1142,26 @@ def confirm_buy_account(item_id: int, price: float):
                     409,
                 )
 
+        if resp.status_code == 401:
+            raise PurchaseFlowError(
+                "market_auth_failed",
+                "Marketplace API token is invalid or expired.",
+                502,
+            )
+
+        if resp.status_code == 422 and "balance" in error_text:
+            raise PurchaseFlowError(
+                "market_balance_required",
+                "Marketplace balance is not configured correctly. Please contact support.",
+                400,
+            )
+
         if not resp.ok:
-            raise RuntimeError(f"Fast-buy failed ({resp.status_code}): {error_text or resp.text[:300]}")
+            raise PurchaseFlowError(
+                "confirm_buy_failed",
+                f"Fast-buy failed ({resp.status_code}): {error_text or resp.text[:300]}",
+                400,
+            )
 
         return data
 
@@ -4053,7 +4071,7 @@ def api_fortnite_buy():
         return jsonify({"error": e.code, "message": e.message}), e.status_code
     except Exception as e:
         app.logger.error("confirm_buy_account failed for item %s: %s", item_id, e)
-        return jsonify({"error": "confirm_buy_failed", "message": "Purchase failed"}), 500
+        return jsonify({"error": "confirm_buy_failed", "message": str(e) or "Purchase failed"}), 500
 
     # STEP 2: optional, try to fetch latest order
     try:
