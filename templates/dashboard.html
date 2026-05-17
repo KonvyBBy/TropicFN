@@ -4,77 +4,101 @@
 {% block extra_styles %}
 <style>
   :root {
-    --market-preview-grid-separator: rgba(0, 255, 135, 0.55);
-    /* Header + paddings reserved so filters keep a viewport-bound scroll area. */
-    --filters-offset: 260px;
+    --filters-offset: 240px;
   }
   .project-shell { background: transparent; }
-  .bg-grid-pattern {
-    background-image:
-      linear-gradient(rgba(0,255,135,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,255,135,0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
-  }
-  .project-card { background: rgba(13,17,40,.78); border: 1px solid rgba(0,255,135,.14); box-shadow: 0 10px 34px rgba(0,0,0,.35); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
-  .project-input { background: rgba(7,10,25,.62); border: 1px solid rgba(30,37,64,.95); color: #eaeef8; }
-  .project-input::placeholder { color: #556080; }
+  .project-card { background: #141414; border: 1px solid rgba(255,255,255,0.07); }
+  .project-input { background: #1e1e1e; border: 1px solid rgba(255,255,255,0.1); color: #eaeef8; }
+  .project-input::placeholder { color: #555; }
   .project-input:focus { border-color: rgba(0,255,135,.5) !important; }
   .project-pill { background: rgba(0,255,135,0.12); border: 1px solid rgba(0,255,135,0.24); color: #8affcc; }
-  .project-btn { background: rgba(255,255,255,.03); border: 1px solid rgba(30,37,64,.95); color: #a8b2d4; }
-  .project-btn:hover { color: #eaeef8; border-color: rgba(0,255,135,.35); }
-  .project-btn-primary { background: linear-gradient(135deg,#00ff87,#00d26a); color: #041208; }
-  .project-sign-btn {
-    border: 1px solid rgba(0,255,135,0.45);
-    background: rgba(0,255,135,0.14);
-    color: #d5ffeb;
-    box-shadow: inset 0 0 20px rgba(0,255,135,0.12);
-    animation: sign-btn-appear .45s ease-out both;
-  }
-  .project-sign-btn:hover { border-color: rgba(0,255,135,0.75); background: rgba(0,255,135,0.2); }
-  @keyframes sign-btn-appear { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-  .project-muted { color: #a8b2d4; }
+  .project-btn { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,0.1); color: #888; }
+  .project-btn:hover { color: #eaeef8; border-color: rgba(255,255,255,.2); }
+  .project-btn-primary { background: #00ff87; color: #041208; font-weight: 700; border: none; }
+  .project-btn-primary:hover { background: #00d26a; }
+  .project-muted { color: #666; }
   .filters-scroll { max-height: calc(100vh - var(--filters-offset)); overflow-y: auto; }
-  .filter-section { border: 1px solid rgba(30,37,64,.95); border-radius: .75rem; background: rgba(19,24,49,.45); }
+  .filter-section { border: 1px solid rgba(255,255,255,0.07); border-radius: .65rem; background: #161616; }
   .filter-head {
     width: 100%; display: flex; justify-content: space-between; align-items: center;
-    padding: .65rem .75rem; font-size: .675rem; text-transform: uppercase; letter-spacing: .12em; font-weight: 700; color: #c3cae2;
+    padding: .6rem .75rem; font-size: .65rem; text-transform: uppercase; letter-spacing: .12em; font-weight: 700; color: #aaa;
   }
-  .filter-body { padding: .75rem; border-top: 1px solid rgba(255,255,255,.08); }
+  .filter-body { padding: .65rem .75rem; border-top: 1px solid rgba(255,255,255,.06); }
   .filter-section[data-open="false"] .filter-body { display: none; }
-  .filter-section[data-open="false"] .toggle-icon::before { content: '+'; }
-  .filter-section[data-open="true"] .toggle-icon::before { content: '−'; }
-  .toolbar-tab.active { background: #00ff87; color: #041208; }
+  .filter-section[data-open="false"] .toggle-icon::before { content: '›'; font-size: .9rem; }
+  .filter-section[data-open="true"] .toggle-icon::before { content: '⌄'; font-size: .9rem; }
+
+  /* Sort tabs */
+  .toolbar-tab {
+    padding: 5px 14px; border-radius: 6px; font-size: 11px; font-weight: 600; letter-spacing: .02em;
+    cursor: pointer; transition: all .15s;
+    background: transparent; border: 1px solid rgba(255,255,255,0.1); color: #888;
+  }
+  .toolbar-tab:hover { color: #ddd; border-color: rgba(255,255,255,.2); }
+  .toolbar-tab.active { background: #00ff87; color: #000; border-color: #00ff87; }
+
+  /* Button toggle groups (No matter / Yes / No) */
+  .sx-btn-group { display: flex; gap: 4px; }
+  .sx-toggle-btn {
+    flex: 1; padding: 5px 6px; font-size: 10px; font-weight: 600; border-radius: 5px;
+    border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,.04);
+    color: #666; cursor: pointer; transition: all .15s; text-align: center;
+  }
+  .sx-toggle-btn.active { background: #00ff87; border-color: #00ff87; color: #000; }
+  .sx-toggle-btn:not(.active):hover { background: rgba(255,255,255,.08); color: #ddd; }
+
+  /* Account cards - Skinex style */
   .market-account-card {
-    overflow: hidden; border-radius: 14px; border: 1px solid rgba(255,255,255,0.12);
-    background: linear-gradient(180deg, rgba(12,17,38,0.94), rgba(9,13,28,0.96));
+    border-radius: 8px; overflow: hidden; cursor: pointer;
+    background: #1a1a1a; border: 1px solid rgba(255,255,255,0.07);
+    transition: transform .15s ease, box-shadow .15s ease;
     display: flex; flex-direction: column;
   }
-  .market-card-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 10px 0; }
-  .market-chip-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-  .market-chip { display: inline-flex; align-items: center; border-radius: 999px; font-size: 10px; font-weight: 700; letter-spacing: .03em; padding: 2px 8px; }
-  .market-chip--warranty { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.32); color: #34d399; }
-  .market-price-badge {
-    font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: .98rem; color: #34d399;
-    border: 1px solid rgba(16,185,129,0.35); background: rgba(16,185,129,0.1);
-    padding: 3px 9px; border-radius: 9px; line-height: 1; white-space: nowrap;
+  .market-account-card:hover { transform: translateY(-3px); box-shadow: 0 8px 28px rgba(0,0,0,0.55); border-color: rgba(255,255,255,0.14); }
+  .market-account-card:focus-visible { outline: 2px solid #00ff87; outline-offset: 2px; }
+
+  /* Card image section */
+  .sx-card-imgs { position: relative; background: #111; }
+  .sx-imgs-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(2, 1fr);
+    gap: 1px; background: #0d0d0d;
   }
-  .market-card-main { padding: 12px 12px 10px; }
-  .market-card-title { font-size: .92rem; font-weight: 700; color: #f5f7ff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .market-stat-line { margin-top: 10px; }
-  .market-stat-main { font-family: 'Space Grotesk', sans-serif; color: #e7ebff; font-size: 1.6rem; font-weight: 700; line-height: 1.05; }
-  .market-icon-row { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 10px; font-size: .74rem; color: #9aa4c7; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 8px; }
-  .market-icon-item { display: inline-flex; align-items: center; gap: 4px; }
-  .market-icon-item i { color: #38bdf8; font-size: .8rem; }
-  .market-open-hint { margin-top: 10px; font-size: .69rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #6ee7b7; opacity: .85; }
-  .market-account-card[role="button"] { cursor: pointer; transition: transform .16s ease, border-color .16s ease; }
-  .market-account-card[role="button"]:hover { transform: translateY(-2px); border-color: rgba(0,255,135,.35); }
-  .market-account-card[role="button"]:focus-visible { outline: 2px solid rgba(0,255,135,.6); outline-offset: 2px; }
+  .market-preview-tile {
+    width: 100%; aspect-ratio: 1; background: #1e1e1e;
+    overflow: hidden; display: flex; align-items: center; justify-content: center;
+  }
+  .market-preview-tile img { width: 100%; height: 100%; object-fit: cover; }
+  .sx-price-badge {
+    position: absolute; top: 7px; right: 7px;
+    background: rgba(0,0,0,0.82); color: #00ff87;
+    font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 5px;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+  .sx-img-bar { height: 3px; background: linear-gradient(90deg,#ff6b35 0%,#a855f7 50%,#3b82f6 100%); }
+
+  /* Card body */
+  .sx-card-body { padding: 9px 11px 11px; }
+  .sx-card-title {
+    font-size: .78rem; font-weight: 600; color: #f0f0f0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 7px;
+  }
+  .sx-card-meta { display: flex; align-items: center; gap: 9px; font-size: .72rem; color: #777; margin-bottom: 7px; }
+  .sx-meta-item { display: inline-flex; align-items: center; gap: 3px; }
+  .sx-meta-item i { font-size: .8rem; color: #555; }
+  .sx-card-platforms { display: flex; gap: 5px; }
+  .sx-plat {
+    font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 4px;
+    letter-spacing: .04em; display: inline-flex; align-items: center; gap: 3px;
+  }
+  .sx-plat-xb { background: rgba(255,255,255,.08); color: #999; }
+  .sx-plat-ps { background: rgba(220,38,38,.15); color: #f87171; }
+
   .mobile-filters-wrap {
-    position: fixed; top: 0; left: 0; z-index: 60; width: 18rem; height: 100%;
-    transform: translateX(-100%); transition: transform .25s ease;
+    position: fixed; top: 0; left: 0; z-index: 60; width: 17rem; height: 100%;
+    transform: translateX(-100%); transition: transform .25s ease; background: #141414;
   }
   .mobile-filters-wrap.open { transform: translateX(0); }
-  #mobile-filter-overlay { position: fixed; inset: 0; z-index: 55; display: none; background: rgba(0,0,0,.7); }
+  #mobile-filter-overlay { position: fixed; inset: 0; z-index: 55; display: none; background: rgba(0,0,0,.75); }
   #mobile-filter-overlay.open { display: block; }
   @media (max-width: 1023px) { .desktop-filters { display: none; } }
   @media (min-width: 1024px) { .mobile-filter-toggle, .mobile-filters-wrap, #mobile-filter-overlay { display: none !important; } }
@@ -82,194 +106,167 @@
 {% endblock %}
 
 {% block content %}
-<div class="project-shell bg-grid-pattern" style="color:#eaeef8;">
-  <header class="project-card mb-4 rounded-2xl px-3 py-3 sm:px-4">
-    <div class="flex items-center gap-2 sm:gap-3">
-      <button id="mobile-filter-toggle" class="mobile-filter-toggle project-btn inline-flex h-10 w-10 items-center justify-center rounded-xl text-sm lg:hidden">☰</button>
-
-      <div class="relative min-w-0 flex-1">
-        <input id="global-search" type="text" placeholder="Search accounts by skins, V-Bucks, level..." class="project-input h-10 w-full rounded-xl pl-10 pr-3 text-sm font-medium">
-        <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm project-muted">🔎</span>
-      </div>
-
-      <div class="hidden md:flex items-center gap-1">
-        <a href="/dashboard" class="project-btn rounded-lg px-3 py-1.5 text-xs font-semibold no-underline">Buy Account</a>
-        <a href="/my-accounts" class="project-btn rounded-lg px-3 py-1.5 text-xs font-semibold no-underline">My Accounts</a>
-      </div>
-
-      <div class="relative" id="currency-wrap">
-        <button id="currency-btn" class="project-btn flex h-10 items-center gap-1.5 rounded-xl px-2.5 text-xs font-semibold">
-          <span>💱</span><span id="currency-value" class="hidden sm:inline">USD</span><span>▾</span>
-        </button>
-        <div id="currency-menu" class="absolute right-0 top-full z-50 mt-1.5 hidden w-24 overflow-hidden rounded-xl border" style="background:#0d1128;border-color:rgba(255,255,255,.12);">
-          <button data-currency="EUR" class="currency-option block w-full px-3 py-2 text-left text-xs hover:bg-white/5">EUR</button>
-          <button data-currency="USD" class="currency-option block w-full px-3 py-2 text-left text-xs hover:bg-white/5">USD</button>
-          <button data-currency="GBP" class="currency-option block w-full px-3 py-2 text-left text-xs hover:bg-white/5">GBP</button>
-          <button data-currency="PLN" class="currency-option block w-full px-3 py-2 text-left text-xs hover:bg-white/5">PLN</button>
-        </div>
-      </div>
-
-      {% if not logged_in %}
-      <button type="button" id="sign-in-trigger" aria-label="Sign in" class="project-sign-btn rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-wider">Sign In</button>
-      {% endif %}
-    </div>
-  </header>
+<div class="project-shell" style="color:#eaeef8;">
 
   <div id="mobile-filter-overlay"></div>
-  <aside id="mobile-filters-wrap" class="mobile-filters-wrap project-card p-3">
+  <aside id="mobile-filters-wrap" class="mobile-filters-wrap p-3">
     <div class="mb-2 flex items-center justify-between">
-      <h2 class="text-xs font-bold uppercase tracking-[.16em]" style="color:#34d399;">Filters</h2>
+      <h2 class="text-xs font-bold uppercase tracking-[.16em]" style="color:#00ff87;">Filters</h2>
       <button id="mobile-filter-close" class="project-btn h-8 w-8 rounded-lg text-xs">✕</button>
     </div>
     <div id="mobile-filters-slot"></div>
   </aside>
 
-  <div class="flex flex-col lg:flex-row">
-    <aside class="desktop-filters w-full shrink-0 lg:w-72 xl:w-80">
-      <div class="project-card m-3 rounded-2xl">
-        <div class="flex items-center justify-between border-b px-4 py-3" style="border-color:rgba(255,255,255,.1);">
-          <h2 class="text-xs font-bold uppercase tracking-[0.16em]" style="color:#34d399;">Filters</h2>
-          <div class="flex items-center gap-1.5">
-            <button type="reset" form="search-form" class="project-btn rounded-lg px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide">Reset</button>
-          </div>
+  <div class="flex flex-col lg:flex-row gap-3">
+    <aside class="desktop-filters w-full shrink-0 lg:w-64 xl:w-72">
+      <div class="project-card rounded-xl">
+        <div class="flex items-center justify-between border-b px-4 py-2.5" style="border-color:rgba(255,255,255,.07);">
+          <h2 class="text-xs font-bold uppercase tracking-[0.14em]" style="color:#00ff87;">Filters</h2>
+          <button type="reset" form="search-form" class="project-btn rounded-md px-2 py-1 text-[10px] font-semibold uppercase tracking-wide" style="color:#00ff87;border-color:transparent;background:transparent;">Reset</button>
         </div>
-        <form id="search-form" class="filters-scroll space-y-2.5 p-3">
+        <form id="search-form" class="filters-scroll space-y-2 p-2.5">
           <div class="filter-section" data-open="true">
-            <button type="button" class="filter-head section-toggle">Price <span class="toggle-icon"></span></button>
+            <button type="button" class="filter-head section-toggle">Price <span class="toggle-icon ml-auto"></span></button>
             <div class="filter-body space-y-2">
-              <div class="grid grid-cols-2 gap-2">
-                <input id="price-min" name="pmin" type="number" min="0" placeholder="Price from €" aria-label="Minimum price in euros" class="project-input h-9 rounded-lg px-2 text-xs">
-                <input id="price-max" name="pmax" type="number" min="0" placeholder="up to €" aria-label="Maximum price in euros" class="project-input h-9 rounded-lg px-2 text-xs">
+              <div class="grid grid-cols-2 gap-1.5">
+                <input id="price-min" name="pmin" type="number" min="0" placeholder="Price from €" aria-label="Min price" class="project-input h-8 rounded-md px-2 text-xs">
+                <input id="price-max" name="pmax" type="number" min="0" placeholder="up to €" aria-label="Max price" class="project-input h-8 rounded-md px-2 text-xs">
               </div>
             </div>
           </div>
 
           <div class="filter-section" data-open="true">
-            <button type="button" class="filter-head section-toggle">Email <span class="toggle-icon"></span></button>
+            <button type="button" class="filter-head section-toggle">Search <span class="toggle-icon ml-auto"></span></button>
+            <div class="filter-body">
+              <input id="title-search" name="title_search" type="text" placeholder="Search by title" class="project-input h-8 w-full rounded-md px-2 text-xs">
+            </div>
+          </div>
+
+          <div class="filter-section" data-open="true">
+            <button type="button" class="filter-head section-toggle">Email <span class="toggle-icon ml-auto"></span></button>
             <div class="filter-body space-y-2">
-              <label class="mb-1 block text-[10px] font-bold uppercase tracking-[.12em] project-muted">Access to email</label>
-              <select name="email_login_data" class="project-input h-9 w-full rounded-lg px-2 text-xs">
+              <div class="text-[9px] font-bold uppercase tracking-[.12em] mb-1" style="color:#666;">Access to email</div>
+              <div class="sx-btn-group">
+                <button type="button" class="sx-toggle-btn active" data-field="email_login_data" data-value="">No matter</button>
+                <button type="button" class="sx-toggle-btn" data-field="email_login_data" data-value="yes">Yes</button>
+                <button type="button" class="sx-toggle-btn" data-field="email_login_data" data-value="no">No</button>
+              </div>
+              <input type="hidden" name="email_login_data" value="" id="email-login-hidden">
+              <div class="text-[9px] font-bold uppercase tracking-[.12em] mt-2 mb-1" style="color:#666;">Changeable email</div>
+              <div class="sx-btn-group">
+                <button type="button" class="sx-toggle-btn active" data-field="change_email" data-value="">No matter</button>
+                <button type="button" class="sx-toggle-btn" data-field="change_email" data-value="yes">Yes</button>
+                <button type="button" class="sx-toggle-btn" data-field="change_email" data-value="no">No</button>
+              </div>
+              <input type="hidden" name="change_email" value="" id="change-email-hidden">
+            </div>
+          </div>
+
+          <div class="filter-section" data-open="true">
+            <button type="button" class="filter-head section-toggle">Select Cosmetics <span class="toggle-icon ml-auto"></span></button>
+            <div class="filter-body space-y-2">
+              <div class="text-[9px] font-bold uppercase tracking-[.12em] mb-1" style="color:#666;">Outfits</div>
+              <div class="autocomplete-wrapper" style="position:relative;">
+                <input name="skin[]" type="text" data-cosmetic-type="outfit" placeholder="Search outfits..." class="cosmetic-search-input project-input h-8 w-full rounded-md px-2.5 text-xs" autocomplete="off">
+                <div class="autocomplete-dropdown"></div>
+              </div>
+              <div class="text-[9px] font-bold uppercase tracking-[.12em] mb-1" style="color:#666;">Pickaxes</div>
+              <div class="autocomplete-wrapper" style="position:relative;">
+                <input name="pickaxe[]" type="text" data-cosmetic-type="pickaxe" placeholder="Search pickaxes..." class="cosmetic-search-input project-input h-8 w-full rounded-md px-2.5 text-xs" autocomplete="off">
+                <div class="autocomplete-dropdown"></div>
+              </div>
+              <div class="text-[9px] font-bold uppercase tracking-[.12em] mb-1" style="color:#666;">Emotes</div>
+              <div class="autocomplete-wrapper" style="position:relative;">
+                <input name="dance[]" type="text" data-cosmetic-type="emote" placeholder="Search emotes..." class="cosmetic-search-input project-input h-8 w-full rounded-md px-2.5 text-xs" autocomplete="off">
+                <div class="autocomplete-dropdown"></div>
+              </div>
+              <div class="text-[9px] font-bold uppercase tracking-[.12em] mb-1" style="color:#666;">Gliders</div>
+              <div class="autocomplete-wrapper" style="position:relative;">
+                <input name="glider[]" type="text" data-cosmetic-type="glider" placeholder="Search gliders..." class="cosmetic-search-input project-input h-8 w-full rounded-md px-2.5 text-xs" autocomplete="off">
+                <div class="autocomplete-dropdown"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="filter-section" data-open="true">
+            <button type="button" class="filter-head section-toggle">Outfits & Cosmetics <span class="toggle-icon ml-auto"></span></button>
+            <div class="filter-body space-y-1.5">
+              <div class="grid grid-cols-2 gap-1.5">
+                <input name="smin" type="number" min="0" placeholder="Min outfits" class="project-input h-8 rounded-md px-2 text-xs">
+                <input name="smax" type="number" min="0" placeholder="up to" class="project-input h-8 rounded-md px-2 text-xs">
+              </div>
+              <div class="grid grid-cols-2 gap-1.5">
+                <input name="pickaxe_min" type="number" min="0" placeholder="Pickaxes, from" class="project-input h-8 rounded-md px-2 text-xs">
+                <input name="pickaxe_max" type="number" min="0" placeholder="up to" class="project-input h-8 rounded-md px-2 text-xs">
+              </div>
+              <div class="grid grid-cols-2 gap-1.5">
+                <input name="dmin" type="number" min="0" placeholder="Dances, from" class="project-input h-8 rounded-md px-2 text-xs">
+                <input name="dmax" type="number" min="0" placeholder="up to" class="project-input h-8 rounded-md px-2 text-xs">
+              </div>
+              <div class="grid grid-cols-2 gap-1.5">
+                <input name="gmin" type="number" min="0" placeholder="Gliders, from" class="project-input h-8 rounded-md px-2 text-xs">
+                <input name="gmax" type="number" min="0" placeholder="up to" class="project-input h-8 rounded-md px-2 text-xs">
+              </div>
+            </div>
+          </div>
+
+          <div class="filter-section" data-open="true">
+            <button type="button" class="filter-head section-toggle">V-Bucks <span class="toggle-icon ml-auto"></span></button>
+            <div class="filter-body space-y-1.5">
+              <div class="grid grid-cols-2 gap-1.5">
+                <input name="vbmin" type="number" min="0" placeholder="Min V-Bucks" class="project-input h-8 rounded-md px-2 text-xs">
+                <input name="vbmax" type="number" min="0" placeholder="up to" class="project-input h-8 rounded-md px-2 text-xs">
+              </div>
+            </div>
+          </div>
+
+          <div class="filter-section" data-open="true">
+            <button type="button" class="filter-head section-toggle">Account Stats <span class="toggle-icon ml-auto"></span></button>
+            <div class="filter-body space-y-1.5">
+              <div class="grid grid-cols-2 gap-1.5">
+                <input name="lmin" type="number" min="0" placeholder="Level, from" class="project-input h-8 rounded-md px-2 text-xs">
+                <input name="lmax" type="number" min="0" placeholder="up to" class="project-input h-8 rounded-md px-2 text-xs">
+              </div>
+              <div class="grid grid-cols-2 gap-1.5">
+                <input name="paid_items_min" type="number" min="0" placeholder="Paid Items, from" class="project-input h-8 rounded-md px-2 text-xs">
+                <input name="paid_items_max" type="number" min="0" placeholder="up to" class="project-input h-8 rounded-md px-2 text-xs">
+              </div>
+              <div class="grid grid-cols-2 gap-1.5">
+                <input name="refund_credits_min" type="number" min="0" placeholder="Refund credits, from" class="project-input h-8 rounded-md px-2 text-xs">
+                <input name="refund_credits_max" type="number" min="0" placeholder="up to" class="project-input h-8 rounded-md px-2 text-xs">
+              </div>
+              <div class="grid grid-cols-2 gap-1.5">
+                <input name="daybreak" type="number" min="0" placeholder="Last activity, from" class="project-input h-8 rounded-md px-2 text-xs">
+                <input name="daybreak_max" type="number" min="0" placeholder="up to" class="project-input h-8 rounded-md px-2 text-xs">
+              </div>
+            </div>
+          </div>
+
+          <div class="filter-section" data-open="true">
+            <button type="button" class="filter-head section-toggle">Battle Pass <span class="toggle-icon ml-auto"></span></button>
+            <div class="filter-body space-y-1.5">
+              <select name="bp" class="project-input h-8 w-full rounded-md px-2 text-xs">
                 <option value="">No matter</option>
                 <option value="yes">Yes</option>
                 <option value="no">No</option>
               </select>
-              <label class="mb-1 block text-[10px] font-bold uppercase tracking-[.12em] project-muted">Changeable email</label>
-              <select name="change_email" class="project-input h-9 w-full rounded-lg px-2 text-xs">
-                <option value="">No matter</option>
-                <option value="yes">Yes</option>
-                <option value="no">No</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="filter-section" data-open="true">
-            <button type="button" class="filter-head section-toggle">Select Cosmetics <span class="toggle-icon"></span></button>
-            <div class="filter-body space-y-2">
-              <label class="mb-1 block text-[10px] font-bold uppercase tracking-[.12em] project-muted">Select outfits</label>
-              <div class="autocomplete-wrapper" style="position:relative;">
-                <input name="skin[]" type="text" data-cosmetic-type="outfit" placeholder="Search select outfits..." class="cosmetic-search-input project-input h-9 w-full rounded-lg px-3 text-xs" autocomplete="off">
-                <div class="autocomplete-dropdown"></div>
-              </div>
-              <label class="mb-1 block text-[10px] font-bold uppercase tracking-[.12em] project-muted">Select pickaxes</label>
-              <div class="autocomplete-wrapper" style="position:relative;">
-                <input name="pickaxe[]" type="text" data-cosmetic-type="pickaxe" placeholder="Search select pickaxes..." class="cosmetic-search-input project-input h-9 w-full rounded-lg px-3 text-xs" autocomplete="off">
-                <div class="autocomplete-dropdown"></div>
-              </div>
-              <label class="mb-1 block text-[10px] font-bold uppercase tracking-[.12em] project-muted">Select emotes</label>
-              <div class="autocomplete-wrapper" style="position:relative;">
-                <input name="dance[]" type="text" data-cosmetic-type="emote" placeholder="Search select emotes..." class="cosmetic-search-input project-input h-9 w-full rounded-lg px-3 text-xs" autocomplete="off">
-                <div class="autocomplete-dropdown"></div>
-              </div>
-              <label class="mb-1 block text-[10px] font-bold uppercase tracking-[.12em] project-muted">Select gliders</label>
-              <div class="autocomplete-wrapper" style="position:relative;">
-                <input name="glider[]" type="text" data-cosmetic-type="glider" placeholder="Search select gliders..." class="cosmetic-search-input project-input h-9 w-full rounded-lg px-3 text-xs" autocomplete="off">
-                <div class="autocomplete-dropdown"></div>
+              <div class="grid grid-cols-2 gap-1.5">
+                <input name="bp_lmin" type="number" min="0" placeholder="from" class="project-input h-8 rounded-md px-2 text-xs">
+                <input name="bp_lmax" type="number" min="0" placeholder="up to" class="project-input h-8 rounded-md px-2 text-xs">
               </div>
             </div>
           </div>
 
-          <div class="filter-section" data-open="true">
-            <button type="button" class="filter-head section-toggle">Outfits & Cosmetics <span class="toggle-icon"></span></button>
-            <div class="filter-body space-y-2">
-              <div class="grid grid-cols-2 gap-2">
-                <input name="smin" type="number" min="0" placeholder="Min outfits" class="project-input h-9 rounded-lg px-2 text-xs">
-                <input name="smax" type="number" min="0" placeholder="up to" class="project-input h-9 rounded-lg px-2 text-xs">
-              </div>
-              <div class="grid grid-cols-2 gap-2">
-                <input name="pickaxe_min" type="number" min="0" placeholder="Pickaxes, from" class="project-input h-9 rounded-lg px-2 text-xs">
-                <input name="pickaxe_max" type="number" min="0" placeholder="up to" class="project-input h-9 rounded-lg px-2 text-xs">
-              </div>
-              <div class="grid grid-cols-2 gap-2">
-                <input name="dmin" type="number" min="0" placeholder="Dances, from" class="project-input h-9 rounded-lg px-2 text-xs">
-                <input name="dmax" type="number" min="0" placeholder="up to" class="project-input h-9 rounded-lg px-2 text-xs">
-              </div>
-              <div class="grid grid-cols-2 gap-2">
-                <input name="gmin" type="number" min="0" placeholder="Gliders, from" class="project-input h-9 rounded-lg px-2 text-xs">
-                <input name="gmax" type="number" min="0" placeholder="up to" class="project-input h-9 rounded-lg px-2 text-xs">
-              </div>
-            </div>
-          </div>
-
-          <div class="filter-section" data-open="true">
-            <button type="button" class="filter-head section-toggle">V-Bucks <span class="toggle-icon"></span></button>
-            <div class="filter-body space-y-2">
-              <div class="grid grid-cols-2 gap-2">
-                <input name="vbmin" type="number" min="0" placeholder="Min V-Bucks" class="project-input h-9 rounded-lg px-2 text-xs">
-                <input name="vbmax" type="number" min="0" placeholder="up to" class="project-input h-9 rounded-lg px-2 text-xs">
-              </div>
-            </div>
-          </div>
-
-          <div class="filter-section" data-open="true">
-            <button type="button" class="filter-head section-toggle">Account Stats <span class="toggle-icon"></span></button>
-            <div class="filter-body space-y-2">
-              <div class="grid grid-cols-2 gap-2">
-                <input name="lmin" type="number" min="0" placeholder="Level, from" class="project-input h-9 rounded-lg px-2 text-xs">
-                <input name="lmax" type="number" min="0" placeholder="up to" class="project-input h-9 rounded-lg px-2 text-xs">
-              </div>
-              <div class="grid grid-cols-2 gap-2">
-                <input name="paid_items_min" type="number" min="0" placeholder="Paid Items, from" class="project-input h-9 rounded-lg px-2 text-xs">
-                <input name="paid_items_max" type="number" min="0" placeholder="up to" class="project-input h-9 rounded-lg px-2 text-xs">
-              </div>
-              <div class="grid grid-cols-2 gap-2">
-                <input name="refund_credits_min" type="number" min="0" placeholder="Refund credits, from" class="project-input h-9 rounded-lg px-2 text-xs">
-                <input name="refund_credits_max" type="number" min="0" placeholder="up to" class="project-input h-9 rounded-lg px-2 text-xs">
-              </div>
-              <div class="grid grid-cols-2 gap-2">
-                <input name="daybreak" type="number" min="0" placeholder="Last activity (days), from" class="project-input h-9 rounded-lg px-2 text-xs">
-                <input name="daybreak_max" type="number" min="0" placeholder="up to" class="project-input h-9 rounded-lg px-2 text-xs">
-              </div>
-            </div>
-          </div>
-
-          <div class="filter-section" data-open="true">
-            <button type="button" class="filter-head section-toggle">Battle Pass <span class="toggle-icon"></span></button>
-            <div class="filter-body space-y-2">
-              <label class="mb-1 block text-[10px] font-bold uppercase tracking-[.12em] project-muted">Battle Pass</label>
-              <select name="bp" class="project-input h-9 w-full rounded-lg px-2 text-xs">
-                <option value="">No matter</option>
-                <option value="yes">Yes</option>
-                <option value="no">No</option>
-              </select>
-              <div class="grid grid-cols-2 gap-2">
-                <input name="bp_lmin" type="number" min="0" placeholder="from" class="project-input h-9 rounded-lg px-2 text-xs">
-                <input name="bp_lmax" type="number" min="0" placeholder="up to" class="project-input h-9 rounded-lg px-2 text-xs">
-              </div>
-            </div>
-          </div>
-
-          <div class="filter-section" data-open="true">
-            <button type="button" class="filter-head section-toggle">Other <span class="toggle-icon"></span></button>
-            <div class="filter-body space-y-2">
-              <label class="mb-1 block text-[10px] font-bold uppercase tracking-[.12em] project-muted">STW Edition</label>
-              <select name="stw_mode" class="project-input h-9 w-full rounded-lg px-2 text-xs">
-                <option value="">No matter</option>
+          <div class="filter-section" data-open="false">
+            <button type="button" class="filter-head section-toggle">Other <span class="toggle-icon ml-auto"></span></button>
+            <div class="filter-body space-y-1.5">
+              <select name="stw_mode" class="project-input h-8 w-full rounded-md px-2 text-xs">
+                <option value="">STW — No matter</option>
                 <option value="include">Has STW</option>
-                <option value="exclude">Exclude</option>
+                <option value="exclude">Exclude STW</option>
               </select>
-              <label class="mb-1 block text-[10px] font-bold uppercase tracking-[.12em] project-muted">Country</label>
-              <select name="country[]" class="project-input h-9 w-full rounded-lg px-2 text-xs">
-                <option value="">Any</option>
+              <select name="country[]" class="project-input h-8 w-full rounded-md px-2 text-xs">
+                <option value="">Any Country</option>
                 <option value="US">United States</option>
                 <option value="GB">United Kingdom</option>
                 <option value="DE">Germany</option>
@@ -279,33 +276,31 @@
             </div>
           </div>
 
-          <button type="submit" class="project-btn-primary w-full rounded-xl px-4 py-2.5 text-xs font-bold uppercase tracking-[0.12em]">Search Accounts</button>
+          <button type="submit" class="project-btn-primary w-full rounded-lg px-4 py-2.5 text-xs font-bold uppercase tracking-[0.1em] cursor-pointer">Search Accounts</button>
         </form>
       </div>
     </aside>
 
-    <main class="min-w-0 flex-1 p-3 sm:p-4">
+    <main class="min-w-0 flex-1">
       <div class="mb-3 flex items-center justify-between gap-3 flex-wrap">
-        <div class="flex items-center gap-1.5 rounded-xl border p-1" style="background:rgba(24,24,27,.65);border-color:rgba(255,255,255,.1);">
-          <button class="toolbar-tab active rounded-lg px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider" data-sort="default">Default</button>
-          <button class="toolbar-tab rounded-lg px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider project-muted" data-sort="cheap">Cheap first</button>
-          <button class="toolbar-tab rounded-lg px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider project-muted" data-sort="expensive">Expensive first</button>
-          <button class="toolbar-tab rounded-lg px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider project-muted" data-sort="newest">Newest</button>
+        <div class="flex items-center gap-1.5">
+          <button class="toolbar-tab active" data-sort="default">Default</button>
+          <button class="toolbar-tab" data-sort="cheap">Cheap first</button>
+          <button class="toolbar-tab" data-sort="expensive">Expensive first</button>
+          <button class="toolbar-tab" data-sort="newest">Newest</button>
+          <button class="toolbar-tab" data-sort="oldest">Oldest</button>
         </div>
 
         <div class="flex items-center gap-2">
-          <span class="project-pill rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[.14em]">Live Marketplace</span>
           <span class="project-btn rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[.14em]"><span id="result-count">0</span> accounts</span>
         </div>
       </div>
 
-      <div class="project-card rounded-2xl p-3 sm:p-4">
-        <div id="search-results" class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          <div class="col-span-full py-16 text-center">
-            <div class="mb-2 text-2xl">🎮</div>
-            <p class="text-sm font-semibold text-white">Use filters to find accounts</p>
-            <p class="mt-1 text-xs project-muted">Your results will appear here</p>
-          </div>
+      <div id="search-results" class="grid gap-2 grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+        <div class="col-span-full py-16 text-center">
+          <div class="mb-2 text-2xl">🎮</div>
+          <p class="text-sm font-semibold text-white">Use filters to find accounts</p>
+          <p class="mt-1 text-xs" style="color:#555;">Your results will appear here</p>
         </div>
       </div>
     </main>
@@ -336,24 +331,7 @@
 <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
 <script>
   (function () {
-    const currencyBtn = document.getElementById('currency-btn');
-    const currencyMenu = document.getElementById('currency-menu');
-    const currencyValue = document.getElementById('currency-value');
-    currencyBtn?.addEventListener('click', (e) => {
-      e.preventDefault();
-      currencyMenu?.classList.toggle('hidden');
-    });
-    document.querySelectorAll('.currency-option').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const value = btn.getAttribute('data-currency') || 'USD';
-        if (currencyValue) currencyValue.textContent = value;
-        currencyMenu?.classList.add('hidden');
-      });
-    });
-    document.addEventListener('click', (e) => {
-      if (!document.getElementById('currency-wrap')?.contains(e.target)) currencyMenu?.classList.add('hidden');
-    });
-
+    // Section toggles
     document.querySelectorAll('.section-toggle').forEach(btn => {
       btn.addEventListener('click', () => {
         const wrap = btn.closest('.filter-section');
@@ -362,6 +340,38 @@
       });
     });
 
+    // Button toggle groups (No matter / Yes / No)
+    const hiddenInputs = {
+      'email_login_data': document.getElementById('email-login-hidden'),
+      'change_email': document.getElementById('change-email-hidden'),
+    };
+    document.querySelectorAll('.sx-btn-group').forEach(group => {
+      const btns = group.querySelectorAll('.sx-toggle-btn');
+      btns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          btns.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          const field = btn.dataset.field;
+          if (field && hiddenInputs[field]) hiddenInputs[field].value = btn.dataset.value || '';
+        });
+      });
+    });
+
+    // Reset form: also reset button groups
+    document.getElementById('search-form')?.addEventListener('reset', () => {
+      window.setTimeout(() => {
+        document.querySelectorAll('.sx-btn-group').forEach(group => {
+          const btns = group.querySelectorAll('.sx-toggle-btn');
+          btns.forEach((b, i) => b.classList.toggle('active', i === 0));
+          const field = btns[0]?.dataset.field;
+          if (field && hiddenInputs[field]) hiddenInputs[field].value = '';
+        });
+        document.querySelectorAll('.autocomplete-dropdown').forEach(d => d.classList.remove('show'));
+        document.querySelectorAll('.cosmetic-search-input').forEach(i => i.removeAttribute('data-cosmetic-id'));
+      }, 0);
+    });
+
+    // Mobile filters
     const mobileToggle = document.getElementById('mobile-filter-toggle');
     const mobileClose = document.getElementById('mobile-filter-close');
     const mobileWrap = document.getElementById('mobile-filters-wrap');
@@ -379,24 +389,20 @@
     }
 
     mobileToggle?.addEventListener('click', () => {
-      if (desktopForm && mobileSlot) {
-        mobileSlot.appendChild(desktopForm);
-      }
+      if (desktopForm && mobileSlot) mobileSlot.appendChild(desktopForm);
       mobileWrap?.classList.add('open');
       mobileOverlay?.classList.add('open');
     });
-
     mobileClose?.addEventListener('click', closeMobileFilters);
     mobileOverlay?.addEventListener('click', closeMobileFilters);
-    window.addEventListener('resize', () => {
-      if (window.innerWidth >= 1024) closeMobileFilters();
-    });
+    window.addEventListener('resize', () => { if (window.innerWidth >= 1024) closeMobileFilters(); });
 
+    // Result count observer — count .market-account-card elements
     const searchResults = document.getElementById('search-results');
     const countEl = document.getElementById('result-count');
     const observer = new MutationObserver(() => {
       if (!searchResults || !countEl) return;
-      countEl.textContent = String(searchResults.querySelectorAll('.glass-panel').length);
+      countEl.textContent = String(searchResults.querySelectorAll('.market-account-card').length);
     });
     if (searchResults && countEl) {
       observer.observe(searchResults, { childList: true, subtree: false });

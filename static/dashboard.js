@@ -425,15 +425,14 @@ document.addEventListener("DOMContentLoaded", () => {
     if (currentSort === 'cheap') list.sort((a, b) => (a.user_price || 0) - (b.user_price || 0));
     if (currentSort === 'expensive') list.sort((a, b) => (b.user_price || 0) - (a.user_price || 0));
     if (currentSort === 'newest') list.sort((a, b) => (b.item_id || 0) - (a.item_id || 0));
+    if (currentSort === 'oldest') list.sort((a, b) => (a.item_id || 0) - (b.item_id || 0));
     return list;
   }
 
   function setSort(sort) {
     currentSort = sort;
     sortButtons.forEach(btn => {
-      const active = btn.dataset.sort === sort;
-      btn.classList.toggle('active', active);
-      btn.classList.toggle('project-muted', !active);
+      btn.classList.toggle('active', btn.dataset.sort === sort);
     });
     if (lastSearchAccounts.length) renderAccounts(getSortedAccounts(lastSearchAccounts));
   }
@@ -462,39 +461,37 @@ document.addEventListener("DOMContentLoaded", () => {
 
     accounts.forEach(acc => {
       const card = document.createElement('div');
-      card.className = 'glass-panel market-account-card group';
-
-      const warrantyTag = acc.last_played_days != null && acc.last_played_days >= 11
-        ? `<span class="market-chip market-chip--warranty">✓ Warranty</span>`
-        : '';
+      card.className = 'market-account-card';
 
       const numericPrice = Number(acc.user_price);
       const hasPrice = Number.isFinite(numericPrice);
       const formattedPrice = hasPrice ? numericPrice.toFixed(2) : 'N/A';
-
       const cardTitle = escapeHtml(acc.title || `${acc.skins || 0} Skins | Fortnite Account`);
 
+      // 8 preview image tiles (2 rows × 4 cols)
+      const previews = Array.isArray(acc.preview_cosmetics) ? acc.preview_cosmetics : [];
+      const tiles = Array.from({length: 8}, (_, i) => {
+        const name = previews[i] || '';
+        return `<div class="market-preview-tile"${name ? ` data-cosmetic-name="${escapeHtml(name)}"` : ''}></div>`;
+      }).join('');
+
       card.innerHTML = `
-        <div class="market-card-head">
-          <div class="market-chip-row">
-            ${warrantyTag}
-          </div>
-          <div class="market-price-badge">${formattedPrice} €</div>
+        <div class="sx-card-imgs">
+          <div class="sx-imgs-grid">${tiles}</div>
+          <span class="sx-price-badge">${formattedPrice} €</span>
+          <div class="sx-img-bar"></div>
         </div>
-
-        <div class="market-card-main">
-          <div class="market-card-title">${cardTitle}</div>
-
-          <div class="market-stat-line">
-            <span class="market-stat-main">${acc.skins || 0} Skins</span>
+        <div class="sx-card-body">
+          <div class="sx-card-title">${cardTitle}</div>
+          <div class="sx-card-meta">
+            <span class="sx-meta-item"><i class="ri-t-shirt-2-line"></i> ${acc.skins || 0}</span>
+            <span class="sx-meta-item"><i class="ri-copper-diamond-line"></i> ${acc.vbucks || 0}</span>
+            <span class="sx-meta-item"><i class="ri-mail-line"></i></span>
           </div>
-
-          <div class="market-icon-row">
-            <span class="market-icon-item"><i class="ri-t-shirt-2-line"></i> ${acc.skins || 0}</span>
-            <span class="market-icon-item"><i class="ri-coin-line"></i> ${acc.vbucks || 0}</span>
-            <span class="market-icon-item"><i class="ri-calendar-event-line"></i> ${escapeHtml(acc.last_played || "N/A")}</span>
+          <div class="sx-card-platforms">
+            <span class="sx-plat sx-plat-xb"><i class="ri-xbox-line"></i> XB</span>
+            <span class="sx-plat sx-plat-ps"><i class="ri-playstation-line"></i> PS</span>
           </div>
-          <div class="market-open-hint">Click to open account details</div>
         </div>
       `;
 
@@ -517,6 +514,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
       searchResults.appendChild(card);
     });
+
+    // Lazy-load cosmetic images after all cards are in the DOM
+    hydratePreviewIcons();
   }
 
   searchForm?.addEventListener('submit', async (e) => {
