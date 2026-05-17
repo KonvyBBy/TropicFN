@@ -351,7 +351,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (LINKABILITY_KEYS.has(key)) {
-      // "yes" is treated as "no extra constraint" for marketplace linkability filters.
+      // Marketplace treats "yes" as the default behavior; only "maybe/no" apply stricter constraints.
       if (trimmed === 'yes') return undefined;
       if (trimmed in BOOL_NUMERIC) return BOOL_NUMERIC[trimmed];
       return undefined;
@@ -437,8 +437,9 @@ document.addEventListener("DOMContentLoaded", () => {
         ? `<span style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:#34d399;padding:2px 8px;border-radius:99px;font-size:0.65rem;font-weight:700;">✓ Warranty</span>`
         : '';
 
-      const hasPrice = Number.isFinite(Number(acc.user_price));
-      const formattedPrice = hasPrice ? Number(acc.user_price).toFixed(2) : 'N/A';
+      const numericPrice = Number(acc.user_price);
+      const hasPrice = Number.isFinite(numericPrice);
+      const formattedPrice = hasPrice ? numericPrice.toFixed(2) : 'N/A';
 
       card.innerHTML = `
         <div style="padding:16px 18px 0;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
@@ -578,7 +579,7 @@ document.addEventListener("DOMContentLoaded", () => {
     window.setTimeout(() => {
       const rows = Array.from(document.querySelectorAll('.item-input-row'));
       rows.slice(1).forEach(row => row.remove());
-      itemInputCount = document.querySelectorAll('.item-input-row').length || 1;
+      itemInputCount = 1;
       updateRemoveButtons();
       document.querySelectorAll('.autocomplete-dropdown').forEach(d => d.classList.remove('show'));
     }, 0);

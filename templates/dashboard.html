@@ -558,9 +558,9 @@
   </div>
 
   <div id="auth-modal-overlay" class="auth-modal-overlay" aria-hidden="true">
-    <div class="auth-modal-card">
+    <div class="auth-modal-card" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
       <div class="auth-modal-header">
-        <h3>Sign In</h3>
+        <h3 id="auth-modal-title">Sign In</h3>
         <button id="auth-modal-close" class="auth-modal-close" type="button" aria-label="Close sign in dialog">✕</button>
       </div>
       <iframe id="auth-modal-frame" class="auth-modal-frame" src="/login" title="Sign In"></iframe>
