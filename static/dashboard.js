@@ -19,6 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   const qs = (id) => document.getElementById(id);
+  const MIN_SEARCH_LENGTH = 2;
 
   // =============== AUTH NAVIGATION ===============
   function openAuthPage(mode = "login") {
@@ -124,7 +125,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function searchCosmetics(query, allowedTypes) {
     const q = String(query || "").trim().toLowerCase();
-    if (q.length < 2) return [];
+    if (q.length < MIN_SEARCH_LENGTH) return [];
 
     const normalizedAllowed = (allowedTypes || ['outfit', 'pickaxe', 'emote', 'glider'])
       .map(v => String(v).toLowerCase())
@@ -173,7 +174,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function filterCosmetics(query, dropdown, allowedTypes) {
-    if (!query || query.length < 2) {
+    if (!query || query.length < MIN_SEARCH_LENGTH) {
       dropdown.classList.remove('show');
       return;
     }

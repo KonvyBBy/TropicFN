@@ -3,7 +3,7 @@
 
 {% block extra_styles %}
 <style>
-  :root { --market-preview-grid-separator: rgba(142, 74, 255, 0.55); }
+  :root { --market-preview-grid-separator: rgba(142, 74, 255, 0.55); --filters-offset: 260px; }
   .project-shell { background: transparent; }
   .bg-grid-pattern {
     background-image:
@@ -29,7 +29,7 @@
   .project-sign-btn:hover { border-color: rgba(16,185,129,0.75); background: rgba(16,185,129,0.2); }
   @keyframes sign-btn-appear { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
   .project-muted { color: #a8b2d4; }
-  .filters-scroll { max-height: calc(100vh - 260px); overflow-y: auto; }
+  .filters-scroll { max-height: calc(100vh - var(--filters-offset)); overflow-y: auto; }
   .filter-section { border: 1px solid rgba(255,255,255,.1); border-radius: .75rem; background: rgba(19,24,49,.35); }
   .filter-head {
     width: 100%; display: flex; justify-content: space-between; align-items: center;
