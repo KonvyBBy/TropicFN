@@ -56,6 +56,7 @@ COSMETIC_LOGGER = logging.getLogger("cosmetic_lookup")
 COSMETIC_REFRESH_IN_PROGRESS = False
 PURCHASE_DELAY_AFTER_CHECK_SECONDS = 5
 FAST_BUY_MAX_ATTEMPTS = 100
+# Sub-second pause between retries to avoid hammering the API.
 FAST_BUY_RETRY_DELAY_SECONDS = 0.1
 ACCOUNT_UNAVAILABLE_MESSAGE = "Account is no longer available. Please choose another account."
 PRICE_CHANGED_MESSAGE = "The account price changed while we were checking it. Please try again."
@@ -1117,7 +1118,7 @@ def confirm_buy_account(item_id: int, price: float):
                 time.sleep(FAST_BUY_RETRY_DELAY_SECONDS)
                 continue
             raise RuntimeError(
-                f"Fast-buy failed after {FAST_BUY_MAX_ATTEMPTS} attempts with retry_request errors"
+                f"Fast-buy exhausted all {FAST_BUY_MAX_ATTEMPTS} attempts due to retry_request responses"
             )
 
         if resp.status_code == 404:
