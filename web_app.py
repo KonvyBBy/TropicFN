@@ -1108,6 +1108,7 @@ def confirm_buy_account(item_id: int, price: float):
             error_code = data.get("error")
             if error_code:
                 error_parts.append(str(error_code))
+        error_parts = list(dict.fromkeys(error_parts))
         error_text = " | ".join(error_parts).lower()
 
         if "retry_request" in error_text:
@@ -1143,6 +1144,8 @@ def confirm_buy_account(item_id: int, price: float):
             raise RuntimeError(f"Fast-buy failed ({resp.status_code}): {error_text or resp.text[:300]}")
 
         return data
+
+    raise RuntimeError("Fast-buy failed: request loop exited unexpectedly")
 
 def get_latest_order():
     """
