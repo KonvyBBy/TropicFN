@@ -1108,6 +1108,7 @@ def confirm_buy_account(item_id: int, price: float):
             error_code = data.get("error")
             if error_code:
                 error_parts.append(str(error_code))
+        # Deduplicate while preserving API-provided order.
         error_parts = list(dict.fromkeys(error_parts))
         error_text = " | ".join(error_parts).lower()
 
@@ -1116,7 +1117,7 @@ def confirm_buy_account(item_id: int, price: float):
                 time.sleep(FAST_BUY_RETRY_DELAY_SECONDS)
                 continue
             raise RuntimeError(
-                f"Fast-buy failed: retry_request returned {FAST_BUY_MAX_ATTEMPTS} times"
+                f"Fast-buy failed after {FAST_BUY_MAX_ATTEMPTS} attempts with retry_request errors"
             )
 
         if resp.status_code == 404:
