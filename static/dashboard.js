@@ -432,7 +432,6 @@ document.addEventListener("DOMContentLoaded", () => {
       card.innerHTML = `
         <div style="padding:10px 12px 0;display:flex;align-items:center;justify-content:space-between;gap:8px;">
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-            <span style="background:#dc2626;color:#fff;padding:3px 9px;border-radius:999px;font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;">Active</span>
             ${warrantyTag}
           </div>
           <div style="font-family:'Space Grotesk',sans-serif;font-size:1rem;font-weight:700;color:#00ff87;background:rgba(0,255,135,0.08);border:1px solid rgba(0,255,135,0.28);padding:3px 8px;border-radius:8px;">${formattedPrice} €</div>
