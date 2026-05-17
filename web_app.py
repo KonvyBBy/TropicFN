@@ -9,6 +9,7 @@ import hmac
 import hashlib
 import base64
 import datetime
+import logging
 import threading
 from typing import List, Tuple, Optional, Set, Dict, Any
 
@@ -47,6 +48,10 @@ COSMETIC_LOOKUP_BY_TYPE: Dict[str, Dict[str, Optional[str]]] = {}
 COSMETIC_LOOKUP_LAST_REFRESH_TS = 0
 COSMETIC_LOOKUP_LOCK = threading.Lock()
 COSMETIC_LOOKUP_SCHEDULER_STARTED = False
+COSMETIC_LOOKUP_SCHEDULER_LOCK = threading.Lock()
+COSMETIC_LOOKUP_RUNTIME_INITIALIZED = False
+COSMETIC_LOOKUP_RUNTIME_INIT_LOCK = threading.Lock()
+COSMETIC_LOGGER = logging.getLogger("cosmetic_lookup")
 
 def fortnite_api_get_outfit_icon_url_by_name(name: str):
     """
@@ -136,16 +141,31 @@ def _load_cosmetic_lookup_from_disk() -> bool:
 
 
 def refresh_cosmetic_lookup_from_api() -> bool:
+    started_at = time.time()
     try:
+        COSMETIC_LOGGER.info("Starting cosmetic lookup refresh from Fortnite API")
         response = requests.get(FORTNITE_COSMETICS_ALL_URL, timeout=30)
         if response.status_code != 200:
+            COSMETIC_LOGGER.warning(
+                "Cosmetic lookup refresh failed with status %s in %.2fs",
+                response.status_code,
+                time.time() - started_at,
+            )
             return False
 
         data = (response.json() or {}).get("data") or []
         if not isinstance(data, list):
+            COSMETIC_LOGGER.warning(
+                "Cosmetic lookup refresh failed due to invalid payload in %.2fs",
+                time.time() - started_at,
+            )
             return False
         any_lookup, by_type_lookup = _build_cosmetic_lookup(data)
         if not any_lookup:
+            COSMETIC_LOGGER.warning(
+                "Cosmetic lookup refresh produced empty lookup in %.2fs",
+                time.time() - started_at,
+            )
             return False
 
         with COSMETIC_LOOKUP_LOCK:
@@ -155,8 +175,18 @@ def refresh_cosmetic_lookup_from_api() -> bool:
             COSMETIC_LOOKUP_LAST_REFRESH_TS = int(time.time())
 
         _persist_cosmetic_lookup_to_disk()
+        COSMETIC_LOGGER.info(
+            "Cosmetic lookup refresh succeeded with %s entries in %.2fs",
+            len(any_lookup),
+            time.time() - started_at,
+        )
         return True
-    except Exception:
+    except Exception as exc:
+        COSMETIC_LOGGER.warning(
+            "Cosmetic lookup refresh failed with exception after %.2fs: %s",
+            time.time() - started_at,
+            exc,
+        )
         return False
 
 
@@ -168,9 +198,10 @@ def initialize_cosmetic_lookup() -> None:
 
 def start_cosmetic_lookup_scheduler() -> None:
     global COSMETIC_LOOKUP_SCHEDULER_STARTED
-    if COSMETIC_LOOKUP_SCHEDULER_STARTED:
-        return
-    COSMETIC_LOOKUP_SCHEDULER_STARTED = True
+    with COSMETIC_LOOKUP_SCHEDULER_LOCK:
+        if COSMETIC_LOOKUP_SCHEDULER_STARTED:
+            return
+        COSMETIC_LOOKUP_SCHEDULER_STARTED = True
 
     def _scheduler_loop():
         while True:
@@ -179,6 +210,16 @@ def start_cosmetic_lookup_scheduler() -> None:
 
     thread = threading.Thread(target=_scheduler_loop, daemon=True)
     thread.start()
+
+
+def ensure_cosmetic_lookup_runtime_initialized() -> None:
+    global COSMETIC_LOOKUP_RUNTIME_INITIALIZED
+    with COSMETIC_LOOKUP_RUNTIME_INIT_LOCK:
+        if COSMETIC_LOOKUP_RUNTIME_INITIALIZED:
+            return
+        initialize_cosmetic_lookup()
+        start_cosmetic_lookup_scheduler()
+        COSMETIC_LOOKUP_RUNTIME_INITIALIZED = True
 
 
 def fortnite_api_get_cosmetic_icon_url_by_name(name: str, cosmetic_type: str = None):
@@ -1062,8 +1103,11 @@ def get_shopify_order_by_ref(order_ref: str):
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-change-this")
 KONVY_ADMIN_PASSWORD = os.environ.get("KONVY_ADMIN_PASSWORD", "Kelvilo40")
-initialize_cosmetic_lookup()
-start_cosmetic_lookup_scheduler()
+
+
+@app.before_request
+def _ensure_runtime_cosmetic_lookup():
+    ensure_cosmetic_lookup_runtime_initialized()
 
 
 def login_required_page(f):
@@ -3837,4 +3881,5 @@ def api_fortnite_my_accounts():
 if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 5000))
+    ensure_cosmetic_lookup_runtime_initialized()
     app.run(host="0.0.0.0", port=port)
