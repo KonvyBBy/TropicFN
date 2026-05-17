@@ -56,6 +56,7 @@ COSMETIC_LOGGER = logging.getLogger("cosmetic_lookup")
 COSMETIC_REFRESH_IN_PROGRESS = False
 PURCHASE_DELAY_AFTER_CHECK_SECONDS = 5
 FAST_BUY_MAX_RETRY_REQUEST_ATTEMPTS = 100
+FAST_BUY_RETRY_DELAY_SECONDS = 0.1
 ACCOUNT_UNAVAILABLE_MESSAGE = "Account is no longer available. Please choose another account."
 PRICE_CHANGED_MESSAGE = "The account price changed while we were checking it. Please try again."
 ACCOUNT_UNAVAILABLE_KEYWORDS = ("sold", "not found", "unavailable", "deleted", "archived")
@@ -1111,9 +1112,11 @@ def confirm_buy_account(item_id: int, price: float):
 
         if "retry_request" in error_text:
             if attempt < FAST_BUY_MAX_RETRY_REQUEST_ATTEMPTS:
-                time.sleep(0.1)
+                time.sleep(FAST_BUY_RETRY_DELAY_SECONDS)
                 continue
-            raise RuntimeError("Fast-buy failed: retry_request returned too many times")
+            raise RuntimeError(
+                f"Fast-buy failed: retry_request returned {FAST_BUY_MAX_RETRY_REQUEST_ATTEMPTS} times"
+            )
 
         if resp.status_code == 404:
             raise PurchaseFlowError(
