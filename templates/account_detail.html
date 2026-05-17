@@ -233,6 +233,22 @@
     return new Promise((resolve) => window.setTimeout(resolve, ms));
   }
 
+  function getPurchaseErrorMessage(code, fallbackMessage) {
+    if (code === 'not_enough_balance') {
+      return 'Not enough balance. Please top up and try again.';
+    }
+    if (code === 'account_unavailable') {
+      return 'Account is no longer available. Please choose another account.';
+    }
+    if (code === 'price_changed') {
+      return 'The account price changed while it was being checked. Please try again.';
+    }
+    if (code === 'confirm_buy_failed') {
+      return 'Purchase failed. Please try again.';
+    }
+    return fallbackMessage || 'Purchase failed. Please try again.';
+  }
+
   async function loadCategory(sectionId, apiType) {
     const detail = window.ACCOUNT_DETAIL || {};
     const names = Array.isArray(detail[sectionId]) ? detail[sectionId] : [];
@@ -337,14 +353,7 @@
       }
       if (!checkRes.ok) {
         const code = String(checkData.error || '').toLowerCase();
-        let message = checkData.message || checkData.error || 'Purchase failed. Please try again.';
-        if (code === 'not_enough_balance') {
-          message = 'Not enough balance. Please top up and try again.';
-        } else if (code === 'account_unavailable') {
-          message = 'Account is no longer available. Please choose another account.';
-        } else if (code === 'price_changed') {
-          message = 'The account price changed while it was being checked. Please try again.';
-        }
+        const message = getPurchaseErrorMessage(code, checkData.message || checkData.error);
         throw new Error(message);
       }
       if (payTitle) payTitle.textContent = 'Account Checked…';
@@ -365,16 +374,7 @@
       }
       if (!res.ok) {
         const code = String(data.error || '').toLowerCase();
-        let message = data.message || data.error || 'Purchase failed. Please try again.';
-        if (code === 'not_enough_balance') {
-          message = 'Not enough balance. Please top up and try again.';
-        } else if (code === 'account_unavailable') {
-          message = 'Account is no longer available. Please choose another account.';
-        } else if (code === 'price_changed') {
-          message = 'The account price changed while it was being checked. Please try again.';
-        } else if (code === 'confirm_buy_failed') {
-          message = 'Purchase failed. Please try again.';
-        }
+        const message = getPurchaseErrorMessage(code, data.message || data.error);
         throw new Error(message);
       }
       showPaySuccess(data.message || 'Your account is ready!');

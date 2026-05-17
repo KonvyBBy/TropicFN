@@ -57,6 +57,7 @@ COSMETIC_REFRESH_IN_PROGRESS = False
 PURCHASE_RECHECK_DELAY_SECONDS = 5
 ACCOUNT_UNAVAILABLE_MESSAGE = "Account is no longer available. Please choose another account."
 PRICE_CHANGED_MESSAGE = "The account price changed while we were checking it. Please try again."
+ACCOUNT_UNAVAILABLE_KEYWORDS = ("sold", "not found", "unavailable", "deleted", "archived")
 
 
 class PurchaseFlowError(Exception):
@@ -750,6 +751,16 @@ def get_live_purchase_costs(item_id: int) -> Tuple[float, float, int]:
     return live_price, user_price, cost_cents
 
 
+def _not_enough_balance_response(balance_cents: int, cost_cents: int):
+    missing = (cost_cents - balance_cents) / 100
+    return jsonify(
+        {
+            "error": "not_enough_balance",
+            "message": f"Not enough balance. Missing ${missing:.2f}",
+        }
+    ), 400
+
+
 
 # ===================== FORTNITE / MARKET HELPERS =====================
 
@@ -1067,7 +1078,7 @@ def confirm_buy_account(item_id: int, price: float):
     if resp.status_code in (403, 404):
         errors = " ".join(data.get("errors", []) if isinstance(data, dict) else [])
         error_text = f"{errors} {data.get('message', '') if isinstance(data, dict) else ''}".lower()
-        if any(keyword in error_text for keyword in ("sold", "not found", "unavailable", "deleted", "archived")):
+        if any(keyword in error_text for keyword in ACCOUNT_UNAVAILABLE_KEYWORDS):
             raise PurchaseFlowError(
                 "account_unavailable",
                 ACCOUNT_UNAVAILABLE_MESSAGE,
@@ -3961,13 +3972,7 @@ def api_fortnite_check_buy():
     balance_cents = get_balance(username)
 
     if balance_cents < cost_cents:
-        missing = (cost_cents - balance_cents) / 100
-        return jsonify(
-            {
-                "error": "not_enough_balance",
-                "message": f"Not enough balance. Missing ${missing:.2f}",
-            }
-        ), 400
+        return _not_enough_balance_response(balance_cents, cost_cents)
 
     return jsonify(
         {
@@ -3995,13 +4000,7 @@ def api_fortnite_buy():
         return jsonify({"error": e.code, "message": e.message}), e.status_code
 
     if starting_balance < cost_cents:
-        missing = (cost_cents - starting_balance) / 100
-        return jsonify(
-            {
-                "error": "not_enough_balance",
-                "message": f"Not enough balance. Missing ${missing:.2f}",
-            }
-        ), 400
+        return _not_enough_balance_response(starting_balance, cost_cents)
 
     # STEP 1: fast-buy on market
     try:
