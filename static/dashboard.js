@@ -21,6 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const qs = (id) => document.getElementById(id);
   const MIN_COSMETIC_SEARCH_LENGTH = 2;
   const MAX_COSMETIC_RESULTS = 10;
+  const DEFAULT_COSMETIC_TYPES = ['outfit', 'pickaxe', 'emote', 'glider'];
 
   // =============== AUTH NAVIGATION ===============
   function openAuthPage(mode = "login") {
@@ -128,7 +129,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const q = String(query || "").trim().toLowerCase();
     if (q.length < MIN_COSMETIC_SEARCH_LENGTH) return [];
 
-    const normalizedAllowed = (allowedTypes || ['outfit', 'pickaxe', 'emote', 'glider'])
+    const normalizedAllowed = (allowedTypes || DEFAULT_COSMETIC_TYPES)
       .map(v => String(v).toLowerCase())
       .sort();
     const cacheKey = `${q}::${normalizedAllowed.join(',')}`;
@@ -254,7 +255,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const dropdown = input.parentElement?.querySelector('.autocomplete-dropdown');
     if (!dropdown) return;
     const cosmeticType = String(input.dataset.cosmeticType || '').toLowerCase();
-    const allowedTypes = cosmeticType ? [cosmeticType] : ['outfit', 'pickaxe', 'emote', 'glider'];
+    const allowedTypes = cosmeticType ? [cosmeticType] : DEFAULT_COSMETIC_TYPES;
     setupAutocomplete(input, dropdown, allowedTypes);
   });
 
