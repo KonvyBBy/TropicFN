@@ -328,15 +328,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const sortButtons = Array.from(document.querySelectorAll('.toolbar-tab[data-sort]'));
   let currentSort = 'default';
   let lastSearchAccounts = [];
-  const BOOLEAN_FILTER_KEYS = new Set(['email_login_data', 'change_email', 'bp']);
-  const LINKABILITY_KEYS = new Set(['xbox_linkable', 'psn_linkable']);
-  const BOOL_NUMERIC = { yes: 1, no: 0, maybe: 1 };
+  const BOOLEAN_FILTER_KEYS = new Set(['email_login_data']);
+  const ENUM_FILTER_KEYS = new Set(['change_email', 'bp', 'xbox_linkable', 'psn_linkable']);
   const allowedFormKeys = new Set([
     'pmin', 'pmax', 'title', 'email_login_data', 'change_email',
     'xbox_linkable', 'psn_linkable', 'skin[]', 'pickaxe[]', 'dance[]', 'glider[]',
     'smin', 'smax', 'pickaxe_min', 'pickaxe_max', 'dmin', 'dmax', 'gmin', 'gmax',
-    'vbmin', 'vbmax', 'lmin', 'lmax', 'rl_purchases', 'refund_credits_min',
-    'refund_credits_max', 'daybreak', 'bp', 'bp_lmin', 'bp_lmax', 'country[]',
+    'vbmin', 'vbmax', 'lmin', 'lmax', 'paid_items_min', 'paid_items_max',
+    'refund_credits_min', 'refund_credits_max', 'daybreak', 'daybreak_max',
+    'bp', 'bp_lmin', 'bp_lmax', 'country[]',
     'stw_mode'
   ]);
 
@@ -346,14 +346,17 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!trimmed) return undefined;
 
     if (BOOLEAN_FILTER_KEYS.has(key)) {
-      if (trimmed in BOOL_NUMERIC) return BOOL_NUMERIC[trimmed];
+      if (trimmed === 'yes') return true;
+      if (trimmed === 'no') return false;
+      if (trimmed === 'true') return true;
+      if (trimmed === 'false') return false;
       return undefined;
     }
 
-    if (LINKABILITY_KEYS.has(key)) {
-      // Marketplace treats "yes" as the default behavior; only "maybe/no" apply stricter constraints.
-      if (trimmed === 'yes') return undefined;
-      if (trimmed in BOOL_NUMERIC) return BOOL_NUMERIC[trimmed];
+    if (ENUM_FILTER_KEYS.has(key)) {
+      const lowered = trimmed.toLowerCase();
+      if (lowered === 'maybe') return 'yes';
+      if (lowered === 'yes' || lowered === 'no' || lowered === 'nomatter') return lowered;
       return undefined;
     }
 
