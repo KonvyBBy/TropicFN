@@ -157,7 +157,10 @@ document.addEventListener("DOMContentLoaded", () => {
         cosmeticsSearchCache.set(cacheKey, filtered);
         return filtered;
       })
-      .catch(() => [])
+      .catch((err) => {
+        console.warn("Cosmetic search failed:", err);
+        return [];
+      })
       .finally(() => cosmeticsSearchInFlight.delete(cacheKey));
 
     cosmeticsSearchInFlight.set(cacheKey, request);
