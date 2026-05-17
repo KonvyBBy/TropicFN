@@ -356,7 +356,10 @@
       if (!searchResults || !countEl) return;
       countEl.textContent = String(searchResults.querySelectorAll('.glass-panel').length);
     });
-    if (searchResults && countEl) observer.observe(searchResults, { childList: true, subtree: false });
+    if (searchResults && countEl) {
+      observer.observe(searchResults, { childList: true, subtree: false });
+      window.addEventListener('beforeunload', () => observer.disconnect(), { once: true });
+    }
   })();
 </script>
 {% endblock %}
