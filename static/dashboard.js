@@ -406,6 +406,7 @@ document.addEventListener("DOMContentLoaded", () => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ names: missing }),
         });
+        if (!res.ok) throw new Error("Failed to fetch cosmetic icons");
         const data = await res.json();
         const icons = Array.isArray(data.icons) ? data.icons : [];
         const returnedNames = new Set();
@@ -504,7 +505,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <div class="market-price-badge">${formattedPrice} €</div>
         </div>
 
-        <div class="market-preview-grid">
+        <div class="market-preview-grid" role="button" tabindex="0" aria-label="Preview cosmetics for ${cardTitle}">
           ${previewNames.length > 0 ? previewTiles : '<div class="market-preview-empty">No preview cosmetics</div>'}
         </div>
 
@@ -539,6 +540,12 @@ document.addEventListener("DOMContentLoaded", () => {
       const previewGrid = card.querySelector(".market-preview-grid");
       previewBtn.onclick = openPreview;
       previewGrid?.addEventListener("click", openPreview);
+      previewGrid?.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          openPreview();
+        }
+      });
 
       const buyBtn = card.querySelector(".buy-btn");
       buyBtn.onclick = async () => {
