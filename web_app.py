@@ -1111,6 +1111,7 @@ def confirm_buy_account(item_id: int, price: float):
 
         if "retry_request" in error_text:
             if attempt < FAST_BUY_MAX_RETRY_REQUEST_ATTEMPTS:
+                time.sleep(0.1)
                 continue
             raise RuntimeError("Fast-buy failed: retry_request returned too many times")
 
@@ -1139,9 +1140,6 @@ def confirm_buy_account(item_id: int, price: float):
             raise RuntimeError(f"Fast-buy failed ({resp.status_code}): {error_text or resp.text[:300]}")
 
         return data
-
-    raise RuntimeError("Fast-buy failed unexpectedly")
-
 
 def get_latest_order():
     """
