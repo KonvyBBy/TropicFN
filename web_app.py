@@ -3989,7 +3989,7 @@ def api_fortnite_check_buy():
         return _not_enough_balance_response(balance_cents, cost_cents)
 
     return jsonify(
-            {
+        {
             "message": f"Account checked. Waiting {PURCHASE_DELAY_AFTER_CHECK_SECONDS} seconds before buying.",
             "price": round(user_price, 2),
         }
