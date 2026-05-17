@@ -205,12 +205,12 @@
     <div class="pay-success-icon">✅</div>
     <div class="pay-success-title">Purchase Successful!</div>
     <div class="pay-sub" id="pay-success-msg"></div>
-    <button class="pay-success-btn" onclick="window.location.href='/my-accounts'">View My Accounts</button>
+    <button id="pay-success-btn" class="pay-success-btn">View My Accounts</button>
   </div>
   <div id="pay-error-block" class="pay-error">
     <div class="pay-error-icon">❌</div>
     <div class="pay-error-msg" id="pay-error-msg"></div>
-    <button class="pay-error-btn" onclick="document.getElementById('pay-overlay').classList.remove('open');">Close</button>
+    <button id="pay-error-close-btn" class="pay-error-btn">Close</button>
   </div>
 </div>
 {% endblock %}
@@ -328,7 +328,7 @@
         const code = String(data.error || '').toLowerCase();
         const message = code === 'not_enough_balance'
           ? 'Not enough balance. Please top up and try again.'
-          : code === 'fast_buy_failed'
+          : code === 'confirm_buy_failed'
             ? 'Account is no longer available. Please choose another account.'
             : (data.message || data.error || 'Purchase failed. Please try again.');
         throw new Error(message);
@@ -351,6 +351,13 @@
       loadCategory('emotes', 'emote'),
       loadCategory('gliders', 'glider')
     ]);
+
+    document.getElementById('pay-success-btn')?.addEventListener('click', () => {
+      window.location.href = '/my-accounts';
+    });
+    document.getElementById('pay-error-close-btn')?.addEventListener('click', () => {
+      document.getElementById('pay-overlay').classList.remove('open');
+    });
 
     const buyBtn = document.getElementById('buy-now');
     buyBtn?.addEventListener('click', () => {

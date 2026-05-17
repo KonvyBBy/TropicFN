@@ -984,7 +984,7 @@ def fetch_cheapest_accounts(
     return all_accounts, base_params
 
 
-def fast_buy_account(item_id: int, price: float):
+def confirm_buy_account(item_id: int, price: float):
     """
     Purchase an account using POST /{item_id}/confirm-buy.
     Requires price (integer, current market price) and optionally balance_id.
@@ -1009,7 +1009,7 @@ def fast_buy_account(item_id: int, price: float):
     # Try to parse JSON response; fall back to raising with raw text
     try:
         data = resp.json()
-    except Exception:
+    except (ValueError, requests.exceptions.JSONDecodeError):
         raise RuntimeError(f"Confirm-buy returned non-JSON: {resp.status_code} - {resp.text[:300]}")
 
     if resp.status_code == 403:
@@ -3901,10 +3901,10 @@ def api_fortnite_buy():
 
     # STEP 1: fast-buy on market
     try:
-        purchase_result = fast_buy_account(item_id, base_price)
+        purchase_result = confirm_buy_account(item_id, base_price)
     except Exception as e:
-        app.logger.error("fast_buy_account failed for item %s: %s", item_id, e)
-        return jsonify({"error": "fast_buy_failed", "message": "Purchase failed"}), 500
+        app.logger.error("confirm_buy_account failed for item %s: %s", item_id, e)
+        return jsonify({"error": "confirm_buy_failed", "message": "Purchase failed"}), 500
 
     # STEP 2: optional, try to fetch latest order
     try:
