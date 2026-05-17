@@ -325,16 +325,20 @@
     const mobileWrap = document.getElementById('mobile-filters-wrap');
     const mobileOverlay = document.getElementById('mobile-filter-overlay');
     const desktopForm = document.getElementById('search-form');
+    const desktopFormParent = desktopForm?.parentElement;
     const mobileSlot = document.getElementById('mobile-filters-slot');
 
     function closeMobileFilters() {
       mobileWrap?.classList.remove('open');
       mobileOverlay?.classList.remove('open');
+      if (desktopForm && desktopFormParent && desktopForm.parentElement !== desktopFormParent) {
+        desktopFormParent.appendChild(desktopForm);
+      }
     }
 
     mobileToggle?.addEventListener('click', () => {
-      if (desktopForm && mobileSlot && !mobileSlot.firstChild) {
-        mobileSlot.appendChild(desktopForm.cloneNode(true));
+      if (desktopForm && mobileSlot) {
+        mobileSlot.appendChild(desktopForm);
       }
       mobileWrap?.classList.add('open');
       mobileOverlay?.classList.add('open');
@@ -342,6 +346,9 @@
 
     mobileClose?.addEventListener('click', closeMobileFilters);
     mobileOverlay?.addEventListener('click', closeMobileFilters);
+    window.addEventListener('resize', () => {
+      if (window.innerWidth >= 1024) closeMobileFilters();
+    });
 
     const searchResults = document.getElementById('search-results');
     const countEl = document.getElementById('result-count');
