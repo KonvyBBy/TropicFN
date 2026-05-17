@@ -66,13 +66,6 @@ PRICE_CHANGED_KEYWORDS = (
     "actual price",
     "price mismatch",
 )
-PRICE_CHANGE_CONTEXT_KEYWORDS = (
-    "change",
-    "changed",
-    "different",
-    "current",
-    "actual",
-)
 
 
 class PurchaseFlowError(Exception):
@@ -89,13 +82,7 @@ def _is_price_changed_error(error_text: str) -> bool:
 
     normalized_error_text = str(error_text).lower()
 
-    if "price" not in normalized_error_text:
-        return False
-
-    return any(keyword in normalized_error_text for keyword in PRICE_CHANGED_KEYWORDS) or any(
-        keyword in normalized_error_text
-        for keyword in PRICE_CHANGE_CONTEXT_KEYWORDS
-    )
+    return any(keyword in normalized_error_text for keyword in PRICE_CHANGED_KEYWORDS)
 
 def fortnite_api_get_outfit_icon_url_by_name(name: str):
     """
