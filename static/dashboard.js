@@ -334,7 +334,7 @@ document.addEventListener("DOMContentLoaded", () => {
     'pmin', 'pmax', 'title', 'email_login_data', 'change_email',
     'xbox_linkable', 'psn_linkable', 'skin[]', 'pickaxe[]', 'dance[]', 'glider[]',
     'smin', 'smax', 'pickaxe_min', 'pickaxe_max', 'dmin', 'dmax', 'gmin', 'gmax',
-    'vbmin', 'vbmax', 'lmin', 'lmax', 'rl_purchases', 'paid_items_min', 'paid_items_max',
+    'vbmin', 'vbmax', 'lmin', 'lmax', 'paid_items_min', 'paid_items_max',
     'refund_credits_min', 'refund_credits_max', 'daybreak', 'daybreak_max',
     'bp', 'bp_lmin', 'bp_lmax', 'country[]',
     'stw_mode'
