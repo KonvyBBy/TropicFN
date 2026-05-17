@@ -172,16 +172,7 @@ document.addEventListener("DOMContentLoaded", () => {
   
   loadCosmetics();
 
-  // =============== MULTI-ITEM SEARCH LOGIC ===============
-  let itemInputCount = document.querySelectorAll('.item-input-row').length || 1;
-
-  function updateRemoveButtons() {
-    const rows = document.querySelectorAll('.item-input-row');
-    rows.forEach((row, idx) => {
-      const btn = row.querySelector('.remove-item-btn');
-      if (btn) btn.style.display = rows.length > 1 ? 'block' : 'none';
-    });
-  }
+  // =============== COSMETIC AUTOCOMPLETE LOGIC ===============
 
   function updateSelection(items, index) {
     items.forEach((item, idx) => {
@@ -192,20 +183,20 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  function filterCosmetics(query, dropdown) {
+  function filterCosmetics(query, dropdown, allowedTypes) {
     if (!query || query.length < 2) {
       dropdown.classList.remove('show');
       return;
     }
 
     const q = query.toLowerCase();
-    const allowedTypes = ['outfit', 'pickaxe', 'emote', 'glider'];
+    const allowedTypeSet = new Set((allowedTypes || ['outfit', 'pickaxe', 'emote', 'glider']).map(v => String(v).toLowerCase()));
     
     const filtered = window.allCosmetics
       .filter(item => {
         const itemType = (item.type?.value || '').toLowerCase();
         const nameMatch = item.name.toLowerCase().includes(q);
-        return nameMatch && allowedTypes.includes(itemType);
+        return nameMatch && allowedTypeSet.has(itemType);
       })
       .slice(0, 10);
 
@@ -235,14 +226,14 @@ document.addEventListener("DOMContentLoaded", () => {
     dropdown.classList.add('show');
   }
 
-  function setupAutocomplete(input, dropdown) {
+  function setupAutocomplete(input, dropdown, allowedTypes) {
     let selectedIndex = -1;
     let debounceTimer = null;
     
     input.addEventListener('input', (e) => {
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
-        filterCosmetics(e.target.value, dropdown);
+        filterCosmetics(e.target.value, dropdown, allowedTypes);
       }, 200);
     });
     
@@ -274,44 +265,12 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  const firstInput = document.querySelector('.item-search-input');
-  const firstDropdown = document.querySelector('.autocomplete-dropdown');
-  if (firstInput && firstDropdown) {
-    setupAutocomplete(firstInput, firstDropdown);
-  }
-  updateRemoveButtons();
-
-  document.getElementById('add-item-btn')?.addEventListener('click', () => {
-    itemInputCount++;
-    const container = document.getElementById('items-container');
-    
-    const row = document.createElement('div');
-    row.className = 'item-input-row';
-    row.innerHTML = `
-      <div class="autocomplete-wrapper" style="position:relative;">
-        <input 
-          type="text" 
-          class="item-search-input project-input h-9 w-full rounded-lg px-3 text-xs" 
-          placeholder="Search skin, emote, glider..." 
-          autocomplete="off">
-        <div class="autocomplete-dropdown"></div>
-      </div>
-      <button type="button" class="remove-item-btn project-btn mt-2 rounded-lg px-3 py-1 text-xs">- Remove</button>
-    `;
-    
-    container.appendChild(row);
-    
-    const input = row.querySelector('.item-search-input');
-    const dropdown = row.querySelector('.autocomplete-dropdown');
-    setupAutocomplete(input, dropdown);
-    
-    row.querySelector('.remove-item-btn').addEventListener('click', () => {
-      row.remove();
-      itemInputCount--;
-      updateRemoveButtons();
-    });
-    
-    updateRemoveButtons();
+  document.querySelectorAll('.cosmetic-search-input').forEach((input) => {
+    const dropdown = input.parentElement?.querySelector('.autocomplete-dropdown');
+    if (!dropdown) return;
+    const cosmeticType = String(input.dataset.cosmeticType || '').toLowerCase();
+    const allowedTypes = cosmeticType ? [cosmeticType] : ['outfit', 'pickaxe', 'emote', 'glider'];
+    setupAutocomplete(input, dropdown, allowedTypes);
   });
 
   document.addEventListener('click', (e) => {
@@ -329,10 +288,10 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentSort = 'default';
   let lastSearchAccounts = [];
   const BOOLEAN_FILTER_KEYS = new Set(['email_login_data']);
-  const ENUM_FILTER_KEYS = new Set(['change_email', 'bp', 'xbox_linkable', 'psn_linkable']);
+  const ENUM_FILTER_KEYS = new Set(['change_email', 'bp']);
   const allowedFormKeys = new Set([
-    'pmin', 'pmax', 'title', 'email_login_data', 'change_email',
-    'xbox_linkable', 'psn_linkable', 'skin[]', 'pickaxe[]', 'dance[]', 'glider[]',
+    'pmin', 'pmax', 'email_login_data', 'change_email',
+    'skin[]', 'pickaxe[]', 'dance[]', 'glider[]',
     'smin', 'smax', 'pickaxe_min', 'pickaxe_max', 'dmin', 'dmax', 'gmin', 'gmax',
     'vbmin', 'vbmax', 'lmin', 'lmax', 'paid_items_min', 'paid_items_max',
     'refund_credits_min', 'refund_credits_max', 'daybreak', 'daybreak_max',
@@ -364,7 +323,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function buildSearchPayload(formData, items) {
-    const payload = { item: items.join(', ') };
+    const payload = {};
+    if (Array.isArray(items) && items.length > 0) {
+      payload.item = items.join(', ');
+    }
 
     formData.forEach((value, key) => {
       if (!allowedFormKeys.has(key)) return;
@@ -388,6 +350,15 @@ document.addEventListener("DOMContentLoaded", () => {
     if (pmax > 0) payload.budget = pmax;
 
     return payload;
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   function getSortedAccounts(accounts) {
@@ -435,6 +406,7 @@ document.addEventListener("DOMContentLoaded", () => {
       card.className = 'glass-panel group relative overflow-hidden rounded-2xl transition hover:border-white/20';
       card.style.display = 'flex';
       card.style.flexDirection = 'column';
+      card.style.padding = '0';
 
       const warrantyTag = acc.last_played_days != null && acc.last_played_days >= 11
         ? `<span style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:#34d399;padding:2px 8px;border-radius:99px;font-size:0.65rem;font-weight:700;">✓ Warranty</span>`
@@ -444,50 +416,50 @@ document.addEventListener("DOMContentLoaded", () => {
       const hasPrice = Number.isFinite(numericPrice);
       const formattedPrice = hasPrice ? numericPrice.toFixed(2) : 'N/A';
 
+      const previewNames = Array.isArray(acc.preview_cosmetics) ? acc.preview_cosmetics.slice(0, 8) : [];
+      const previewTiles = previewNames.map((name) => {
+        const safe = String(name || '').trim();
+        const initials = safe ? safe.split(/\s+/).slice(0, 2).map(p => p[0]).join('').toUpperCase() : '?';
+        return `
+          <div title="${escapeHtml(safe)}" style="height:56px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:linear-gradient(135deg,rgba(59,130,246,0.15),rgba(16,185,129,0.18));display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.75rem;font-weight:700;letter-spacing:0.04em;">
+            ${escapeHtml(initials)}
+          </div>
+        `;
+      }).join('');
+      const cardTitle = escapeHtml(acc.title || `${acc.skins || 0} Skins | Fortnite Account`);
+
       card.innerHTML = `
-        <div style="padding:16px 18px 0;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+        <div style="padding:10px 12px 0;display:flex;align-items:center;justify-content:space-between;gap:8px;">
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-            <span style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#e4e4e7;padding:3px 8px;border-radius:99px;font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;">Full Access</span>
+            <span style="background:#dc2626;color:#fff;padding:3px 9px;border-radius:999px;font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;">Active</span>
             ${warrantyTag}
           </div>
-          <div style="font-family:'Space Grotesk',sans-serif;font-size:1.25rem;font-weight:700;color:#fff;">$${formattedPrice}</div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:1rem;font-weight:700;color:#00ff87;background:rgba(0,255,135,0.08);border:1px solid rgba(0,255,135,0.28);padding:3px 8px;border-radius:8px;">${formattedPrice} €</div>
         </div>
 
-        <div style="padding:14px 18px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;flex:1;">
-          <div style="text-align:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:10px 6px;">
-            <div style="font-size:0.7rem;color:#71717a;margin-bottom:3px;">🎭 Skins</div>
-            <div style="font-weight:700;color:#fff;font-size:0.95rem;">${acc.skins || 0}</div>
-          </div>
-          <div style="text-align:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:10px 6px;">
-            <div style="font-size:0.7rem;color:#71717a;margin-bottom:3px;">💃 Emotes</div>
-            <div style="font-weight:700;color:#fff;font-size:0.95rem;">${acc.emotes || 0}</div>
-          </div>
-          <div style="text-align:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:10px 6px;">
-            <div style="font-size:0.7rem;color:#71717a;margin-bottom:3px;">⛏️ Picks</div>
-            <div style="font-weight:700;color:#fff;font-size:0.95rem;">${acc.pickaxes || 0}</div>
-          </div>
-          <div style="text-align:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:10px 6px;">
-            <div style="font-size:0.7rem;color:#71717a;margin-bottom:3px;">🪂 Gliders</div>
-            <div style="font-weight:700;color:#fff;font-size:0.95rem;">${acc.gliders || 0}</div>
-          </div>
-          <div style="text-align:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:10px 6px;">
-            <div style="font-size:0.7rem;color:#71717a;margin-bottom:3px;">💰 V-Bucks</div>
-            <div style="font-weight:700;color:#fff;font-size:0.95rem;">${acc.vbucks || 0}</div>
-          </div>
-          <div style="text-align:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:10px 6px;">
-            <div style="font-size:0.7rem;color:#71717a;margin-bottom:3px;">📅 Offline</div>
-            <div style="font-weight:700;color:#fff;font-size:0.85rem;">${acc.last_played || "?"}</div>
+        <div style="padding:8px 12px 0;">
+          <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;">
+            ${previewTiles || '<div style="grid-column:1/-1;height:56px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;color:#71717a;font-size:0.72rem;">No preview cosmetics</div>'}
           </div>
         </div>
 
-        <div style="padding:0 18px 16px;display:flex;gap:8px;">
+        <div style="padding:10px 12px 8px;border-bottom:1px solid rgba(255,255,255,0.08);">
+          <div style="font-size:1.02rem;font-weight:700;line-height:1.3;color:#f4f4f5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${cardTitle}</div>
+          <div style="display:flex;align-items:center;gap:12px;color:#8f98af;font-size:0.78rem;margin-top:6px;">
+            <span>🎭 ${acc.skins || 0}</span>
+            <span>💰 ${acc.vbucks || 0}</span>
+            <span>📅 ${escapeHtml(acc.last_played || "N/A")}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+            <span style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.25);color:#34d399;padding:2px 8px;border-radius:6px;font-size:0.68rem;font-weight:700;">XB</span>
+            <span style="background:rgba(251,113,133,0.1);border:1px solid rgba(251,113,133,0.25);color:#fb7185;padding:2px 8px;border-radius:6px;font-size:0.68rem;font-weight:700;">PS</span>
+          </div>
+        </div>
+
+        <div style="padding:10px 12px 12px;display:flex;gap:8px;">
           <button class="buy-btn" data-item-id="${acc.item_id}" data-base-price="${acc.base_price}"
-            style="flex:1;background:#10b981;color:#000;border:none;border-radius:12px;padding:10px;font-size:0.82rem;font-weight:700;cursor:pointer;transition:background 0.15s;">
-            💳 Buy Now
-          </button>
-          <button class="skins-btn" data-item-id="${acc.item_id}"
-            style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#a1a1aa;border-radius:12px;padding:10px 14px;font-size:0.82rem;font-weight:600;cursor:pointer;transition:all 0.15s;white-space:nowrap;">
-            👀 Preview
+            style="flex:1;background:#10b981;color:#04110c;border:none;border-radius:10px;padding:10px;font-size:0.8rem;font-weight:700;cursor:pointer;transition:background 0.15s;">
+            Buy Account
           </button>
         </div>
       `;
@@ -530,10 +502,6 @@ document.addEventListener("DOMContentLoaded", () => {
         buyBtn.disabled = false;
       };
 
-      card.querySelector(".skins-btn").onclick = () => {
-        showCosmeticTypeDialog(acc.item_id);
-      };
-
       searchResults.appendChild(card);
     });
   }
@@ -541,17 +509,12 @@ document.addEventListener("DOMContentLoaded", () => {
   searchForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
     
-    const inputs = document.querySelectorAll('.item-search-input');
-    const items = Array.from(inputs)
-      .map(input => input.value.trim())
-      .filter(val => val.length > 0);
-    
     const fd = new FormData(searchForm);
-    const payload = buildSearchPayload(fd, items);
-    const hasNonItemFilters = Object.keys(payload).some(k => k !== 'item');
+    const payload = buildSearchPayload(fd, []);
+    const hasFilters = Object.keys(payload).length > 0;
 
-    if (items.length === 0 && !hasNonItemFilters) {
-      alert('Please enter at least one item or set filters to search');
+    if (!hasFilters) {
+      alert('Please set at least one filter to search');
       return;
     }
 
@@ -580,10 +543,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   searchForm?.addEventListener('reset', () => {
     window.setTimeout(() => {
-      const rows = Array.from(document.querySelectorAll('.item-input-row'));
-      rows.slice(1).forEach(row => row.remove());
-      itemInputCount = 1;
-      updateRemoveButtons();
       document.querySelectorAll('.autocomplete-dropdown').forEach(d => d.classList.remove('show'));
     }, 0);
   });
