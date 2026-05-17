@@ -151,6 +151,7 @@ if not SHOPIFY_WEBHOOK_SECRET:
 MAX_ACCOUNTS = 50
 MAX_PAGES = 10
 MARKET_API_TIMEOUT = 12
+MAX_PREVIEW_COSMETICS = 8
 
 # --- Redeemed orders tracking ---
 REDEEMED_FILE = os.path.join(DATA_DIR, "redeemed_orders.json")
@@ -3538,9 +3539,9 @@ def api_fortnite_search():
                         name = str(cosmetic)
                     if name:
                         preview_cosmetics.append(str(name))
-                    if len(preview_cosmetics) >= 8:
+                    if len(preview_cosmetics) >= MAX_PREVIEW_COSMETICS:
                         break
-                if len(preview_cosmetics) >= 8:
+                if len(preview_cosmetics) >= MAX_PREVIEW_COSMETICS:
                     break
 
             result_accounts.append(
@@ -3638,7 +3639,6 @@ if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
-
 
 
 

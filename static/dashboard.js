@@ -287,6 +287,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const sortButtons = Array.from(document.querySelectorAll('.toolbar-tab[data-sort]'));
   let currentSort = 'default';
   let lastSearchAccounts = [];
+  const MAX_PREVIEW_COSMETICS = 8;
   const BOOLEAN_FILTER_KEYS = new Set(['email_login_data']);
   const ENUM_FILTER_KEYS = new Set(['change_email', 'bp']);
   const allowedFormKeys = new Set([
@@ -416,7 +417,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const hasPrice = Number.isFinite(numericPrice);
       const formattedPrice = hasPrice ? numericPrice.toFixed(2) : 'N/A';
 
-      const previewNames = Array.isArray(acc.preview_cosmetics) ? acc.preview_cosmetics.slice(0, 8) : [];
+      const previewNames = Array.isArray(acc.preview_cosmetics) ? acc.preview_cosmetics.slice(0, MAX_PREVIEW_COSMETICS) : [];
       const previewTiles = previewNames.map((name) => {
         const safe = String(name || '').trim();
         const initials = safe ? safe.split(/\s+/).slice(0, 2).map(p => p[0]).join('').toUpperCase() : '?';
@@ -439,7 +440,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         <div style="padding:8px 12px 0;">
           <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;">
-            ${previewTiles || '<div style="grid-column:1/-1;height:56px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;color:#71717a;font-size:0.72rem;">No preview cosmetics</div>'}
+            ${previewNames.length > 0 ? previewTiles : '<div style="grid-column:1/-1;height:56px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;color:#71717a;font-size:0.72rem;">No preview cosmetics</div>'}
           </div>
         </div>
 
@@ -449,10 +450,6 @@ document.addEventListener("DOMContentLoaded", () => {
             <span>🎭 ${acc.skins || 0}</span>
             <span>💰 ${acc.vbucks || 0}</span>
             <span>📅 ${escapeHtml(acc.last_played || "N/A")}</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
-            <span style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.25);color:#34d399;padding:2px 8px;border-radius:6px;font-size:0.68rem;font-weight:700;">XB</span>
-            <span style="background:rgba(251,113,133,0.1);border:1px solid rgba(251,113,133,0.25);color:#fb7185;padding:2px 8px;border-radius:6px;font-size:0.68rem;font-weight:700;">PS</span>
           </div>
         </div>
 
