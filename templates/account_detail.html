@@ -57,11 +57,11 @@
     <section class="buy-card rounded-2xl p-5 text-center">
       <div class="font-space text-4xl font-bold">{{ '%.2f'|format(account_detail.price) }} €</div>
       <div class="mt-1 text-sm">💎 {{ account_detail.vbucks }} V-Bucks included</div>
-      <button id="buy-now" class="buy-now-btn mt-4 w-full rounded-xl py-3 text-sm font-bold tracking-wide cursor-pointer">🛒 PURCHASE NOW</button>
+      <button id="buy-now" class="buy-now-btn mt-4 w-full rounded-xl py-3 text-sm font-bold tracking-wide cursor-pointer"><i class="ri-shopping-cart-line" aria-hidden="true"></i> PURCHASE NOW</button>
     </section>
 
     <section class="detail-panel rounded-2xl p-5">
-      <h3 class="font-space text-xl font-bold text-white">Reliable Information</h3>
+      <h3 class="font-space text-xl font-bold text-white">Account Information</h3>
       <div class="mt-3">
         <div class="info-row"><span class="text-zinc-400">Level</span><strong class="text-emerald-400">{{ account_detail.level }}</strong></div>
         <div class="info-row"><span class="text-zinc-400">V-Bucks</span><strong class="text-emerald-400">{{ account_detail.vbucks }}</strong></div>
@@ -144,12 +144,12 @@
     grid.innerHTML = names.map((name, idx) => {
       const safe = String(name || '').trim();
       const icon = iconMap.get(name);
-      const eager = idx < 12 ? 'eager' : 'lazy';
-      const priority = idx < 12 ? 'high' : 'low';
       if (!icon) {
         return `<div class="detail-tile" title="${escapeHtml(safe)}"><span class="detail-tile-fallback">${escapeHtml(safe.slice(0, 2).toUpperCase() || '?')}</span></div>`;
       }
-      return `<div class="detail-tile" title="${escapeHtml(safe)}"><img src="${escapeHtml(icon)}" alt="${escapeHtml(safe)}" loading="${eager}" fetchpriority="${priority}" decoding="async"></div>`;
+      const loadingAttr = idx < 12 ? '' : ' loading="lazy"';
+      const priorityAttr = idx < 12 ? ' fetchpriority="high"' : '';
+      return `<div class="detail-tile" title="${escapeHtml(safe)}"><img src="${escapeHtml(icon)}" alt="${escapeHtml(safe)}"${loadingAttr}${priorityAttr} decoding="async"></div>`;
     }).join('');
   }
 
@@ -181,10 +181,18 @@
           })
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || data.message || 'Purchase failed');
+        if (!res.ok) {
+          const code = String(data.error || '').toLowerCase();
+          const message = code === 'not_enough_balance'
+            ? 'Not enough balance. Please top up and try again.'
+            : code === 'fast_buy_failed'
+              ? 'Account is no longer available. Please choose another account.'
+              : (data.message || data.error || 'Purchase failed. Please try again.');
+          throw new Error(message);
+        }
         window.location.href = '/my-accounts';
       } catch (e) {
-        alert(e.message || 'Purchase failed');
+        alert(e.message || 'Purchase failed. Please try again.');
       } finally {
         buyBtn.disabled = false;
         buyBtn.textContent = original;

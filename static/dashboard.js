@@ -476,8 +476,9 @@ document.addEventListener("DOMContentLoaded", () => {
       `;
 
       const openDetail = () => {
-        if (!acc.item_id) return;
-        window.location.href = `/account/${encodeURIComponent(acc.item_id)}`;
+        const itemId = Number(acc.item_id);
+        if (!Number.isFinite(itemId) || itemId <= 0) return;
+        window.location.href = `/account/${itemId}`;
       };
 
       card.setAttribute("role", "button");
