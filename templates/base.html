@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>{% block title %}Konvy Accounts{% endblock %}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700;800&family=Rajdhani:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/remixicon@4.0.0/fonts/remixicon.css" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -14,23 +14,37 @@
           fontFamily: {
             space: ['Space Grotesk', 'sans-serif'],
             manrope: ['Manrope', 'sans-serif'],
+            rajdhani: ['Rajdhani', 'sans-serif'],
+            oxanium: ['Oxanium', 'sans-serif'],
           }
         }
       }
     }
   </script>
   <style>
-    html { background-color: #0a0a0a; color: #f5f5f5; font-family: 'Manrope', sans-serif; }
-    body { background-color: #0a0a0a; min-height: 100vh; overflow-x: hidden; }
-
-    .glass-panel {
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+    html {
+      background-color: #07091a;
+      color: #eaeef8;
+      font-family: 'Rajdhani', 'Manrope', sans-serif;
+    }
+    body {
+      background:
+        radial-gradient(circle at 12% -8%, rgba(0,255,135,0.13), transparent 42%),
+        radial-gradient(circle at 88% 12%, rgba(0,184,255,0.11), transparent 36%),
+        #07091a;
+      min-height: 100vh;
+      overflow-x: hidden;
     }
 
-    .text-glow { text-shadow: 0 0 40px rgba(255, 255, 255, 0.15); }
+    .glass-panel {
+      background: rgba(13, 17, 40, 0.82);
+      border: 1px solid rgba(34, 197, 94, 0.15);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    .text-glow { text-shadow: 0 0 32px rgba(0, 255, 135, 0.45); }
 
     .bg-grain { position: relative; }
     .bg-grain::before {
@@ -43,9 +57,13 @@
       z-index: 0;
     }
 
-    .font-space { font-family: 'Space Grotesk', sans-serif; }
+    .font-space { font-family: 'Oxanium', 'Space Grotesk', sans-serif; }
 
-    input:focus, textarea:focus, select:focus { outline: none; border-color: rgba(52, 211, 153, 0.5) !important; }
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: rgba(0, 255, 135, 0.55) !important;
+      box-shadow: 0 0 0 1px rgba(0, 255, 135, 0.28);
+    }
 
     /* Autocomplete dropdown styles */
     .autocomplete-dropdown { display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 50; background: #18181b; border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; margin-top: 4px; overflow: hidden; max-height: 280px; overflow-y: auto; }
@@ -66,7 +84,7 @@
     .processing-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
     .processing-overlay.active { display: flex; }
     .processing-content { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 24px; padding: 40px; text-align: center; max-width: 380px; }
-    .processing-spinner { width: 48px; height: 48px; border: 3px solid rgba(255,255,255,0.1); border-top-color: #10b981; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 20px; }
+    .processing-spinner { width: 48px; height: 48px; border: 3px solid rgba(255,255,255,0.1); border-top-color: #00ff87; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 20px; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .processing-title { font-size: 1.1rem; font-weight: 600; color: #fff; margin-bottom: 8px; }
     .processing-message { font-size: 0.85rem; color: #a1a1aa; margin-bottom: 12px; line-height: 1.5; }
@@ -96,7 +114,7 @@
     .skins-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; padding: 20px; }
     .skins-grid img { width: 100%; aspect-ratio: 1; object-fit: contain; border-radius: 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); }
     .skins-loader { display: none; flex-direction: column; align-items: center; justify-content: center; padding: 48px 24px; gap: 10px; }
-    .loader-spinner { width: 36px; height: 36px; border: 3px solid rgba(255,255,255,0.08); border-top-color: #10b981; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    .loader-spinner { width: 36px; height: 36px; border: 3px solid rgba(255,255,255,0.08); border-top-color: #00ff87; border-radius: 50%; animation: spin 0.8s linear infinite; }
     .loader-text { font-size: 0.9rem; font-weight: 500; color: #fff; }
     .loader-progress { font-size: 0.82rem; color: #a1a1aa; }
     .loader-count { font-size: 0.75rem; color: #52525b; }
@@ -107,8 +125,8 @@
     .naming-modal h3 { font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 8px; }
     .naming-modal p { font-size: 0.85rem; color: #a1a1aa; margin-bottom: 20px; }
     .naming-modal-actions { display: flex; gap: 10px; margin-top: 16px; }
-    .btn-naming-submit { flex: 1; background: #10b981; color: #000; border: none; border-radius: 10px; padding: 10px; font-size: 0.875rem; font-weight: 600; cursor: pointer; }
-    .btn-naming-submit:hover { background: #059669; }
+    .btn-naming-submit { flex: 1; background: #00ff87; color: #000; border: none; border-radius: 10px; padding: 10px; font-size: 0.875rem; font-weight: 600; cursor: pointer; }
+    .btn-naming-submit:hover { background: #00d26a; }
     .btn-naming-skip { flex: 1; background: rgba(255,255,255,0.05); color: #a1a1aa; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 10px; font-size: 0.875rem; cursor: pointer; }
 
     /* Pending topup banner */
@@ -157,7 +175,7 @@
     .notif-dropdown.open { display: block; }
     .notif-dropdown-header { padding: 14px 16px 10px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: space-between; }
     .notif-dropdown-header h3 { font-size: 0.85rem; font-weight: 600; color: #fff; }
-    .notif-mark-all { font-size: 0.72rem; color: #10b981; cursor: pointer; background: none; border: none; padding: 0; }
+    .notif-mark-all { font-size: 0.72rem; color: #00ff87; cursor: pointer; background: none; border: none; padding: 0; }
     .notif-mark-all:hover { text-decoration: underline; }
     .notif-list { max-height: 300px; overflow-y: auto; }
     .notif-empty { padding: 24px 16px; text-align: center; font-size: 0.82rem; color: #52525b; }
@@ -167,12 +185,12 @@
     }
     .notif-item:last-child { border-bottom: none; }
     .notif-item:hover { background: rgba(255,255,255,0.04); }
-    .notif-item-icon { width: 32px; height: 32px; border-radius: 9px; background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.25); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.9rem; }
+    .notif-item-icon { width: 32px; height: 32px; border-radius: 9px; background: rgba(0,255,135,0.14); border: 1px solid rgba(0,255,135,0.24); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.9rem; }
     .notif-item-body { flex: 1; min-width: 0; }
     .notif-item-title { font-size: 0.8rem; font-weight: 600; color: #e4e4e7; }
     .notif-item-desc { font-size: 0.75rem; color: #71717a; margin-top: 2px; line-height: 1.4; }
     .notif-dismiss { background: none; border: none; color: #52525b; cursor: pointer; font-size: 0.75rem; padding: 2px 4px; border-radius: 4px; flex-shrink: 0; transition: color 0.12s; }
-    .notif-dismiss:hover { color: #ef4444; }
+    .notif-dismiss:hover { color: #ff3d5a; }
 
     {% block extra_styles %}{% endblock %}
   </style>
@@ -190,10 +208,10 @@
   </div>
 
   <!-- Ambient glow orbs -->
-  <div class="absolute inset-0 -z-10 opacity-70 pointer-events-none overflow-hidden">
-    <div class="absolute -left-40 top-16 h-72 w-72 rounded-full bg-white/10 blur-[120px]"></div>
-    <div class="absolute right-0 top-32 h-80 w-80 rounded-full bg-zinc-300/10 blur-[130px]"></div>
-    <div class="absolute bottom-0 left-1/3 h-96 w-96 rounded-full bg-zinc-500/10 blur-[150px]"></div>
+  <div class="absolute inset-0 -z-10 opacity-80 pointer-events-none overflow-hidden">
+    <div class="absolute -left-40 top-16 h-72 w-72 rounded-full bg-emerald-400/20 blur-[120px]"></div>
+    <div class="absolute right-0 top-32 h-80 w-80 rounded-full bg-cyan-400/20 blur-[130px]"></div>
+    <div class="absolute bottom-0 left-1/3 h-96 w-96 rounded-full bg-emerald-500/15 blur-[150px]"></div>
   </div>
 
   <div class="mx-auto w-full max-w-[1300px] px-3 pb-16 pt-4 sm:px-4 sm:pt-5 md:px-8 md:pt-6">
@@ -238,17 +256,17 @@
               </div>
             </div>
           </div>
-          <a href="/balance" class="inline-flex items-center justify-center rounded-xl font-medium transition border border-white/15 bg-white/5 text-white hover:border-emerald-400/50 hover:text-emerald-300 h-8 px-2.5 text-[11px] sm:h-10 sm:px-3 sm:text-sm whitespace-nowrap">
+          <a href="/balance" class="inline-flex items-center justify-center rounded-xl font-medium transition border border-[#00ff87]/35 bg-[#00ff87]/10 text-[#c6ffea] hover:border-[#00ff87]/65 hover:text-[#e8fff5] h-8 px-2.5 text-[11px] sm:h-10 sm:px-3 sm:text-sm whitespace-nowrap">
             Add Funds
           </a>
           <a href="/logout" class="inline-flex items-center justify-center rounded-xl font-medium transition border border-white/15 bg-white/5 text-zinc-400 hover:text-white h-8 px-2.5 text-[11px] sm:h-10 sm:px-3 sm:text-sm whitespace-nowrap">
             Logout
           </a>
           {% else %}
-          <a href="/login" class="inline-flex items-center justify-center rounded-xl font-medium transition border border-white/15 bg-white/5 text-white hover:border-emerald-400/50 hover:text-emerald-300 h-8 px-2.5 text-[11px] sm:h-10 sm:px-3 sm:text-sm whitespace-nowrap">
+          <a href="/login" class="inline-flex items-center justify-center rounded-xl font-medium transition border border-white/15 bg-white/5 text-white hover:border-[#00ff87]/60 hover:text-[#00ff87] h-8 px-2.5 text-[11px] sm:h-10 sm:px-3 sm:text-sm whitespace-nowrap">
             Login
           </a>
-          <a href="/register" class="inline-flex items-center justify-center rounded-xl font-medium transition bg-emerald-500 text-black hover:bg-emerald-400 active:scale-[0.99] h-8 px-2.5 text-[11px] sm:h-10 sm:px-3 sm:text-sm whitespace-nowrap">
+          <a href="/register" class="inline-flex items-center justify-center rounded-xl font-medium transition bg-[#00ff87] text-black hover:bg-[#00d26a] active:scale-[0.99] h-8 px-2.5 text-[11px] sm:h-10 sm:px-3 sm:text-sm whitespace-nowrap">
             Register
           </a>
           {% endif %}
@@ -272,7 +290,7 @@
   </div>
 
   <!-- Footer -->
-  <footer class="mt-12 border-t border-white/5 bg-zinc-950/60 py-8 sm:py-10">
+  <footer class="mt-12 border-t border-[#00ff87]/10 bg-[#060914]/85 py-8 sm:py-10">
     <div class="mx-auto max-w-[1300px] px-3 sm:px-4 md:px-8">
       <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
         <div class="space-y-3">
