@@ -342,8 +342,6 @@
       const detail = window.ACCOUNT_DETAIL || {};
       const payTitle = document.getElementById('pay-title');
       const paySub = document.getElementById('pay-sub');
-      if (payTitle) payTitle.textContent = 'Checking Account…';
-      if (paySub) paySub.textContent = PURCHASE_CHECK_MESSAGE;
       const checkRes = await fetch('/api/fortnite/check-buy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

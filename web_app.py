@@ -54,7 +54,7 @@ COSMETIC_LOOKUP_RUNTIME_INITIALIZED = False
 COSMETIC_LOOKUP_RUNTIME_INIT_LOCK = threading.Lock()
 COSMETIC_LOGGER = logging.getLogger("cosmetic_lookup")
 COSMETIC_REFRESH_IN_PROGRESS = False
-PURCHASE_RECHECK_DELAY_SECONDS = 5
+PURCHASE_DELAY_AFTER_CHECK_SECONDS = 5
 ACCOUNT_UNAVAILABLE_MESSAGE = "Account is no longer available. Please choose another account."
 PRICE_CHANGED_MESSAGE = "The account price changed while we were checking it. Please try again."
 ACCOUNT_UNAVAILABLE_KEYWORDS = ("sold", "not found", "unavailable", "deleted", "archived")
@@ -3989,8 +3989,8 @@ def api_fortnite_check_buy():
         return _not_enough_balance_response(balance_cents, cost_cents)
 
     return jsonify(
-        {
-            "message": f"Account checked. Waiting {PURCHASE_RECHECK_DELAY_SECONDS} seconds before buying.",
+            {
+            "message": f"Account checked. Waiting {PURCHASE_DELAY_AFTER_CHECK_SECONDS} seconds before buying.",
             "price": round(user_price, 2),
         }
     )
