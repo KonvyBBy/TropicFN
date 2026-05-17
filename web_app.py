@@ -2891,6 +2891,104 @@ def my_accounts_page():
         active_page="my-accounts",
     )
 
+
+def _extract_cosmetic_names(account: dict, field_name: str) -> List[str]:
+    values = account.get(field_name) or []
+    if not isinstance(values, list):
+        return []
+    names: List[str] = []
+    for item in values:
+        if isinstance(item, dict):
+            name = item.get("title") or item.get("name")
+        else:
+            name = str(item)
+        if name:
+            names.append(str(name))
+    return names
+
+
+def _to_status_bool(value) -> Optional[bool]:
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return None
+    text = str(value).strip().lower()
+    if text in {"1", "true", "yes", "y"}:
+        return True
+    if text in {"0", "false", "no", "n"}:
+        return False
+    return None
+
+
+@app.route("/account/<int:item_id>")
+def account_detail_page(item_id: int):
+    username = session.get("username")
+    logged_in = bool(username)
+    balance = "0.00"
+    has_topup = False
+
+    if logged_in:
+        balance_cents = get_balance(username)
+        balance = f"{balance_cents / 100:.2f}"
+        has_topup = user_has_any_topup(username)
+
+    try:
+        account = find_account_by_item_id(item_id)
+    except Exception as e:
+        app.logger.error("Failed to load account %s: %s", item_id, e)
+        account = None
+
+    if not account:
+        return redirect(url_for("dashboard_page"))
+
+    skins = _extract_cosmetic_names(account, "fortniteSkins")
+    pickaxes = _extract_cosmetic_names(account, "fortnitePickaxe")
+    emotes = _extract_cosmetic_names(account, "fortniteDance")
+    gliders = _extract_cosmetic_names(account, "fortniteGliders")
+
+    try:
+        base_price = float(account.get("price") or 0)
+    except Exception:
+        base_price = 0.0
+
+    user_price = round(base_price * get_lzt_multiplier_for_pricing(), 2)
+    days_ago = compute_days_ago(account)
+
+    status = {
+        "xbox_linkable": _to_status_bool(account.get("xbox_linkable") or account.get("xboxLinkable") or account.get("xbl_linkable")),
+        "psn_linkable": _to_status_bool(account.get("psn_linkable") or account.get("psnLinkable")),
+        "email_changeable": _to_status_bool(account.get("change_email") or account.get("email_changeable")),
+        "email_access": _to_status_bool(account.get("email_login_data") or account.get("email_access")),
+        "battle_pass": _to_status_bool(account.get("bp") or account.get("battle_pass")),
+        "stw_edition": _to_status_bool(account.get("stw") or account.get("fortnite_stw")),
+    }
+
+    account_detail = {
+        "item_id": item_id,
+        "title": account.get("title") or account.get("title_en") or f"{len(skins)} Skins",
+        "price": user_price,
+        "base_price": base_price,
+        "level": int(account.get("fortnite_level") or 0),
+        "vbucks": int(account.get("fortnite_balance") or 0),
+        "country": account.get("country") or "Unknown",
+        "last_activity": f"{days_ago} days ago" if days_ago is not None else "Unknown",
+        "skins": skins,
+        "pickaxes": pickaxes,
+        "emotes": emotes,
+        "gliders": gliders,
+        "status": status,
+    }
+
+    return render_template(
+        "account_detail.html",
+        username=username,
+        balance=balance,
+        logged_in=logged_in,
+        has_topup=has_topup,
+        active_page="home",
+        account_detail=account_detail,
+    )
+
 @app.route("/transactions")
 @login_required_page
 def transactions_page():
@@ -3639,6 +3737,5 @@ if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
-
 
 

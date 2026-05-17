@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+{% block title %}{{ account_detail.title }} — Konvy Accounts{% endblock %}
+
+{% block extra_styles %}
+<style>
+  .detail-shell { display: grid; gap: 18px; }
+  @media (min-width: 1024px) { .detail-shell { grid-template-columns: minmax(0,1fr) 360px; } }
+  .detail-panel { border: 1px solid rgba(255,255,255,.1); background: rgba(9,14,26,.72); }
+  .detail-section + .detail-section { margin-top: 14px; }
+  .detail-header { border-bottom: 1px solid rgba(255,255,255,.08); }
+  .detail-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+  .detail-tile {
+    width: 72px; height: 72px; border-radius: 10px; border: 2px solid rgba(255,255,255,.16);
+    background: linear-gradient(145deg,#20294c,#10172f); overflow: hidden; display: flex; align-items: center; justify-content: center;
+  }
+  .detail-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .detail-tile-fallback { font-size: .68rem; font-weight: 700; color: #dbe5ff; text-align: center; padding: 4px; }
+  .buy-card { border: 1px solid rgba(16,185,129,.45); background: linear-gradient(135deg,#10b981,#06d876); color: #03180f; }
+  .buy-now-btn { border: 1px solid rgba(3,24,15,.18); background: rgba(3,24,15,.14); color: #03180f; }
+  .buy-now-btn:hover { background: rgba(3,24,15,.2); }
+  .info-row { display: flex; justify-content: space-between; gap: 8px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,.08); }
+  .info-row:last-child { border-bottom: none; }
+</style>
+{% endblock %}
+
+{% block content %}
+<header class="glass-panel rounded-3xl px-5 py-6 sm:px-7">
+  <div class="flex items-center gap-3">
+    <a href="/dashboard" class="text-zinc-400 hover:text-white transition"><i class="ri-arrow-left-line text-xl"></i></a>
+    <div>
+      <h1 class="font-space text-xl font-bold text-white sm:text-2xl">{{ account_detail.title }}</h1>
+      <p class="text-xs text-zinc-500">ID: {{ account_detail.item_id }}</p>
+    </div>
+  </div>
+</header>
+
+<section class="detail-shell">
+  <div class="space-y-4">
+    {% for section_id, label, icon, color in [
+      ('skins','SKINS','ri-t-shirt-2-line','#a855f7'),
+      ('pickaxes','PICKAXES','ri-hammer-line','#38bdf8'),
+      ('emotes','EMOTES','ri-music-2-line','#60a5fa'),
+      ('gliders','GLIDERS','ri-send-plane-line','#22c55e')
+    ] %}
+    <article class="detail-panel detail-section rounded-2xl overflow-hidden">
+      <div class="detail-header px-4 py-3">
+        <h2 class="font-space text-lg font-bold text-white flex items-center gap-2"><i class="{{ icon }}" style="color:{{ color }}"></i>{{ label }} (<span data-count="{{ section_id }}">0</span>)</h2>
+      </div>
+      <div class="p-4">
+        <div class="detail-grid" id="grid-{{ section_id }}"></div>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+
+  <aside class="space-y-4">
+    <section class="buy-card rounded-2xl p-5 text-center">
+      <div class="font-space text-4xl font-bold">{{ '%.2f'|format(account_detail.price) }} €</div>
+      <div class="mt-1 text-sm">💎 {{ account_detail.vbucks }} V-Bucks included</div>
+      <button id="buy-now" class="buy-now-btn mt-4 w-full rounded-xl py-3 text-sm font-bold tracking-wide cursor-pointer">🛒 PURCHASE NOW</button>
+    </section>
+
+    <section class="detail-panel rounded-2xl p-5">
+      <h3 class="font-space text-xl font-bold text-white">Reliable Information</h3>
+      <div class="mt-3">
+        <div class="info-row"><span class="text-zinc-400">Level</span><strong class="text-emerald-400">{{ account_detail.level }}</strong></div>
+        <div class="info-row"><span class="text-zinc-400">V-Bucks</span><strong class="text-emerald-400">{{ account_detail.vbucks }}</strong></div>
+        <div class="info-row"><span class="text-zinc-400">Last Activity</span><strong class="text-zinc-200">{{ account_detail.last_activity }}</strong></div>
+        <div class="info-row"><span class="text-zinc-400">Country</span><strong class="text-zinc-200">{{ account_detail.country }}</strong></div>
+        <div class="info-row"><span class="text-zinc-400">Skins</span><strong class="text-zinc-200">{{ account_detail.skins|length }}</strong></div>
+        <div class="info-row"><span class="text-zinc-400">Pickaxes</span><strong class="text-zinc-200">{{ account_detail.pickaxes|length }}</strong></div>
+        <div class="info-row"><span class="text-zinc-400">Emotes</span><strong class="text-zinc-200">{{ account_detail.emotes|length }}</strong></div>
+        <div class="info-row"><span class="text-zinc-400">Gliders</span><strong class="text-zinc-200">{{ account_detail.gliders|length }}</strong></div>
+      </div>
+    </section>
+
+    <section class="detail-panel rounded-2xl p-5">
+      <h3 class="font-space text-xl font-bold text-white">Status</h3>
+      <div class="mt-3 space-y-2 text-sm">
+        {% set s = account_detail.status %}
+        {% for key, label in [
+          ('xbox_linkable', 'Xbox Linkable'),
+          ('psn_linkable', 'PSN Linkable'),
+          ('email_changeable', 'Email Changeable'),
+          ('email_access', 'Email Access'),
+          ('battle_pass', 'Battle Pass'),
+          ('stw_edition', 'STW Edition')
+        ] %}
+        {% set v = s.get(key) %}
+        <div class="info-row">
+          <span class="text-zinc-400">{{ label }}</span>
+          <strong class="{% if v is sameas true %}text-emerald-400{% elif v is sameas false %}text-red-400{% else %}text-zinc-500{% endif %}">
+            {% if v is sameas true %}✓{% elif v is sameas false %}✕{% else %}—{% endif %}
+          </strong>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+  </aside>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.ACCOUNT_DETAIL = {{ account_detail|tojson }};
+  window.KONVY_LOGGED_IN = {{ 'true' if logged_in else 'false' }};
+
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  async function loadCategory(sectionId, apiType) {
+    const detail = window.ACCOUNT_DETAIL || {};
+    const names = Array.isArray(detail[sectionId]) ? detail[sectionId] : [];
+    const grid = document.getElementById(`grid-${sectionId}`);
+    const countEl = document.querySelector(`[data-count="${sectionId}"]`);
+    if (!grid) return;
+    if (countEl) countEl.textContent = String(names.length);
+
+    if (!names.length) {
+      grid.innerHTML = '<div class="text-sm text-zinc-500">No items available</div>';
+      return;
+    }
+
+    let iconMap = new Map();
+    try {
+      const res = await fetch('/api/skins/icons', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ names, type: apiType })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const icons = Array.isArray(data.icons) ? data.icons : [];
+        iconMap = new Map(icons.map((x) => [x.name, x.icon || null]));
+      }
+    } catch (e) {}
+
+    grid.innerHTML = names.map((name, idx) => {
+      const safe = String(name || '').trim();
+      const icon = iconMap.get(name);
+      const eager = idx < 12 ? 'eager' : 'lazy';
+      const priority = idx < 12 ? 'high' : 'low';
+      if (!icon) {
+        return `<div class="detail-tile" title="${escapeHtml(safe)}"><span class="detail-tile-fallback">${escapeHtml(safe.slice(0, 2).toUpperCase() || '?')}</span></div>`;
+      }
+      return `<div class="detail-tile" title="${escapeHtml(safe)}"><img src="${escapeHtml(icon)}" alt="${escapeHtml(safe)}" loading="${eager}" fetchpriority="${priority}" decoding="async"></div>`;
+    }).join('');
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    Promise.all([
+      loadCategory('skins', 'outfit'),
+      loadCategory('pickaxes', 'pickaxe'),
+      loadCategory('emotes', 'emote'),
+      loadCategory('gliders', 'glider')
+    ]);
+
+    const buyBtn = document.getElementById('buy-now');
+    buyBtn?.addEventListener('click', async () => {
+      if (!window.KONVY_LOGGED_IN) {
+        window.location.href = '/login';
+        return;
+      }
+      buyBtn.disabled = true;
+      const original = buyBtn.textContent;
+      buyBtn.textContent = 'Processing...';
+      try {
+        const detail = window.ACCOUNT_DETAIL || {};
+        const res = await fetch('/api/fortnite/buy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            item_id: Number(detail.item_id),
+            base_price: Number(detail.base_price || 0)
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || data.message || 'Purchase failed');
+        window.location.href = '/my-accounts';
+      } catch (e) {
+        alert(e.message || 'Purchase failed');
+      } finally {
+        buyBtn.disabled = false;
+        buyBtn.textContent = original;
+      }
+    });
+  });
+</script>
+{% endblock %}

@@ -43,61 +43,6 @@
     .rarity-uncommon { background: rgba(34,197,94,0.15); color: #4ade80; }
     .autocomplete-no-results { padding: 12px 14px; font-size: 0.82rem; color: #71717a; }
 
-    .auth-modal-overlay {
-      position: fixed;
-      inset: 0;
-      z-index: 10000;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-      background: rgba(0,0,0,0.75);
-      backdrop-filter: blur(8px);
-    }
-    .auth-modal-overlay.open { display: flex; }
-    .auth-modal-card {
-      width: min(560px, 100%);
-      min-height: 480px;
-      border-radius: 20px;
-      border: 1px solid #1e2540;
-      background: #0d1128;
-      overflow: hidden;
-      box-shadow: 0 18px 40px rgba(0,0,0,0.45);
-      display: flex;
-      flex-direction: column;
-    }
-    .auth-modal-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 14px;
-      border-bottom: 1px solid #1e2540;
-    }
-    .auth-modal-header h3 {
-      margin: 0;
-      font-size: 0.82rem;
-      font-weight: 700;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      color: #00ff87;
-    }
-    .auth-modal-close {
-      width: 30px;
-      height: 30px;
-      border-radius: 8px;
-      border: 1px solid #1e2540;
-      background: #121734;
-      color: #9ca3af;
-      cursor: pointer;
-    }
-    .auth-modal-frame {
-      border: 0;
-      width: 100%;
-      height: 100%;
-      flex: 1;
-      background: #07091a;
-    }
-
     /* Processing overlay */
     .processing-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
     .processing-overlay.active { display: flex; }
@@ -214,6 +159,21 @@
       background: linear-gradient(135deg,#00ff87,#00c864);
       color: #041208;
     }
+    .project-sign-btn {
+      border: 1px solid rgba(0,255,135,0.45);
+      background: rgba(0,255,135,0.14);
+      color: #d1fae5;
+      box-shadow: inset 0 0 20px rgba(0,255,135,0.12);
+      animation: sign-btn-appear .45s ease-out both;
+    }
+    .project-sign-btn:hover {
+      border-color: rgba(0,255,135,0.75);
+      background: rgba(0,255,135,0.2);
+    }
+    @keyframes sign-btn-appear {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
     .project-muted { color: #a8b2d4; }
     .filters-scroll {
       max-height: calc(100vh - 210px);
@@ -286,53 +246,6 @@
       line-height: 1;
       white-space: nowrap;
     }
-    .market-preview-grid {
-      margin-top: 8px;
-      display: grid;
-      grid-template-columns: repeat(4,minmax(0,1fr));
-      gap: 2px;
-      border-top: 1px solid rgba(255,255,255,0.08);
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-      background: var(--market-preview-grid-separator);
-      padding: 0 1px;
-      cursor: pointer;
-    }
-    .market-preview-grid:focus-visible {
-      outline: 2px solid #7c90ff;
-      outline-offset: 2px;
-    }
-    .market-preview-tile {
-      position: relative;
-      aspect-ratio: 1.1/1;
-      background: linear-gradient(145deg, #20294c, #10172f);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #eef2ff;
-      overflow: hidden;
-    }
-    .market-preview-tile img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-    .market-preview-fallback {
-      font-size: .76rem;
-      font-weight: 800;
-      letter-spacing: .04em;
-      opacity: .9;
-    }
-    .market-preview-empty {
-      grid-column: 1 / -1;
-      height: 72px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: .78rem;
-      color: #9ca3af;
-      background: #121938;
-    }
     .market-card-main { padding: 12px 12px 10px; }
     .market-card-title {
       font-size: .92rem;
@@ -362,44 +275,27 @@
     }
     .market-icon-item { display: inline-flex; align-items: center; gap: 4px; }
     .market-icon-item i { color: #38bdf8; font-size: .8rem; }
-    .market-card-actions {
-      padding: 0 12px 12px;
-      margin-top: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .market-preview-btn {
-      width: 100%;
-      background: #151d3d;
-      color: #c8d4ff;
-      border: 1px solid #2f3a6b;
-      border-radius: 10px;
-      padding: 9px 10px;
-      font-size: .72rem;
-      font-weight: 800;
+    .market-open-hint {
+      margin-top: 10px;
+      font-size: .69rem;
+      font-weight: 700;
       letter-spacing: .08em;
       text-transform: uppercase;
-      cursor: pointer;
-      transition: all .15s ease;
+      color: #6ee7b7;
+      opacity: .85;
     }
-    .market-preview-btn:hover { border-color: #5b6ac0; color: #eef2ff; }
-    .market-buy-btn {
-      width: 100%;
-      background: linear-gradient(135deg,#00ff87,#00c864);
-      color: #041208;
-      border: none;
-      border-radius: 10px;
-      padding: 10px;
-      font-size: .78rem;
-      font-weight: 800;
-      letter-spacing: .06em;
-      text-transform: uppercase;
+    .market-account-card[role="button"] {
       cursor: pointer;
-      transition: filter .15s ease;
+      transition: transform .16s ease, border-color .16s ease;
     }
-    .market-buy-btn:hover { filter: brightness(0.95); }
-    .market-buy-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .market-account-card[role="button"]:hover {
+      transform: translateY(-2px);
+      border-color: rgba(0,255,135,.35);
+    }
+    .market-account-card[role="button"]:focus-visible {
+      outline: 2px solid rgba(0,255,135,.6);
+      outline-offset: 2px;
+    }
     .mobile-filters-wrap {
       position: fixed;
       top: 0;
@@ -478,7 +374,7 @@
       <a href="/balance" class="project-btn rounded-xl px-3 py-2 text-xs font-semibold no-underline">${{ balance }}</a>
       <a href="/logout" class="project-btn rounded-xl px-3 py-2 text-xs font-semibold no-underline">Logout</a>
       {% else %}
-      <button type="button" id="sign-in-trigger" aria-label="Sign in" aria-haspopup="dialog" class="project-btn-primary rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-wider">Sign In</button>
+      <button type="button" id="sign-in-trigger" aria-label="Sign in" class="project-sign-btn rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-wider">Sign In</button>
       {% endif %}
     </div>
   </header>
@@ -695,15 +591,6 @@
     </div>
   </div>
 
-  <div id="auth-modal-overlay" class="auth-modal-overlay" aria-hidden="true">
-    <div class="auth-modal-card" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
-      <div class="auth-modal-header">
-        <h3 id="auth-modal-title">Sign In</h3>
-        <button id="auth-modal-close" class="auth-modal-close" type="button" aria-label="Close sign in dialog">✕</button>
-      </div>
-      <iframe id="auth-modal-frame" class="auth-modal-frame" src="/login" title="Sign In"></iframe>
-    </div>
-  </div>
 </div>
 </div>
 </div>
