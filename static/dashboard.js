@@ -300,11 +300,22 @@ document.addEventListener("DOMContentLoaded", () => {
       .map(input => input.value.trim())
       .filter(val => val.length > 0);
     
-    if (items.length === 0) {
-      alert('Please enter at least one item to search');
+    const fd = new FormData(searchForm);
+    const budgetInput = document.getElementById('budget-input');
+    const priceMinInput = document.getElementById('price-min');
+    const budget = budgetInput.value ? parseFloat(budgetInput.value) : 999999;
+    const pmin = priceMinInput?.value ? Number(priceMinInput.value) : 0;
+    const skins = Number(fd.get('skins') || 0);
+    const days = Number(fd.get('days') || 0);
+    const vbmin = Number(fd.get('vbmin') || 0);
+    const vbmax = Number(fd.get('vbmax') || 0);
+    const hasNonItemFilters = budgetInput.value || priceMinInput?.value || skins > 0 || days > 0 || vbmin > 0 || vbmax > 0;
+
+    if (items.length === 0 && !hasNonItemFilters) {
+      alert('Please enter at least one item or set filters to search');
       return;
     }
-    
+
     searchResults.innerHTML = `
       <div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;gap:14px;">
         <div style="width:36px;height:36px;border:3px solid rgba(255,255,255,0.08);border-top-color:#10b981;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
@@ -312,16 +323,16 @@ document.addEventListener("DOMContentLoaded", () => {
       </div>
     `;
     
-    const fd = new FormData(searchForm);
-    const budgetInput = document.getElementById('budget-input');
-    const budget = budgetInput.value ? parseFloat(budgetInput.value) : 999999;
-    
     try {
       const data = await postJSON('/api/fortnite/search', {
         item: items.join(', '),
-        days: Number(fd.get('days') || 0),
-        skins: Number(fd.get('skins') || 0),
-        budget: budget,
+        days,
+        skins,
+        budget: budgetInput.value ? budget : undefined,
+        pmin: pmin > 0 ? pmin : undefined,
+        pmax: budgetInput.value ? budget : undefined,
+        vbmin: vbmin > 0 ? vbmin : undefined,
+        vbmax: vbmax > 0 ? vbmax : undefined,
       });
       
       searchResults.innerHTML = '';

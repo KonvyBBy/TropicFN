@@ -296,7 +296,7 @@
             <button type="button" class="filter-head section-toggle">Price <span class="toggle-icon"></span></button>
             <div class="filter-body space-y-2">
               <div class="grid grid-cols-2 gap-2">
-                <input id="price-min" type="number" min="0" placeholder="Min" class="project-input h-9 rounded-lg px-2 text-xs">
+                <input id="price-min" name="pmin" type="number" min="0" placeholder="Min" class="project-input h-9 rounded-lg px-2 text-xs">
                 <input id="budget-input" name="budget" type="number" min="0" placeholder="Max" class="project-input h-9 rounded-lg px-2 text-xs">
               </div>
             </div>
@@ -325,8 +325,8 @@
                 <input name="skins" type="number" min="0" value="0" class="project-input h-9 w-full rounded-lg px-2 text-xs">
               </div>
               <div class="grid grid-cols-2 gap-2">
-                <input type="number" min="0" placeholder="Min V-Bucks" class="project-input h-9 rounded-lg px-2 text-xs">
-                <input type="number" min="0" placeholder="Max V-Bucks" class="project-input h-9 rounded-lg px-2 text-xs">
+                  <input name="vbmin" type="number" min="0" placeholder="Min V-Bucks" class="project-input h-9 rounded-lg px-2 text-xs">
+                  <input name="vbmax" type="number" min="0" placeholder="Max V-Bucks" class="project-input h-9 rounded-lg px-2 text-xs">
               </div>
             </div>
           </div>
