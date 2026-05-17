@@ -20,48 +20,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const qs = (id) => document.getElementById(id);
 
-  // =============== AUTH MODAL ===============
-  function openAuthModal(mode = "login") {
-    const overlay = qs("auth-modal-overlay");
-    const frame = qs("auth-modal-frame");
-    if (!overlay || !frame) {
-      window.location.href = mode === "register" ? "/register" : "/login";
-      return;
-    }
-    frame.src = mode === "register" ? "/register" : "/login";
-    overlay.classList.add("open");
-    overlay.setAttribute("aria-hidden", "false");
-    document.body.style.overflow = "hidden";
+  // =============== AUTH NAVIGATION ===============
+  function openAuthPage(mode = "login") {
+    window.location.href = mode === "register" ? "/register" : "/login";
   }
 
-  function closeAuthModal() {
-    const overlay = qs("auth-modal-overlay");
-    if (!overlay) return;
-    overlay.classList.remove("open");
-    overlay.setAttribute("aria-hidden", "true");
-    document.body.style.overflow = "";
-  }
-
-  qs("sign-in-trigger")?.addEventListener("click", () => openAuthModal("login"));
-  qs("auth-modal-close")?.addEventListener("click", closeAuthModal);
-  qs("auth-modal-overlay")?.addEventListener("click", (e) => {
-    if (e.target.id === "auth-modal-overlay") closeAuthModal();
-  });
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") closeAuthModal();
-  });
-  qs("auth-modal-frame")?.addEventListener("load", () => {
-    const frame = qs("auth-modal-frame");
-    if (!frame) return;
-    try {
-      const path = frame.contentWindow?.location?.pathname || "";
-      if (path && path !== "/login" && path !== "/register") {
-        window.location.reload();
-      }
-    } catch (e) {
-      console.debug("Ignored modal iframe access error", e);
-    }
-  });
+  qs("sign-in-trigger")?.addEventListener("click", () => openAuthPage("login"));
 
 
   // =============== PROCESSING OVERLAY ===============
@@ -485,16 +449,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const hasPrice = Number.isFinite(numericPrice);
       const formattedPrice = hasPrice ? numericPrice.toFixed(2) : 'N/A';
 
-      const previewNames = Array.isArray(acc.preview_cosmetics) ? acc.preview_cosmetics.slice(0, MAX_PREVIEW_COSMETICS) : [];
-      const previewTiles = previewNames.map((name) => {
-        const safe = String(name || '').trim();
-        const initials = safe ? safe.split(/\s+/).slice(0, 2).map(p => p[0]).join('').toUpperCase() : '?';
-        return `
-          <div class="market-preview-tile" title="${escapeHtml(safe)}" data-cosmetic-name="${escapeHtml(safe)}">
-            <span class="market-preview-fallback">${escapeHtml(initials)}</span>
-          </div>
-        `;
-      }).join('');
       const cardTitle = escapeHtml(acc.title || `${acc.skins || 0} Skins | Fortnite Account`);
 
       card.innerHTML = `
@@ -503,10 +457,6 @@ document.addEventListener("DOMContentLoaded", () => {
             ${warrantyTag}
           </div>
           <div class="market-price-badge">${formattedPrice} €</div>
-        </div>
-
-        <div class="market-preview-grid" role="button" tabindex="0" aria-label="Preview cosmetics for ${cardTitle}">
-          ${previewNames.length > 0 ? previewTiles : '<div class="market-preview-empty">No preview cosmetics</div>'}
         </div>
 
         <div class="market-card-main">
@@ -521,74 +471,29 @@ document.addEventListener("DOMContentLoaded", () => {
             <span class="market-icon-item"><i class="ri-coin-line"></i> ${acc.vbucks || 0}</span>
             <span class="market-icon-item"><i class="ri-calendar-event-line"></i> ${escapeHtml(acc.last_played || "N/A")}</span>
           </div>
-        </div>
-
-        <div class="market-card-actions">
-          <button type="button" class="preview-btn market-preview-btn" data-item-id="${acc.item_id}">
-            Preview Cosmetics
-          </button>
-          <button class="buy-btn market-buy-btn" data-item-id="${acc.item_id}" data-base-price="${acc.base_price}">
-            Buy Account
-          </button>
+          <div class="market-open-hint">Click to open account details</div>
         </div>
       `;
 
-      const openPreview = () => {
-        showCosmeticTypeDialog(acc.item_id);
+      const openDetail = () => {
+        const itemId = Number(acc.item_id);
+        if (!Number.isFinite(itemId) || itemId <= 0) return;
+        window.location.href = `/account/${itemId}`;
       };
-      const previewBtn = card.querySelector(".preview-btn");
-      const previewGrid = card.querySelector(".market-preview-grid");
-      previewBtn.onclick = openPreview;
-      previewGrid?.addEventListener("click", openPreview);
-      previewGrid?.addEventListener("keydown", (event) => {
+
+      card.setAttribute("role", "button");
+      card.setAttribute("tabindex", "0");
+      card.setAttribute("aria-label", `Open ${cardTitle}`);
+      card.addEventListener("click", openDetail);
+      card.addEventListener("keydown", (event) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
-          openPreview();
+          openDetail();
         }
       });
 
-      const buyBtn = card.querySelector(".buy-btn");
-      buyBtn.onclick = async () => {
-        if (!window.KONVY_LOGGED_IN) {
-          openAuthModal("login");
-          return;
-        }
-
-        buyBtn.disabled = true;
-        showProcessingOverlay();
-
-        try {
-          await postJSON("/api/fortnite/buy", {
-            item_id: acc.item_id,
-            base_price: acc.base_price
-          });
-
-          hideProcessingOverlay();
-
-          let currentAccounts = [];
-          try {
-            const accsRes = await postJSON("/api/fortnite/my-accounts");
-            currentAccounts = accsRes.accounts || [];
-          } catch (e) {
-            console.error("Failed to refresh purchased accounts after purchase", e);
-          }
-          const newIndex = currentAccounts.length - 1;
-
-          showNamingModal(newIndex, () => {
-            loadMyAccounts();
-          });
-        } catch (e) {
-          hideProcessingOverlay();
-          alert("❌ " + e.message);
-        }
-
-        buyBtn.disabled = false;
-      };
-
       searchResults.appendChild(card);
     });
-
-    hydratePreviewIcons();
   }
 
   searchForm?.addEventListener('submit', async (e) => {
