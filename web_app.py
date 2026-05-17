@@ -3508,12 +3508,12 @@ def api_fortnite_search():
                 if days_ago is None or days_ago > daybreak_max:
                     continue
 
-            rl_purchase_count = _as_int(acc.get("fortnite_rl_purchases"))
+            paid_items_count = _as_int(acc.get("fortnite_rl_purchases"))
             if paid_items_min is not None and paid_items_min >= 0:
-                if rl_purchase_count is None or rl_purchase_count < paid_items_min:
+                if paid_items_count is None or paid_items_count < paid_items_min:
                     continue
             if paid_items_max is not None and paid_items_max >= 0:
-                if rl_purchase_count is None or rl_purchase_count > paid_items_max:
+                if paid_items_count is None or paid_items_count > paid_items_max:
                     continue
 
             last_played = f"{days_ago} days ago" if days_ago is not None else "N/A"
@@ -3611,7 +3611,6 @@ if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
-
 
 
 
