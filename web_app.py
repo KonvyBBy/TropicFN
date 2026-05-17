@@ -9,6 +9,8 @@ import hmac
 import hashlib
 import base64
 import datetime
+import logging
+import threading
 from typing import List, Tuple, Optional, Set, Dict, Any
 
 import requests
@@ -30,8 +32,27 @@ from functools import wraps
 
 # ===================== FORTNITE ICON LOOKUP =====================
 
-FORTNITE_COSMETICS_SEARCH_URL = "https://fortnite-api.com/v2/cosmetics/br/search/all"
+FORTNITE_COSMETICS_ALL_URL = "https://fortnite-api.com/v2/cosmetics/br"
 COSMETIC_ICON_CACHE_FILE = "cosmetic_icon_cache.json"
+COSMETIC_LOOKUP_REFRESH_INTERVAL_SECONDS = 24 * 60 * 60
+COSMETIC_TYPE_ALIASES = {
+    "emote": "emote",
+    "dance": "emote",
+    "outfit": "outfit",
+    "pickaxe": "pickaxe",
+    "glider": "glider",
+}
+
+COSMETIC_LOOKUP: Dict[str, Optional[str]] = {}
+COSMETIC_LOOKUP_BY_TYPE: Dict[str, Dict[str, Optional[str]]] = {}
+COSMETIC_LOOKUP_LAST_REFRESH_TS = 0
+COSMETIC_LOOKUP_LOCK = threading.Lock()
+COSMETIC_LOOKUP_SCHEDULER_STARTED = False
+COSMETIC_LOOKUP_SCHEDULER_LOCK = threading.Lock()
+COSMETIC_LOOKUP_RUNTIME_INITIALIZED = False
+COSMETIC_LOOKUP_RUNTIME_INIT_LOCK = threading.Lock()
+COSMETIC_LOGGER = logging.getLogger("cosmetic_lookup")
+COSMETIC_REFRESH_IN_PROGRESS = False
 
 def fortnite_api_get_outfit_icon_url_by_name(name: str):
     """
@@ -40,63 +61,215 @@ def fortnite_api_get_outfit_icon_url_by_name(name: str):
     return fortnite_api_get_cosmetic_icon_url_by_name(name, 'outfit')
 
 
+def _normalize_cosmetic_type(cosmetic_type: Optional[str]) -> Optional[str]:
+    if cosmetic_type is None:
+        return None
+    value = str(cosmetic_type).strip().lower()
+    if not value:
+        return None
+    return COSMETIC_TYPE_ALIASES.get(value, value)
+
+
+def _extract_cosmetic_icon_url(item: dict) -> Optional[str]:
+    images = item.get("images") or {}
+    return images.get("icon") or images.get("smallIcon") or images.get("featured")
+
+
+def _build_cosmetic_lookup(raw_items: list) -> Tuple[Dict[str, Optional[str]], Dict[str, Dict[str, Optional[str]]]]:
+    any_lookup: Dict[str, Optional[str]] = {}
+    by_type_lookup: Dict[str, Dict[str, Optional[str]]] = {}
+
+    for item in raw_items:
+        if not isinstance(item, dict):
+            continue
+
+        name = (item.get("name") or "").strip()
+        if not name:
+            continue
+        name_key = name.lower()
+        icon_url = _extract_cosmetic_icon_url(item)
+
+        if name_key not in any_lookup:
+            any_lookup[name_key] = icon_url
+
+        item_type = item.get("type") or {}
+        item_type_value = (item_type.get("value") or item_type.get("backendValue") or "").strip().lower()
+        normalized_type = _normalize_cosmetic_type(item_type_value)
+        if normalized_type:
+            type_lookup = by_type_lookup.setdefault(normalized_type, {})
+            if name_key not in type_lookup:
+                type_lookup[name_key] = icon_url
+
+    return any_lookup, by_type_lookup
+
+
+def _persist_cosmetic_lookup_to_disk() -> None:
+    payload = {
+        "updated_at": COSMETIC_LOOKUP_LAST_REFRESH_TS,
+        "any": COSMETIC_LOOKUP,
+        "by_type": COSMETIC_LOOKUP_BY_TYPE,
+    }
+    with open(COSMETIC_ICON_CACHE_FILE, "w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2)
+
+
+def _load_cosmetic_lookup_from_disk() -> bool:
+    if not os.path.exists(COSMETIC_ICON_CACHE_FILE):
+        return False
+    try:
+        with open(COSMETIC_ICON_CACHE_FILE, "r", encoding="utf-8") as f:
+            payload = json.load(f) or {}
+        any_lookup = payload.get("any")
+        by_type_lookup = payload.get("by_type")
+        if not isinstance(any_lookup, dict):
+            return False
+        if not isinstance(by_type_lookup, dict):
+            by_type_lookup = {}
+
+        normalized_by_type: Dict[str, Dict[str, Optional[str]]] = {}
+        for key, value in by_type_lookup.items():
+            normalized_key = _normalize_cosmetic_type(key)
+            if not normalized_key or not isinstance(value, dict):
+                continue
+            normalized_by_type[normalized_key] = value
+
+        with COSMETIC_LOOKUP_LOCK:
+            global COSMETIC_LOOKUP, COSMETIC_LOOKUP_BY_TYPE, COSMETIC_LOOKUP_LAST_REFRESH_TS
+            COSMETIC_LOOKUP = any_lookup
+            COSMETIC_LOOKUP_BY_TYPE = normalized_by_type
+            raw_updated_at = int(payload.get("updated_at") or 0)
+            now_ts = int(time.time())
+            COSMETIC_LOOKUP_LAST_REFRESH_TS = min(max(raw_updated_at, 0), now_ts)
+        return True
+    except Exception:
+        return False
+
+
+def refresh_cosmetic_lookup_from_api() -> bool:
+    started_at = time.time()
+    with COSMETIC_LOOKUP_LOCK:
+        global COSMETIC_REFRESH_IN_PROGRESS
+        if COSMETIC_REFRESH_IN_PROGRESS:
+            return False
+        COSMETIC_REFRESH_IN_PROGRESS = True
+    try:
+        COSMETIC_LOGGER.info("Starting cosmetic lookup refresh from Fortnite API")
+        response = requests.get(FORTNITE_COSMETICS_ALL_URL, timeout=20)
+        if response.status_code != 200:
+            COSMETIC_LOGGER.warning(
+                "Cosmetic lookup refresh failed with status %s in %.2fs",
+                response.status_code,
+                time.time() - started_at,
+            )
+            return False
+
+        data = (response.json() or {}).get("data") or []
+        if not isinstance(data, list):
+            COSMETIC_LOGGER.warning(
+                "Cosmetic lookup refresh failed due to invalid payload in %.2fs",
+                time.time() - started_at,
+            )
+            return False
+        any_lookup, by_type_lookup = _build_cosmetic_lookup(data)
+        if not any_lookup:
+            COSMETIC_LOGGER.warning(
+                "Cosmetic lookup refresh produced empty lookup in %.2fs",
+                time.time() - started_at,
+            )
+            return False
+
+        with COSMETIC_LOOKUP_LOCK:
+            global COSMETIC_LOOKUP, COSMETIC_LOOKUP_BY_TYPE, COSMETIC_LOOKUP_LAST_REFRESH_TS
+            COSMETIC_LOOKUP = any_lookup
+            COSMETIC_LOOKUP_BY_TYPE = by_type_lookup
+            COSMETIC_LOOKUP_LAST_REFRESH_TS = int(time.time())
+
+        _persist_cosmetic_lookup_to_disk()
+        COSMETIC_LOGGER.info(
+            "Cosmetic lookup refresh succeeded with %s entries in %.2fs",
+            len(any_lookup),
+            time.time() - started_at,
+        )
+        return True
+    except Exception as exc:
+        COSMETIC_LOGGER.warning(
+            "Cosmetic lookup refresh failed with exception after %.2fs: %s",
+            time.time() - started_at,
+            exc,
+        )
+        return False
+    finally:
+        with COSMETIC_LOOKUP_LOCK:
+            COSMETIC_REFRESH_IN_PROGRESS = False
+
+
+def initialize_cosmetic_lookup() -> None:
+    if refresh_cosmetic_lookup_from_api():
+        return
+    _load_cosmetic_lookup_from_disk()
+
+
+def start_cosmetic_lookup_scheduler() -> None:
+    global COSMETIC_LOOKUP_SCHEDULER_STARTED
+    with COSMETIC_LOOKUP_SCHEDULER_LOCK:
+        if COSMETIC_LOOKUP_SCHEDULER_STARTED:
+            return
+        COSMETIC_LOOKUP_SCHEDULER_STARTED = True
+
+    def _scheduler_loop():
+        while True:
+            with COSMETIC_LOOKUP_LOCK:
+                last_refresh_ts = COSMETIC_LOOKUP_LAST_REFRESH_TS
+
+            now_ts = time.time()
+            if last_refresh_ts <= 0:
+                sleep_seconds = 60
+            else:
+                age_seconds = max(now_ts - last_refresh_ts, 0)
+                sleep_seconds = max(COSMETIC_LOOKUP_REFRESH_INTERVAL_SECONDS - age_seconds, 0)
+
+            if sleep_seconds > 0:
+                time.sleep(sleep_seconds)
+
+            with COSMETIC_LOOKUP_LOCK:
+                latest_refresh_ts = COSMETIC_LOOKUP_LAST_REFRESH_TS
+            if latest_refresh_ts > 0:
+                latest_age_seconds = max(time.time() - latest_refresh_ts, 0)
+                if latest_age_seconds < COSMETIC_LOOKUP_REFRESH_INTERVAL_SECONDS:
+                    continue
+
+            refresh_cosmetic_lookup_from_api()
+
+    thread = threading.Thread(target=_scheduler_loop, daemon=True)
+    thread.start()
+
+
+def ensure_cosmetic_lookup_runtime_initialized() -> None:
+    global COSMETIC_LOOKUP_RUNTIME_INITIALIZED
+    with COSMETIC_LOOKUP_RUNTIME_INIT_LOCK:
+        if COSMETIC_LOOKUP_RUNTIME_INITIALIZED:
+            return
+        initialize_cosmetic_lookup()
+        start_cosmetic_lookup_scheduler()
+        COSMETIC_LOOKUP_RUNTIME_INITIALIZED = True
+
+
 def fortnite_api_get_cosmetic_icon_url_by_name(name: str, cosmetic_type: str = None):
     """
-    Generic function to fetch cosmetic icon URLs by name.
-    cosmetic_type can be: 'outfit', 'pickaxe', 'emote', 'glider', or None (searches all types)
+    Generic O(1) in-memory cosmetic icon lookup by name.
+    cosmetic_type can be: 'outfit', 'pickaxe', 'emote', 'glider', or None (searches all types).
+    Runtime initialization must run first via ensure_cosmetic_lookup_runtime_initialized().
     """
     name = (name or "").strip()
     if not name:
         return None
 
-    cache = {}
-    if os.path.exists(COSMETIC_ICON_CACHE_FILE):
-        try:
-            with open(COSMETIC_ICON_CACHE_FILE, "r", encoding="utf-8") as f:
-                cache = json.load(f) or {}
-        except Exception:
-            cache = {}
-
-    # Create a cache key that includes the type
-    cache_type = cosmetic_type or "any"
-    key = f"{cache_type}::{name.lower()}"
-    if key in cache:
-        return cache[key]
-
-    params = {
-        "name": name,
-        "matchMethod": "contains",
-        "language": "en",
-        "searchLanguage": "en",
-    }
-
-    try:
-        r = requests.get(FORTNITE_COSMETICS_SEARCH_URL, params=params, timeout=8)
-        if r.status_code != 200:
-            cache[key] = None
-            return None
-
-        data = (r.json() or {}).get("data") or []
-        for item in data:
-            t = item.get("type", {})
-            t_val = (t.get("value") or t.get("backendValue") or "").lower()
-            
-            # If cosmetic_type is specified, only match that type
-            # Otherwise, match any type
-            if cosmetic_type is None or t_val == cosmetic_type.lower():
-                images = item.get("images") or {}
-                url = images.get("icon") or images.get("smallIcon") or images.get("featured")
-                if url:
-                    cache[key] = url
-                    with open(COSMETIC_ICON_CACHE_FILE, "w", encoding="utf-8") as f:
-                        json.dump(cache, f, indent=2)
-                    return url
-
-        cache[key] = None
-        return None
-
-    except Exception:
-        return None
+    name_key = name.lower()
+    normalized_type = _normalize_cosmetic_type(cosmetic_type)
+    with COSMETIC_LOOKUP_LOCK:
+        if normalized_type:
+            return (COSMETIC_LOOKUP_BY_TYPE.get(normalized_type) or {}).get(name_key)
+        return COSMETIC_LOOKUP.get(name_key)
 
 
 
@@ -963,6 +1136,11 @@ def get_shopify_order_by_ref(order_ref: str):
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-change-this")
 KONVY_ADMIN_PASSWORD = os.environ.get("KONVY_ADMIN_PASSWORD", "Kelvilo40")
+
+
+@app.before_serving
+def _ensure_runtime_cosmetic_lookup():
+    ensure_cosmetic_lookup_runtime_initialized()
 
 
 def login_required_page(f):
@@ -3736,6 +3914,5 @@ def api_fortnite_my_accounts():
 if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 5000))
+    ensure_cosmetic_lookup_runtime_initialized()
     app.run(host="0.0.0.0", port=port)
-
-
