@@ -423,10 +423,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     tiles.forEach(tile => {
+      if (tile.hasAttribute('data-hydrated')) return;
       const name = tile.dataset.cosmeticName || '';
       const icon = previewIconCache.get(name);
       if (!icon) return;
-      if (tile.hasAttribute('data-hydrated')) return;
       tile.innerHTML = `<img src="${escapeHtml(icon)}" alt="${escapeHtml(name)}" loading="lazy">`;
       tile.setAttribute('data-hydrated', '');
       tile.classList.add('has-image');
@@ -541,13 +541,7 @@ document.addEventListener("DOMContentLoaded", () => {
       previewBtn.onclick = openPreview;
       previewGrid?.addEventListener("click", openPreview);
       previewGrid?.addEventListener("keydown", (event) => {
-        if (event.key === "Enter") {
-          event.preventDefault();
-          openPreview();
-        }
-      });
-      previewGrid?.addEventListener("keyup", (event) => {
-        if (event.key === " ") {
+        if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
           openPreview();
         }
