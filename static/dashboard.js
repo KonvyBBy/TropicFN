@@ -119,22 +119,47 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
   // =============== LOAD COSMETICS DATA ===============
-  window.allCosmetics = [];
-  
-  async function loadCosmetics() {
-    try {
-      const res = await fetch("https://fortnite-api.com/v2/cosmetics/br");
-      const data = await res.json();
-      if (data.status === 200 && data.data) {
-        window.allCosmetics = data.data;
-        console.log(`Loaded ${window.allCosmetics.length} Fortnite cosmetics`);
-      }
-    } catch (err) {
-      console.error("Failed to load cosmetics:", err);
+  const cosmeticsSearchCache = new Map();
+  const cosmeticsSearchInFlight = new Map();
+
+  async function searchCosmetics(query, allowedTypes) {
+    const q = String(query || "").trim().toLowerCase();
+    if (q.length < 2) return [];
+
+    const normalizedAllowed = (allowedTypes || ['outfit', 'pickaxe', 'emote', 'glider'])
+      .map(v => String(v).toLowerCase())
+      .sort();
+    const cacheKey = `${q}::${normalizedAllowed.join(',')}`;
+
+    if (cosmeticsSearchCache.has(cacheKey)) {
+      return cosmeticsSearchCache.get(cacheKey);
     }
+    if (cosmeticsSearchInFlight.has(cacheKey)) {
+      return cosmeticsSearchInFlight.get(cacheKey);
+    }
+
+    const url = `https://fortnite-api.com/v2/cosmetics/br/search/all?name=${encodeURIComponent(q)}&matchMethod=contains&language=en&searchLanguage=en`;
+    const request = fetch(url)
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`Cosmetic search failed: ${res.status}`);
+        const data = await res.json();
+        const allowedTypeSet = new Set(normalizedAllowed);
+        const filtered = (Array.isArray(data?.data) ? data.data : [])
+          .filter(item => {
+            const itemType = String(item?.type?.value || '').toLowerCase();
+            const name = String(item?.name || '').toLowerCase();
+            return name.includes(q) && allowedTypeSet.has(itemType);
+          })
+          .slice(0, 10);
+        cosmeticsSearchCache.set(cacheKey, filtered);
+        return filtered;
+      })
+      .catch(() => [])
+      .finally(() => cosmeticsSearchInFlight.delete(cacheKey));
+
+    cosmeticsSearchInFlight.set(cacheKey, request);
+    return request;
   }
-  
-  loadCosmetics();
 
   // =============== COSMETIC AUTOCOMPLETE LOGIC ===============
 
@@ -147,22 +172,14 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  function filterCosmetics(query, dropdown, allowedTypes) {
+  async function filterCosmetics(query, dropdown, allowedTypes) {
     if (!query || query.length < 2) {
       dropdown.classList.remove('show');
       return;
     }
 
     const q = query.toLowerCase();
-    const allowedTypeSet = new Set((allowedTypes || ['outfit', 'pickaxe', 'emote', 'glider']).map(v => String(v).toLowerCase()));
-    
-    const filtered = window.allCosmetics
-      .filter(item => {
-        const itemType = (item.type?.value || '').toLowerCase();
-        const nameMatch = item.name.toLowerCase().includes(q);
-        return nameMatch && allowedTypeSet.has(itemType);
-      })
-      .slice(0, 10);
+    const filtered = await searchCosmetics(q, allowedTypes);
 
     if (filtered.length === 0) {
       dropdown.innerHTML = '<div class="autocomplete-no-results">No items found</div>';
@@ -177,7 +194,7 @@ document.addEventListener("DOMContentLoaded", () => {
       
       return `
         <div class="autocomplete-item" data-index="${idx}" data-name="${item.name}" data-id="${item.id || ''}">
-          ${icon ? `<img src="${icon}" alt="${item.name}" loading="lazy">` : ''}
+          ${icon ? `<img src="${icon}" alt="${item.name}" loading="lazy" decoding="async">` : ''}
           <div class="autocomplete-item-info">
             <div class="autocomplete-item-name">${item.name}</div>
             <div class="autocomplete-item-type">${type}</div>
@@ -197,8 +214,8 @@ document.addEventListener("DOMContentLoaded", () => {
     input.addEventListener('input', (e) => {
       input.removeAttribute('data-cosmetic-id');
       clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => {
-        filterCosmetics(e.target.value, dropdown, allowedTypes);
+      debounceTimer = setTimeout(async () => {
+        await filterCosmetics(e.target.value, dropdown, allowedTypes);
       }, 200);
     });
     
