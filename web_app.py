@@ -45,6 +45,7 @@ COSMETIC_TYPE_ALIASES = {
 
 COSMETIC_LOOKUP: Dict[str, Optional[str]] = {}
 COSMETIC_LOOKUP_BY_TYPE: Dict[str, Dict[str, Optional[str]]] = {}
+COSMETIC_RARITY_LOOKUP: Dict[str, Optional[str]] = {}
 COSMETIC_LOOKUP_LAST_REFRESH_TS = 0
 COSMETIC_LOOKUP_LOCK = threading.Lock()
 COSMETIC_LOOKUP_SCHEDULER_STARTED = False
@@ -75,9 +76,10 @@ def _extract_cosmetic_icon_url(item: dict) -> Optional[str]:
     return images.get("icon") or images.get("smallIcon") or images.get("featured")
 
 
-def _build_cosmetic_lookup(raw_items: list) -> Tuple[Dict[str, Optional[str]], Dict[str, Dict[str, Optional[str]]]]:
+def _build_cosmetic_lookup(raw_items: list) -> Tuple[Dict[str, Optional[str]], Dict[str, Dict[str, Optional[str]]], Dict[str, Optional[str]]]:
     any_lookup: Dict[str, Optional[str]] = {}
     by_type_lookup: Dict[str, Dict[str, Optional[str]]] = {}
+    rarity_lookup: Dict[str, Optional[str]] = {}
 
     for item in raw_items:
         if not isinstance(item, dict):
@@ -92,6 +94,11 @@ def _build_cosmetic_lookup(raw_items: list) -> Tuple[Dict[str, Optional[str]], D
         if name_key not in any_lookup:
             any_lookup[name_key] = icon_url
 
+        rarity_info = item.get("rarity") or {}
+        rarity_value = (rarity_info.get("value") or "").strip().lower()
+        if name_key not in rarity_lookup:
+            rarity_lookup[name_key] = rarity_value or None
+
         item_type = item.get("type") or {}
         item_type_value = (item_type.get("value") or item_type.get("backendValue") or "").strip().lower()
         normalized_type = _normalize_cosmetic_type(item_type_value)
@@ -100,7 +107,7 @@ def _build_cosmetic_lookup(raw_items: list) -> Tuple[Dict[str, Optional[str]], D
             if name_key not in type_lookup:
                 type_lookup[name_key] = icon_url
 
-    return any_lookup, by_type_lookup
+    return any_lookup, by_type_lookup, rarity_lookup
 
 
 def _persist_cosmetic_lookup_to_disk() -> None:
@@ -108,6 +115,7 @@ def _persist_cosmetic_lookup_to_disk() -> None:
         "updated_at": COSMETIC_LOOKUP_LAST_REFRESH_TS,
         "any": COSMETIC_LOOKUP,
         "by_type": COSMETIC_LOOKUP_BY_TYPE,
+        "rarity": COSMETIC_RARITY_LOOKUP,
     }
     with open(COSMETIC_ICON_CACHE_FILE, "w", encoding="utf-8") as f:
         json.dump(payload, f, indent=2)
@@ -133,10 +141,15 @@ def _load_cosmetic_lookup_from_disk() -> bool:
                 continue
             normalized_by_type[normalized_key] = value
 
+        rarity_lookup = payload.get("rarity")
+        if not isinstance(rarity_lookup, dict):
+            rarity_lookup = {}
+
         with COSMETIC_LOOKUP_LOCK:
-            global COSMETIC_LOOKUP, COSMETIC_LOOKUP_BY_TYPE, COSMETIC_LOOKUP_LAST_REFRESH_TS
+            global COSMETIC_LOOKUP, COSMETIC_LOOKUP_BY_TYPE, COSMETIC_RARITY_LOOKUP, COSMETIC_LOOKUP_LAST_REFRESH_TS
             COSMETIC_LOOKUP = any_lookup
             COSMETIC_LOOKUP_BY_TYPE = normalized_by_type
+            COSMETIC_RARITY_LOOKUP = rarity_lookup
             raw_updated_at = int(payload.get("updated_at") or 0)
             now_ts = int(time.time())
             COSMETIC_LOOKUP_LAST_REFRESH_TS = min(max(raw_updated_at, 0), now_ts)
@@ -170,7 +183,7 @@ def refresh_cosmetic_lookup_from_api() -> bool:
                 time.time() - started_at,
             )
             return False
-        any_lookup, by_type_lookup = _build_cosmetic_lookup(data)
+        any_lookup, by_type_lookup, rarity_lookup = _build_cosmetic_lookup(data)
         if not any_lookup:
             COSMETIC_LOGGER.warning(
                 "Cosmetic lookup refresh produced empty lookup in %.2fs",
@@ -179,9 +192,10 @@ def refresh_cosmetic_lookup_from_api() -> bool:
             return False
 
         with COSMETIC_LOOKUP_LOCK:
-            global COSMETIC_LOOKUP, COSMETIC_LOOKUP_BY_TYPE, COSMETIC_LOOKUP_LAST_REFRESH_TS
+            global COSMETIC_LOOKUP, COSMETIC_LOOKUP_BY_TYPE, COSMETIC_RARITY_LOOKUP, COSMETIC_LOOKUP_LAST_REFRESH_TS
             COSMETIC_LOOKUP = any_lookup
             COSMETIC_LOOKUP_BY_TYPE = by_type_lookup
+            COSMETIC_RARITY_LOOKUP = rarity_lookup
             COSMETIC_LOOKUP_LAST_REFRESH_TS = int(time.time())
 
         _persist_cosmetic_lookup_to_disk()
@@ -1454,10 +1468,14 @@ def get_skin_icons():
     for name in names:
         # Use the generic function - it handles both with and without type
         url = fortnite_api_get_cosmetic_icon_url_by_name(name, cosmetic_type)
-        
+        rarity = None
+        with COSMETIC_LOOKUP_LOCK:
+            rarity = COSMETIC_RARITY_LOOKUP.get((name or "").strip().lower())
+
         icons.append({
             "name": name,
-            "icon": url
+            "icon": url,
+            "rarity": rarity,
         })
 
     return jsonify({"icons": icons})
