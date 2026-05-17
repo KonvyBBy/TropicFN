@@ -20,10 +20,46 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const qs = (id) => document.getElementById(id);
 
-  // =============== AUTH REDIRECT ===============
+  // =============== AUTH MODAL ===============
   function openAuthModal(mode = "login") {
-    window.location.href = mode === "register" ? "/register" : "/login";
+    const overlay = qs("auth-modal-overlay");
+    const frame = qs("auth-modal-frame");
+    if (!overlay || !frame) {
+      window.location.href = mode === "register" ? "/register" : "/login";
+      return;
+    }
+    frame.src = mode === "register" ? "/register" : "/login";
+    overlay.classList.add("open");
+    overlay.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
   }
+
+  function closeAuthModal() {
+    const overlay = qs("auth-modal-overlay");
+    if (!overlay) return;
+    overlay.classList.remove("open");
+    overlay.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+  }
+
+  qs("sign-in-trigger")?.addEventListener("click", () => openAuthModal("login"));
+  qs("auth-modal-close")?.addEventListener("click", closeAuthModal);
+  qs("auth-modal-overlay")?.addEventListener("click", (e) => {
+    if (e.target.id === "auth-modal-overlay") closeAuthModal();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeAuthModal();
+  });
+  qs("auth-modal-frame")?.addEventListener("load", () => {
+    const frame = qs("auth-modal-frame");
+    if (!frame) return;
+    try {
+      const path = frame.contentWindow?.location?.pathname || "";
+      if (path && path !== "/login" && path !== "/register") {
+        window.location.reload();
+      }
+    } catch (e) {}
+  });
 
 
   // =============== PROCESSING OVERLAY ===============
@@ -135,7 +171,7 @@ document.addEventListener("DOMContentLoaded", () => {
   loadCosmetics();
 
   // =============== MULTI-ITEM SEARCH LOGIC ===============
-  let itemInputCount = 1;
+  let itemInputCount = document.querySelectorAll('.item-input-row').length || 1;
 
   function updateRemoveButtons() {
     const rows = document.querySelectorAll('.item-input-row');
@@ -241,28 +277,24 @@ document.addEventListener("DOMContentLoaded", () => {
   if (firstInput && firstDropdown) {
     setupAutocomplete(firstInput, firstDropdown);
   }
+  updateRemoveButtons();
 
   document.getElementById('add-item-btn')?.addEventListener('click', () => {
-    if (itemInputCount >= 5) {
-      alert('Maximum 5 items allowed');
-      return;
-    }
-    
     itemInputCount++;
     const container = document.getElementById('items-container');
     
     const row = document.createElement('div');
     row.className = 'item-input-row';
     row.innerHTML = `
-      <div class="autocomplete-wrapper">
+      <div class="autocomplete-wrapper" style="position:relative;">
         <input 
           type="text" 
-          class="item-search-input" 
-          placeholder="Type item name..." 
+          class="item-search-input project-input h-9 w-full rounded-lg px-3 text-xs" 
+          placeholder="Search skin, emote, glider..." 
           autocomplete="off">
         <div class="autocomplete-dropdown"></div>
       </div>
-      <button type="button" class="remove-item-btn">✕</button>
+      <button type="button" class="remove-item-btn project-btn mt-2 rounded-lg px-3 py-1 text-xs">- Remove</button>
     `;
     
     container.appendChild(row);
@@ -291,6 +323,208 @@ document.addEventListener("DOMContentLoaded", () => {
   // =============== SEARCH FORM SUBMIT ===============
   const searchForm = document.getElementById('search-form');
   const searchResults = document.getElementById('search-results');
+  const sortButtons = Array.from(document.querySelectorAll('.toolbar-tab[data-sort]'));
+  let currentSort = 'default';
+  let lastSearchAccounts = [];
+  const allowedFormKeys = new Set([
+    'pmin', 'pmax', 'title', 'email_login_data', 'change_email',
+    'xbox_linkable', 'psn_linkable', 'skin[]', 'pickaxe[]', 'dance[]', 'glider[]',
+    'smin', 'smax', 'pickaxe_min', 'pickaxe_max', 'dmin', 'dmax', 'gmin', 'gmax',
+    'vbmin', 'vbmax', 'lmin', 'lmax', 'rl_purchases', 'refund_credits_min',
+    'refund_credits_max', 'daybreak', 'bp', 'bp_lmin', 'bp_lmax', 'country[]',
+    'stw_mode'
+  ]);
+
+  function normalizePayloadValue(key, value) {
+    if (value == null) return undefined;
+    const trimmed = String(value).trim();
+    if (!trimmed) return undefined;
+
+    if (key === 'email_login_data' || key === 'change_email' || key === 'bp') {
+      if (trimmed === 'yes') return 1;
+      if (trimmed === 'no') return 0;
+      return undefined;
+    }
+
+    if (key === 'xbox_linkable' || key === 'psn_linkable') {
+      if (trimmed === 'maybe') return 1;
+      if (trimmed === 'no') return 0;
+      return undefined;
+    }
+
+    return trimmed;
+  }
+
+  function buildSearchPayload(formData, items) {
+    const payload = { item: items.join(', ') };
+
+    formData.forEach((value, key) => {
+      if (!allowedFormKeys.has(key)) return;
+      if (key === 'stw_mode') return;
+      const normalized = normalizePayloadValue(key, value);
+      if (normalized == null) return;
+
+      if (payload[key] !== undefined) {
+        if (!Array.isArray(payload[key])) payload[key] = [payload[key]];
+        payload[key].push(normalized);
+      } else {
+        payload[key] = normalized;
+      }
+    });
+
+    const stwMode = String(formData.get('stw_mode') || '').trim();
+    if (stwMode === 'include') payload['stw[]'] = [1];
+    if (stwMode === 'exclude') payload['not_stw[]'] = [1];
+
+    const pmax = Number(payload.pmax || 0);
+    if (pmax > 0) payload.budget = pmax;
+
+    return payload;
+  }
+
+  function getSortedAccounts(accounts) {
+    const list = [...accounts];
+    if (currentSort === 'cheap') list.sort((a, b) => (a.user_price || 0) - (b.user_price || 0));
+    if (currentSort === 'expensive') list.sort((a, b) => (b.user_price || 0) - (a.user_price || 0));
+    if (currentSort === 'newest') list.sort((a, b) => (b.item_id || 0) - (a.item_id || 0));
+    return list;
+  }
+
+  function setSort(sort) {
+    currentSort = sort;
+    sortButtons.forEach(btn => {
+      const active = btn.dataset.sort === sort;
+      btn.classList.toggle('active', active);
+      btn.classList.toggle('project-muted', !active);
+    });
+    if (lastSearchAccounts.length) renderAccounts(getSortedAccounts(lastSearchAccounts));
+  }
+
+  sortButtons.forEach(btn => {
+    btn.addEventListener('click', () => setSort(btn.dataset.sort || 'default'));
+  });
+
+  function renderEmptyState() {
+    searchResults.innerHTML = `
+      <div style="grid-column:1/-1;text-align:center;padding:48px 24px;">
+        <div style="font-size:2.5rem;margin-bottom:12px;opacity:0.5;">😕</div>
+        <div style="font-size:0.95rem;font-weight:600;color:#e4e4e7;margin-bottom:6px;">No accounts found</div>
+        <div style="font-size:0.82rem;color:#71717a;">Try different items or adjust your filters</div>
+      </div>
+    `;
+  }
+
+  function renderAccounts(accounts) {
+    searchResults.innerHTML = '';
+
+    if (!accounts || accounts.length === 0) {
+      renderEmptyState();
+      return;
+    }
+
+    accounts.forEach(acc => {
+      const card = document.createElement('div');
+      card.className = 'glass-panel group relative overflow-hidden rounded-2xl transition hover:border-white/20';
+      card.style.display = 'flex';
+      card.style.flexDirection = 'column';
+
+      const warrantyTag = acc.last_played_days != null && acc.last_played_days >= 11
+        ? `<span style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:#34d399;padding:2px 8px;border-radius:99px;font-size:0.65rem;font-weight:700;">✓ Warranty</span>`
+        : '';
+
+      const shownPrice = Number(acc.user_price || 0).toFixed(2);
+
+      card.innerHTML = `
+        <div style="padding:16px 18px 0;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+            <span style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#e4e4e7;padding:3px 8px;border-radius:99px;font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;">Full Access</span>
+            ${warrantyTag}
+          </div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:1.25rem;font-weight:700;color:#fff;">$${shownPrice}</div>
+        </div>
+
+        <div style="padding:14px 18px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;flex:1;">
+          <div style="text-align:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:10px 6px;">
+            <div style="font-size:0.7rem;color:#71717a;margin-bottom:3px;">🎭 Skins</div>
+            <div style="font-weight:700;color:#fff;font-size:0.95rem;">${acc.skins || 0}</div>
+          </div>
+          <div style="text-align:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:10px 6px;">
+            <div style="font-size:0.7rem;color:#71717a;margin-bottom:3px;">💃 Emotes</div>
+            <div style="font-weight:700;color:#fff;font-size:0.95rem;">${acc.emotes || 0}</div>
+          </div>
+          <div style="text-align:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:10px 6px;">
+            <div style="font-size:0.7rem;color:#71717a;margin-bottom:3px;">⛏️ Picks</div>
+            <div style="font-weight:700;color:#fff;font-size:0.95rem;">${acc.pickaxes || 0}</div>
+          </div>
+          <div style="text-align:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:10px 6px;">
+            <div style="font-size:0.7rem;color:#71717a;margin-bottom:3px;">🪂 Gliders</div>
+            <div style="font-weight:700;color:#fff;font-size:0.95rem;">${acc.gliders || 0}</div>
+          </div>
+          <div style="text-align:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:10px 6px;">
+            <div style="font-size:0.7rem;color:#71717a;margin-bottom:3px;">💰 V-Bucks</div>
+            <div style="font-weight:700;color:#fff;font-size:0.95rem;">${acc.vbucks || 0}</div>
+          </div>
+          <div style="text-align:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:10px 6px;">
+            <div style="font-size:0.7rem;color:#71717a;margin-bottom:3px;">📅 Offline</div>
+            <div style="font-weight:700;color:#fff;font-size:0.85rem;">${acc.last_played || "?"}</div>
+          </div>
+        </div>
+
+        <div style="padding:0 18px 16px;display:flex;gap:8px;">
+          <button class="buy-btn" data-item-id="${acc.item_id}" data-base-price="${acc.base_price}"
+            style="flex:1;background:#10b981;color:#000;border:none;border-radius:12px;padding:10px;font-size:0.82rem;font-weight:700;cursor:pointer;transition:background 0.15s;">
+            💳 Buy Now
+          </button>
+          <button class="skins-btn" data-item-id="${acc.item_id}"
+            style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#a1a1aa;border-radius:12px;padding:10px 14px;font-size:0.82rem;font-weight:600;cursor:pointer;transition:all 0.15s;white-space:nowrap;">
+            👀 Preview
+          </button>
+        </div>
+      `;
+
+      const buyBtn = card.querySelector(".buy-btn");
+      buyBtn.onclick = async () => {
+        if (!window.KONVY_LOGGED_IN) {
+          openAuthModal("login");
+          return;
+        }
+
+        buyBtn.disabled = true;
+        showProcessingOverlay();
+
+        try {
+          await postJSON("/api/fortnite/buy", {
+            item_id: acc.item_id,
+            base_price: acc.base_price
+          });
+
+          hideProcessingOverlay();
+
+          let currentAccounts = [];
+          try {
+            const accsRes = await postJSON("/api/fortnite/my-accounts");
+            currentAccounts = accsRes.accounts || [];
+          } catch {}
+          const newIndex = currentAccounts.length - 1;
+
+          showNamingModal(newIndex, () => {
+            loadMyAccounts();
+          });
+        } catch (e) {
+          hideProcessingOverlay();
+          alert("❌ " + e.message);
+        }
+
+        buyBtn.disabled = false;
+      };
+
+      card.querySelector(".skins-btn").onclick = () => {
+        showCosmeticTypeDialog(acc.item_id);
+      };
+
+      searchResults.appendChild(card);
+    });
+  }
 
   searchForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -301,15 +535,8 @@ document.addEventListener("DOMContentLoaded", () => {
       .filter(val => val.length > 0);
     
     const fd = new FormData(searchForm);
-    const budgetInput = document.getElementById('budget-input');
-    const priceMinInput = document.getElementById('price-min');
-    const budget = budgetInput?.value ? parseFloat(budgetInput.value) : null;
-    const pmin = priceMinInput?.value ? Number(priceMinInput.value) : 0;
-    const skins = Number(fd.get('skins') || 0);
-    const days = Number(fd.get('days') || 0);
-    const vbmin = Number(fd.get('vbmin') || 0);
-    const vbmax = Number(fd.get('vbmax') || 0);
-    const hasNonItemFilters = budgetInput?.value || priceMinInput?.value || skins > 0 || days > 0 || vbmin > 0 || vbmax > 0;
+    const payload = buildSearchPayload(fd, items);
+    const hasNonItemFilters = Object.keys(payload).some(k => k !== 'item');
 
     if (items.length === 0 && !hasNonItemFilters) {
       alert('Please enter at least one item or set filters to search');
@@ -324,132 +551,9 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
     
     try {
-      const data = await postJSON('/api/fortnite/search', {
-        item: items.join(', '),
-        days,
-        skins,
-        budget: budget,
-        pmin: pmin > 0 ? pmin : undefined,
-        vbmin: vbmin > 0 ? vbmin : undefined,
-        vbmax: vbmax > 0 ? vbmax : undefined,
-      });
-      
-      searchResults.innerHTML = '';
-      
-      if (!data.accounts || data.accounts.length === 0) {
-        searchResults.innerHTML = `
-          <div style="grid-column:1/-1;text-align:center;padding:48px 24px;">
-            <div style="font-size:2.5rem;margin-bottom:12px;opacity:0.5;">😕</div>
-            <div style="font-size:0.95rem;font-weight:600;color:#e4e4e7;margin-bottom:6px;">No accounts found</div>
-            <div style="font-size:0.82rem;color:#71717a;">Try different items or adjust your filters</div>
-          </div>
-        `;
-        return;
-      }
-      
-      data.accounts.forEach(acc => {
-        const card = document.createElement('div');
-        card.className = 'glass-panel group relative overflow-hidden rounded-2xl transition hover:border-white/20';
-        card.style.display = 'flex';
-        card.style.flexDirection = 'column';
-
-        const warrantyTag = acc.last_played_days != null && acc.last_played_days >= 11
-          ? `<span style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:#34d399;padding:2px 8px;border-radius:99px;font-size:0.65rem;font-weight:700;">✓ Warranty</span>`
-          : '';
-
-        card.innerHTML = `
-          <div style="padding:16px 18px 0;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
-            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-              <span style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#e4e4e7;padding:3px 8px;border-radius:99px;font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;">Full Access</span>
-              ${warrantyTag}
-            </div>
-            <div style="font-family:'Space Grotesk',sans-serif;font-size:1.25rem;font-weight:700;color:#fff;">$${acc.user_price.toFixed(2)}</div>
-          </div>
-
-          <div style="padding:14px 18px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;flex:1;">
-            <div style="text-align:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:10px 6px;">
-              <div style="font-size:0.7rem;color:#71717a;margin-bottom:3px;">🎭 Skins</div>
-              <div style="font-weight:700;color:#fff;font-size:0.95rem;">${acc.skins || 0}</div>
-            </div>
-            <div style="text-align:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:10px 6px;">
-              <div style="font-size:0.7rem;color:#71717a;margin-bottom:3px;">💃 Emotes</div>
-              <div style="font-weight:700;color:#fff;font-size:0.95rem;">${acc.emotes || 0}</div>
-            </div>
-            <div style="text-align:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:10px 6px;">
-              <div style="font-size:0.7rem;color:#71717a;margin-bottom:3px;">⛏️ Picks</div>
-              <div style="font-weight:700;color:#fff;font-size:0.95rem;">${acc.pickaxes || 0}</div>
-            </div>
-            <div style="text-align:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:10px 6px;">
-              <div style="font-size:0.7rem;color:#71717a;margin-bottom:3px;">🪂 Gliders</div>
-              <div style="font-weight:700;color:#fff;font-size:0.95rem;">${acc.gliders || 0}</div>
-            </div>
-            <div style="text-align:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:10px 6px;">
-              <div style="font-size:0.7rem;color:#71717a;margin-bottom:3px;">💰 V-Bucks</div>
-              <div style="font-weight:700;color:#fff;font-size:0.95rem;">${acc.vbucks || 0}</div>
-            </div>
-            <div style="text-align:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:10px 6px;">
-              <div style="font-size:0.7rem;color:#71717a;margin-bottom:3px;">📅 Offline</div>
-              <div style="font-weight:700;color:#fff;font-size:0.85rem;">${acc.last_played || "?"}</div>
-            </div>
-          </div>
-
-          <div style="padding:0 18px 16px;display:flex;gap:8px;">
-            <button class="buy-btn" data-item-id="${acc.item_id}" data-base-price="${acc.base_price}"
-              style="flex:1;background:#10b981;color:#000;border:none;border-radius:12px;padding:10px;font-size:0.82rem;font-weight:700;cursor:pointer;transition:background 0.15s;">
-              💳 Buy Now
-            </button>
-            <button class="skins-btn" data-item-id="${acc.item_id}"
-              style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#a1a1aa;border-radius:12px;padding:10px 14px;font-size:0.82rem;font-weight:600;cursor:pointer;transition:all 0.15s;white-space:nowrap;">
-              👀 Preview
-            </button>
-          </div>
-        `;
-
-        // Buy
-        const buyBtn = card.querySelector(".buy-btn");
-        buyBtn.onclick = async () => {
-          if (!window.KONVY_LOGGED_IN) {
-            openAuthModal("login");
-            return;
-          }
-
-          buyBtn.disabled = true;
-          showProcessingOverlay();
-
-          try {
-            await postJSON("/api/fortnite/buy", {
-              item_id: acc.item_id,
-              base_price: acc.base_price
-            });
-
-            hideProcessingOverlay();
-
-            // Load accounts to get current count for index
-            let currentAccounts = [];
-            try {
-              const accsRes = await postJSON("/api/fortnite/my-accounts");
-              currentAccounts = accsRes.accounts || [];
-            } catch {}
-            const newIndex = currentAccounts.length - 1;
-
-            showNamingModal(newIndex, () => {
-              loadMyAccounts();
-            });
-          } catch (e) {
-            hideProcessingOverlay();
-            alert("❌ " + e.message);
-          }
-
-          buyBtn.disabled = false;
-        };
-
-        // Preview
-        card.querySelector(".skins-btn").onclick = () => {
-          showCosmeticTypeDialog(acc.item_id);
-        };
-
-        searchResults.appendChild(card);
-      });
+      const data = await postJSON('/api/fortnite/search', payload);
+      lastSearchAccounts = Array.isArray(data.accounts) ? data.accounts : [];
+      renderAccounts(getSortedAccounts(lastSearchAccounts));
       
     } catch (err) {
       searchResults.innerHTML = `
@@ -460,6 +564,16 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
       `;
     }
+  });
+
+  searchForm?.addEventListener('reset', () => {
+    window.setTimeout(() => {
+      const rows = Array.from(document.querySelectorAll('.item-input-row'));
+      rows.slice(1).forEach(row => row.remove());
+      itemInputCount = document.querySelectorAll('.item-input-row').length || 1;
+      updateRemoveButtons();
+      document.querySelectorAll('.autocomplete-dropdown').forEach(d => d.classList.remove('show'));
+    }, 0);
   });
 
   // =============== COSMETIC TYPE DIALOG ===============
