@@ -55,7 +55,7 @@ COSMETIC_LOOKUP_RUNTIME_INIT_LOCK = threading.Lock()
 COSMETIC_LOGGER = logging.getLogger("cosmetic_lookup")
 COSMETIC_REFRESH_IN_PROGRESS = False
 PURCHASE_DELAY_AFTER_CHECK_SECONDS = 5
-FAST_BUY_MAX_RETRY_REQUEST_ATTEMPTS = 100
+FAST_BUY_MAX_ATTEMPTS = 100
 FAST_BUY_RETRY_DELAY_SECONDS = 0.1
 ACCOUNT_UNAVAILABLE_MESSAGE = "Account is no longer available. Please choose another account."
 PRICE_CHANGED_MESSAGE = "The account price changed while we were checking it. Please try again."
@@ -1086,7 +1086,7 @@ def confirm_buy_account(item_id: int, price: float):
         except (ValueError, TypeError):
             pass
 
-    for attempt in range(1, FAST_BUY_MAX_RETRY_REQUEST_ATTEMPTS + 1):
+    for attempt in range(FAST_BUY_MAX_ATTEMPTS):
         resp = requests.post(url, headers=headers_fb, json=payload, timeout=60)
 
         # Try to parse JSON response; fall back to raising with raw text
@@ -1112,11 +1112,11 @@ def confirm_buy_account(item_id: int, price: float):
         error_text = " | ".join(error_parts).lower()
 
         if "retry_request" in error_text:
-            if attempt < FAST_BUY_MAX_RETRY_REQUEST_ATTEMPTS:
+            if attempt < FAST_BUY_MAX_ATTEMPTS - 1:
                 time.sleep(FAST_BUY_RETRY_DELAY_SECONDS)
                 continue
             raise RuntimeError(
-                f"Fast-buy failed: retry_request returned {FAST_BUY_MAX_RETRY_REQUEST_ATTEMPTS} times"
+                f"Fast-buy failed: retry_request returned {FAST_BUY_MAX_ATTEMPTS} times"
             )
 
         if resp.status_code == 404:
@@ -1144,8 +1144,6 @@ def confirm_buy_account(item_id: int, price: float):
             raise RuntimeError(f"Fast-buy failed ({resp.status_code}): {error_text or resp.text[:300]}")
 
         return data
-
-    raise RuntimeError("Fast-buy failed: request loop exited unexpectedly")
 
 def get_latest_order():
     """
