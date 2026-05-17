@@ -319,7 +319,7 @@
       <a href="/balance" class="project-btn rounded-xl px-3 py-2 text-xs font-semibold no-underline">${{ balance }}</a>
       <a href="/logout" class="project-btn rounded-xl px-3 py-2 text-xs font-semibold no-underline">Logout</a>
       {% else %}
-      <button type="button" id="sign-in-trigger" class="project-btn-primary rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-wider">Sign In</button>
+      <button type="button" id="sign-in-trigger" aria-label="Sign in" aria-haspopup="dialog" class="project-btn-primary rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-wider">Sign In</button>
       {% endif %}
     </div>
   </header>
@@ -348,8 +348,8 @@
             <button type="button" class="filter-head section-toggle">Price <span class="toggle-icon"></span></button>
             <div class="filter-body space-y-2">
               <div class="grid grid-cols-2 gap-2">
-                <input id="price-min" name="pmin" type="number" min="0" placeholder="Price from €" class="project-input h-9 rounded-lg px-2 text-xs">
-                <input id="budget-input" name="pmax" type="number" min="0" placeholder="up to €" class="project-input h-9 rounded-lg px-2 text-xs">
+                <input id="price-min" name="pmin" type="number" min="0" placeholder="Price from €" aria-label="Minimum price in euros" class="project-input h-9 rounded-lg px-2 text-xs">
+                <input id="budget-input" name="pmax" type="number" min="0" placeholder="up to €" aria-label="Maximum price in euros" class="project-input h-9 rounded-lg px-2 text-xs">
               </div>
             </div>
           </div>
@@ -357,7 +357,7 @@
           <div class="filter-section" data-open="true">
             <button type="button" class="filter-head section-toggle">Search <span class="toggle-icon"></span></button>
             <div class="filter-body space-y-2">
-              <input name="title" type="text" placeholder="Search by title" class="project-input h-9 w-full rounded-lg px-3 text-xs">
+              <input name="title" type="text" placeholder="Search by title" aria-label="Search by title" class="project-input h-9 w-full rounded-lg px-3 text-xs">
               <div id="items-container" class="space-y-2">
                 <div class="item-input-row">
                   <div class="autocomplete-wrapper" style="position:relative;">
@@ -561,7 +561,7 @@
     <div class="auth-modal-card">
       <div class="auth-modal-header">
         <h3>Sign In</h3>
-        <button id="auth-modal-close" class="auth-modal-close" type="button">✕</button>
+        <button id="auth-modal-close" class="auth-modal-close" type="button" aria-label="Close sign in dialog">✕</button>
       </div>
       <iframe id="auth-modal-frame" class="auth-modal-frame" src="/login" title="Sign In"></iframe>
     </div>

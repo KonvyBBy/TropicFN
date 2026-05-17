@@ -58,7 +58,9 @@ document.addEventListener("DOMContentLoaded", () => {
       if (path && path !== "/login" && path !== "/register") {
         window.location.reload();
       }
-    } catch (e) {}
+    } catch (e) {
+      console.debug("Ignored modal iframe access error", e);
+    }
   });
 
 
@@ -326,6 +328,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const sortButtons = Array.from(document.querySelectorAll('.toolbar-tab[data-sort]'));
   let currentSort = 'default';
   let lastSearchAccounts = [];
+  const BOOLEAN_FILTER_KEYS = new Set(['email_login_data', 'change_email', 'bp']);
+  const LINKABILITY_KEYS = new Set(['xbox_linkable', 'psn_linkable']);
+  const BOOL_NUMERIC = { yes: 1, no: 0, maybe: 1 };
   const allowedFormKeys = new Set([
     'pmin', 'pmax', 'title', 'email_login_data', 'change_email',
     'xbox_linkable', 'psn_linkable', 'skin[]', 'pickaxe[]', 'dance[]', 'glider[]',
@@ -340,15 +345,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const trimmed = String(value).trim();
     if (!trimmed) return undefined;
 
-    if (key === 'email_login_data' || key === 'change_email' || key === 'bp') {
-      if (trimmed === 'yes') return 1;
-      if (trimmed === 'no') return 0;
+    if (BOOLEAN_FILTER_KEYS.has(key)) {
+      if (trimmed in BOOL_NUMERIC) return BOOL_NUMERIC[trimmed];
       return undefined;
     }
 
-    if (key === 'xbox_linkable' || key === 'psn_linkable') {
-      if (trimmed === 'maybe') return 1;
-      if (trimmed === 'no') return 0;
+    if (LINKABILITY_KEYS.has(key)) {
+      if (trimmed === 'yes') return undefined;
+      if (trimmed in BOOL_NUMERIC) return BOOL_NUMERIC[trimmed];
       return undefined;
     }
 
@@ -432,7 +436,7 @@ document.addEventListener("DOMContentLoaded", () => {
         ? `<span style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:#34d399;padding:2px 8px;border-radius:99px;font-size:0.65rem;font-weight:700;">✓ Warranty</span>`
         : '';
 
-      const shownPrice = Number(acc.user_price || 0).toFixed(2);
+      const formattedPrice = Number(acc.user_price || 0).toFixed(2);
 
       card.innerHTML = `
         <div style="padding:16px 18px 0;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
@@ -440,7 +444,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <span style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#e4e4e7;padding:3px 8px;border-radius:99px;font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;">Full Access</span>
             ${warrantyTag}
           </div>
-          <div style="font-family:'Space Grotesk',sans-serif;font-size:1.25rem;font-weight:700;color:#fff;">$${shownPrice}</div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:1.25rem;font-weight:700;color:#fff;">$${formattedPrice}</div>
         </div>
 
         <div style="padding:14px 18px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;flex:1;">
@@ -504,7 +508,9 @@ document.addEventListener("DOMContentLoaded", () => {
           try {
             const accsRes = await postJSON("/api/fortnite/my-accounts");
             currentAccounts = accsRes.accounts || [];
-          } catch {}
+          } catch (e) {
+            console.error("Failed to refresh purchased accounts after buy", e);
+          }
           const newIndex = currentAccounts.length - 1;
 
           showNamingModal(newIndex, () => {
