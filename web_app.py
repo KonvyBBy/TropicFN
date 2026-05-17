@@ -217,6 +217,14 @@ def start_cosmetic_lookup_scheduler() -> None:
 
             if sleep_seconds > 0:
                 time.sleep(sleep_seconds)
+
+            with COSMETIC_LOOKUP_LOCK:
+                latest_refresh_ts = COSMETIC_LOOKUP_LAST_REFRESH_TS
+            if latest_refresh_ts > 0:
+                latest_age_seconds = max(time.time() - latest_refresh_ts, 0)
+                if latest_age_seconds < COSMETIC_LOOKUP_REFRESH_INTERVAL_SECONDS:
+                    continue
+
             refresh_cosmetic_lookup_from_api()
 
     thread = threading.Thread(target=_scheduler_loop, daemon=True)
@@ -245,9 +253,10 @@ def fortnite_api_get_cosmetic_icon_url_by_name(name: str, cosmetic_type: str = N
 
     name_key = name.lower()
     normalized_type = _normalize_cosmetic_type(cosmetic_type)
-    if normalized_type:
-        return (COSMETIC_LOOKUP_BY_TYPE.get(normalized_type) or {}).get(name_key)
-    return COSMETIC_LOOKUP.get(name_key)
+    with COSMETIC_LOOKUP_LOCK:
+        if normalized_type:
+            return (COSMETIC_LOOKUP_BY_TYPE.get(normalized_type) or {}).get(name_key)
+        return COSMETIC_LOOKUP.get(name_key)
 
 
 
