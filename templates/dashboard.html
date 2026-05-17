@@ -26,11 +26,11 @@
     input:focus, textarea:focus, select:focus { outline: none; border-color: rgba(0,255,135,0.45) !important; }
 
     /* Autocomplete dropdown */
-    .autocomplete-dropdown { display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 50; background: #18181b; border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; margin-top: 4px; overflow: hidden; max-height: 280px; overflow-y: auto; }
+    .autocomplete-dropdown { display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 50; background: #0d1128; border: 1px solid #1e2540; border-radius: 12px; margin-top: 4px; overflow: hidden; max-height: 280px; overflow-y: auto; box-shadow: 0 12px 28px rgba(0,0,0,0.45); }
     .autocomplete-dropdown.show { display: block; }
     .autocomplete-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; cursor: pointer; transition: background 0.15s; }
-    .autocomplete-item:hover, .autocomplete-item.selected { background: rgba(255,255,255,0.06); }
-    .autocomplete-item img { width: 36px; height: 36px; object-fit: contain; border-radius: 6px; background: rgba(255,255,255,0.05); }
+    .autocomplete-item:hover, .autocomplete-item.selected { background: rgba(0,255,135,0.08); }
+    .autocomplete-item img { width: 36px; height: 36px; object-fit: contain; border-radius: 6px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.06); }
     .autocomplete-item-name { font-size: 0.85rem; font-weight: 500; color: #fff; }
     .autocomplete-item-type { font-size: 0.72rem; color: #a1a1aa; margin-top: 1px; }
     .autocomplete-item-rarity { font-size: 0.7rem; padding: 2px 7px; border-radius: 99px; text-transform: capitalize; margin-left: auto; }
@@ -39,6 +39,61 @@
     .rarity-rare { background: rgba(59,130,246,0.15); color: #60a5fa; }
     .rarity-uncommon { background: rgba(34,197,94,0.15); color: #4ade80; }
     .autocomplete-no-results { padding: 12px 14px; font-size: 0.82rem; color: #71717a; }
+
+    .auth-modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(8px);
+    }
+    .auth-modal-overlay.open { display: flex; }
+    .auth-modal-card {
+      width: min(560px, 100%);
+      min-height: 480px;
+      border-radius: 20px;
+      border: 1px solid #1e2540;
+      background: #0d1128;
+      overflow: hidden;
+      box-shadow: 0 18px 40px rgba(0,0,0,0.45);
+      display: flex;
+      flex-direction: column;
+    }
+    .auth-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      border-bottom: 1px solid #1e2540;
+    }
+    .auth-modal-header h3 {
+      margin: 0;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: #00ff87;
+    }
+    .auth-modal-close {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      border: 1px solid #1e2540;
+      background: #121734;
+      color: #9ca3af;
+      cursor: pointer;
+    }
+    .auth-modal-frame {
+      border: 0;
+      width: 100%;
+      height: 100%;
+      flex: 1;
+      background: #07091a;
+    }
 
     /* Processing overlay */
     .processing-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
@@ -226,12 +281,6 @@
   </div>
 
 <div class="project-shell bg-grid-pattern" style="color:#eaeef8;">
-  <div id="announce-bar" class="relative flex items-center justify-center gap-2 border-b px-4 py-2 text-xs font-bold" style="border-color:rgba(0,255,135,.2);background:rgba(0,255,135,.08);color:#00ff87;">
-    <span class="h-1.5 w-1.5 rounded-full" style="background:#00ff87;"></span>
-    <span>lol</span>
-    <button id="announce-close" class="absolute right-3 text-sm" style="color:#00ff87;">✕</button>
-  </div>
-
   <header class="project-header px-3 py-3 sm:px-4">
     <div class="flex items-center gap-2 sm:gap-3">
       <button id="mobile-filter-toggle" class="mobile-filter-toggle project-btn inline-flex h-10 w-10 items-center justify-center rounded-xl text-sm lg:hidden">☰</button>
@@ -270,7 +319,7 @@
       <a href="/balance" class="project-btn rounded-xl px-3 py-2 text-xs font-semibold no-underline">${{ balance }}</a>
       <a href="/logout" class="project-btn rounded-xl px-3 py-2 text-xs font-semibold no-underline">Logout</a>
       {% else %}
-      <a href="/login" class="project-btn-primary rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-wider no-underline">Sign In</a>
+      <button type="button" id="sign-in-trigger" aria-label="Sign in" aria-haspopup="dialog" class="project-btn-primary rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-wider">Sign In</button>
       {% endif %}
     </div>
   </header>
@@ -289,15 +338,18 @@
       <div class="project-card m-3 rounded-2xl">
         <div class="flex items-center justify-between border-b px-4 py-3" style="border-color:#1e2540;">
           <h2 class="text-xs font-bold uppercase tracking-[0.16em]" style="color:#00ff87;">Filters</h2>
-          <button type="button" id="add-item-btn" class="project-btn rounded-lg px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide">+ Add</button>
+          <div class="flex items-center gap-1.5">
+            <button type="reset" form="search-form" class="project-btn rounded-lg px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide">Reset</button>
+            <button type="button" id="add-item-btn" class="project-btn rounded-lg px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide">+ Add</button>
+          </div>
         </div>
         <form id="search-form" class="filters-scroll space-y-2.5 p-3">
           <div class="filter-section" data-open="true">
             <button type="button" class="filter-head section-toggle">Price <span class="toggle-icon"></span></button>
             <div class="filter-body space-y-2">
               <div class="grid grid-cols-2 gap-2">
-                <input id="price-min" name="pmin" type="number" min="0" placeholder="Min" class="project-input h-9 rounded-lg px-2 text-xs">
-                <input id="budget-input" name="budget" type="number" min="0" placeholder="Max" class="project-input h-9 rounded-lg px-2 text-xs">
+                <input id="price-min" name="pmin" type="number" min="0" placeholder="Price from €" aria-label="Minimum price in euros" class="project-input h-9 rounded-lg px-2 text-xs">
+                <input id="price-max" name="pmax" type="number" min="0" placeholder="up to €" aria-label="Maximum price in euros" class="project-input h-9 rounded-lg px-2 text-xs">
               </div>
             </div>
           </div>
@@ -305,6 +357,7 @@
           <div class="filter-section" data-open="true">
             <button type="button" class="filter-head section-toggle">Search Items <span class="toggle-icon"></span></button>
             <div class="filter-body space-y-2">
+              <input name="title" type="text" placeholder="Search by title" aria-label="Search by title" class="project-input h-9 w-full rounded-lg px-3 text-xs">
               <div id="items-container" class="space-y-2">
                 <div class="item-input-row">
                   <div class="autocomplete-wrapper" style="position:relative;">
@@ -318,15 +371,121 @@
           </div>
 
           <div class="filter-section" data-open="true">
+            <button type="button" class="filter-head section-toggle">Email <span class="toggle-icon"></span></button>
+            <div class="filter-body space-y-2">
+              <label class="mb-1 block text-[10px] font-bold uppercase tracking-[.12em] project-muted">Access to email</label>
+              <select name="email_login_data" class="project-input h-9 w-full rounded-lg px-2 text-xs">
+                <option value="">No matter</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+              <label class="mb-1 block text-[10px] font-bold uppercase tracking-[.12em] project-muted">Changeable email</label>
+              <select name="change_email" class="project-input h-9 w-full rounded-lg px-2 text-xs">
+                <option value="">No matter</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="filter-section" data-open="true">
+            <button type="button" class="filter-head section-toggle">Linkability <span class="toggle-icon"></span></button>
+            <div class="filter-body space-y-2">
+              <label class="mb-1 block text-[10px] font-bold uppercase tracking-[.12em] project-muted">XBOX linkable</label>
+              <select name="xbox_linkable" class="project-input h-9 w-full rounded-lg px-2 text-xs">
+                <option value="">No matter</option>
+                <option value="maybe">Maybe</option>
+                <option value="no">No</option>
+              </select>
+              <label class="mb-1 block text-[10px] font-bold uppercase tracking-[.12em] project-muted">PSN linkable</label>
+              <select name="psn_linkable" class="project-input h-9 w-full rounded-lg px-2 text-xs">
+                <option value="">No matter</option>
+                <option value="maybe">Maybe</option>
+                <option value="no">No</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="filter-section" data-open="true">
+            <button type="button" class="filter-head section-toggle">Select Cosmetics <span class="toggle-icon"></span></button>
+            <div class="filter-body space-y-2">
+              <label class="mb-1 block text-[10px] font-bold uppercase tracking-[.12em] project-muted">Select outfits</label>
+              <input name="skin[]" type="text" placeholder="Search select outfits..." class="project-input h-9 w-full rounded-lg px-3 text-xs">
+              <label class="mb-1 block text-[10px] font-bold uppercase tracking-[.12em] project-muted">Select pickaxes</label>
+              <input name="pickaxe[]" type="text" placeholder="Search select pickaxes..." class="project-input h-9 w-full rounded-lg px-3 text-xs">
+              <label class="mb-1 block text-[10px] font-bold uppercase tracking-[.12em] project-muted">Select emotes</label>
+              <input name="dance[]" type="text" placeholder="Search select emotes..." class="project-input h-9 w-full rounded-lg px-3 text-xs">
+              <label class="mb-1 block text-[10px] font-bold uppercase tracking-[.12em] project-muted">Select gliders</label>
+              <input name="glider[]" type="text" placeholder="Search select gliders..." class="project-input h-9 w-full rounded-lg px-3 text-xs">
+            </div>
+          </div>
+
+          <div class="filter-section" data-open="true">
             <button type="button" class="filter-head section-toggle">Outfits & Cosmetics <span class="toggle-icon"></span></button>
             <div class="filter-body space-y-2">
-              <div>
-                <label class="mb-1 block text-[10px] font-bold uppercase tracking-[.12em] project-muted">Minimum Skins</label>
-                <input name="skins" type="number" min="0" value="0" class="project-input h-9 w-full rounded-lg px-2 text-xs">
+              <div class="grid grid-cols-2 gap-2">
+                <input name="smin" type="number" min="0" placeholder="Min outfits" class="project-input h-9 rounded-lg px-2 text-xs">
+                <input name="smax" type="number" min="0" placeholder="up to" class="project-input h-9 rounded-lg px-2 text-xs">
               </div>
               <div class="grid grid-cols-2 gap-2">
-                  <input name="vbmin" type="number" min="0" placeholder="Min V-Bucks" class="project-input h-9 rounded-lg px-2 text-xs">
-                  <input name="vbmax" type="number" min="0" placeholder="Max V-Bucks" class="project-input h-9 rounded-lg px-2 text-xs">
+                <input name="pickaxe_min" type="number" min="0" placeholder="Pickaxes, from" class="project-input h-9 rounded-lg px-2 text-xs">
+                <input name="pickaxe_max" type="number" min="0" placeholder="up to" class="project-input h-9 rounded-lg px-2 text-xs">
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <input name="dmin" type="number" min="0" placeholder="Dances, from" class="project-input h-9 rounded-lg px-2 text-xs">
+                <input name="dmax" type="number" min="0" placeholder="up to" class="project-input h-9 rounded-lg px-2 text-xs">
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <input name="gmin" type="number" min="0" placeholder="Gliders, from" class="project-input h-9 rounded-lg px-2 text-xs">
+                <input name="gmax" type="number" min="0" placeholder="up to" class="project-input h-9 rounded-lg px-2 text-xs">
+              </div>
+            </div>
+          </div>
+
+          <div class="filter-section" data-open="true">
+            <button type="button" class="filter-head section-toggle">V-Bucks <span class="toggle-icon"></span></button>
+            <div class="filter-body space-y-2">
+              <div class="grid grid-cols-2 gap-2">
+                <input name="vbmin" type="number" min="0" placeholder="Min V-Bucks" class="project-input h-9 rounded-lg px-2 text-xs">
+                <input name="vbmax" type="number" min="0" placeholder="up to" class="project-input h-9 rounded-lg px-2 text-xs">
+              </div>
+            </div>
+          </div>
+
+          <div class="filter-section" data-open="true">
+            <button type="button" class="filter-head section-toggle">Account Stats <span class="toggle-icon"></span></button>
+            <div class="filter-body space-y-2">
+              <div class="grid grid-cols-2 gap-2">
+                <input name="lmin" type="number" min="0" placeholder="Level, from" class="project-input h-9 rounded-lg px-2 text-xs">
+                <input name="lmax" type="number" min="0" placeholder="up to" class="project-input h-9 rounded-lg px-2 text-xs">
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <input name="rl_purchases" type="number" min="0" placeholder="Paid Items, from" class="project-input h-9 rounded-lg px-2 text-xs">
+                <input name="paid_items_max" type="number" min="0" placeholder="up to" class="project-input h-9 rounded-lg px-2 text-xs">
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <input name="refund_credits_min" type="number" min="0" placeholder="Refund credits, from" class="project-input h-9 rounded-lg px-2 text-xs">
+                <input name="refund_credits_max" type="number" min="0" placeholder="up to" class="project-input h-9 rounded-lg px-2 text-xs">
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <input name="daybreak" type="number" min="0" placeholder="Last activity (days), from" class="project-input h-9 rounded-lg px-2 text-xs">
+                <input name="daybreak_max" type="number" min="0" placeholder="up to" class="project-input h-9 rounded-lg px-2 text-xs">
+              </div>
+            </div>
+          </div>
+
+          <div class="filter-section" data-open="true">
+            <button type="button" class="filter-head section-toggle">Battle Pass <span class="toggle-icon"></span></button>
+            <div class="filter-body space-y-2">
+              <label class="mb-1 block text-[10px] font-bold uppercase tracking-[.12em] project-muted">Battle Pass</label>
+              <select name="bp" class="project-input h-9 w-full rounded-lg px-2 text-xs">
+                <option value="">No matter</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+              <div class="grid grid-cols-2 gap-2">
+                <input name="bp_lmin" type="number" min="0" placeholder="from" class="project-input h-9 rounded-lg px-2 text-xs">
+                <input name="bp_lmax" type="number" min="0" placeholder="up to" class="project-input h-9 rounded-lg px-2 text-xs">
               </div>
             </div>
           </div>
@@ -334,10 +493,21 @@
           <div class="filter-section" data-open="true">
             <button type="button" class="filter-head section-toggle">Other <span class="toggle-icon"></span></button>
             <div class="filter-body space-y-2">
-              <div>
-                <label class="mb-1 block text-[10px] font-bold uppercase tracking-[.12em] project-muted">Days Offline</label>
-                <input name="days" type="number" min="0" value="0" class="project-input h-9 w-full rounded-lg px-2 text-xs">
-              </div>
+              <label class="mb-1 block text-[10px] font-bold uppercase tracking-[.12em] project-muted">STW Edition</label>
+              <select name="stw_mode" class="project-input h-9 w-full rounded-lg px-2 text-xs">
+                <option value="">No matter</option>
+                <option value="include">Has STW</option>
+                <option value="exclude">Exclude</option>
+              </select>
+              <label class="mb-1 block text-[10px] font-bold uppercase tracking-[.12em] project-muted">Country</label>
+              <select name="country[]" class="project-input h-9 w-full rounded-lg px-2 text-xs">
+                <option value="">Any</option>
+                <option value="US">United States</option>
+                <option value="GB">United Kingdom</option>
+                <option value="DE">Germany</option>
+                <option value="FR">France</option>
+                <option value="PL">Poland</option>
+              </select>
             </div>
           </div>
 
@@ -349,10 +519,10 @@
     <main class="min-w-0 flex-1 p-3 sm:p-4">
       <div class="mb-3 flex items-center justify-between gap-3 flex-wrap">
         <div class="flex items-center gap-1.5 rounded-xl border p-1" style="background:#0d1128;border-color:#1e2540;">
-          <button class="toolbar-tab active rounded-lg px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider">Default</button>
-          <button class="toolbar-tab rounded-lg px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider project-muted">Cheap first</button>
-          <button class="toolbar-tab rounded-lg px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider project-muted">Expensive first</button>
-          <button class="toolbar-tab rounded-lg px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider project-muted">Newest</button>
+          <button class="toolbar-tab active rounded-lg px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider" data-sort="default">Default</button>
+          <button class="toolbar-tab rounded-lg px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider project-muted" data-sort="cheap">Cheap first</button>
+          <button class="toolbar-tab rounded-lg px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider project-muted" data-sort="expensive">Expensive first</button>
+          <button class="toolbar-tab rounded-lg px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider project-muted" data-sort="newest">Newest</button>
         </div>
 
         <div class="flex items-center gap-2">
@@ -385,9 +555,19 @@
         <div class="loader-text">Loading Preview...</div>
         <div class="loader-progress"><span id="skins-loaded">0</span> / <span id="skins-total">0</span></div>
         <div class="loader-count">Loading cosmetics in optimized batches</div>
+  </div>
+
+  <div id="auth-modal-overlay" class="auth-modal-overlay" aria-hidden="true">
+    <div class="auth-modal-card" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
+      <div class="auth-modal-header">
+        <h3 id="auth-modal-title">Sign In</h3>
+        <button id="auth-modal-close" class="auth-modal-close" type="button" aria-label="Close sign in dialog">✕</button>
       </div>
+      <iframe id="auth-modal-frame" class="auth-modal-frame" src="/login" title="Sign In"></iframe>
     </div>
   </div>
+</div>
+</div>
 </div>
 </div>
 
@@ -397,9 +577,6 @@
 <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
 <script>
   (function () {
-    const announceBar = document.getElementById('announce-bar');
-    document.getElementById('announce-close')?.addEventListener('click', () => announceBar?.remove());
-
     const currencyBtn = document.getElementById('currency-btn');
     const currencyMenu = document.getElementById('currency-menu');
     const currencyValue = document.getElementById('currency-value');
