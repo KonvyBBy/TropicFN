@@ -31,6 +31,71 @@
   .info-row { display: flex; justify-content: space-between; gap: 8px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,.08); }
   .info-row:last-child { border-bottom: none; }
   .reliable-info-header { font-size: .6rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #aaa; }
+
+  /* ── Recording-Consent Modal ── */
+  .rec-modal-backdrop {
+    display: none; position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,.78); align-items: center; justify-content: center;
+  }
+  .rec-modal-backdrop.open { display: flex; }
+  .rec-modal {
+    background: #0d1424; border: 1px solid rgba(255,255,255,.12); border-radius: 20px;
+    padding: 32px 28px; max-width: 420px; width: 92%; text-align: center;
+    animation: recModalIn .25s ease;
+  }
+  @keyframes recModalIn { from { opacity:0; transform: scale(.92); } to { opacity:1; transform: scale(1); } }
+  .rec-modal-icon { font-size: 3rem; margin-bottom: 12px; }
+  .rec-modal h2 { font-family:'Space Grotesk',sans-serif; font-size: 1.2rem; font-weight: 700; color:#fff; margin-bottom: 8px; }
+  .rec-modal p { font-size: .88rem; color: #9ca3af; line-height: 1.55; margin-bottom: 20px; }
+  .rec-modal-btn-row { display: flex; gap: 10px; justify-content: center; }
+  .rec-confirm-btn {
+    background: #10b981; color: #03180f; border: none; border-radius: 10px;
+    padding: 11px 24px; font-weight: 700; font-size: .9rem; cursor: pointer; transition: background .15s;
+  }
+  .rec-confirm-btn:hover { background: #059669; }
+  .rec-cancel-btn {
+    background: rgba(255,255,255,.07); color: #9ca3af; border: 1px solid rgba(255,255,255,.1);
+    border-radius: 10px; padding: 11px 20px; font-size: .9rem; cursor: pointer; transition: background .15s;
+  }
+  .rec-cancel-btn:hover { background: rgba(255,255,255,.12); }
+
+  /* ── Payment-Processing Overlay ── */
+  .pay-overlay {
+    display: none; position: fixed; inset: 0; z-index: 300;
+    background: rgba(3,6,18,.93); align-items: center; justify-content: center;
+    flex-direction: column; gap: 24px;
+  }
+  .pay-overlay.open { display: flex; }
+  .pay-ring {
+    width: 72px; height: 72px; border-radius: 50%;
+    border: 5px solid rgba(16,185,129,.18);
+    border-top-color: #10b981;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .pay-title { font-family:'Space Grotesk',sans-serif; font-size: 1.4rem; font-weight: 700; color: #fff; }
+  .pay-sub { font-size: .9rem; color: #9ca3af; text-align: center; line-height: 1.6; max-width: 320px; }
+  .pay-warn {
+    background: rgba(234,179,8,.08); border: 1px solid rgba(234,179,8,.3);
+    border-radius: 10px; padding: 10px 18px;
+    font-size: .82rem; color: #fbbf24; text-align: center; max-width: 340px;
+  }
+  .pay-success { display: none; flex-direction: column; align-items: center; gap: 14px; }
+  .pay-success.show { display: flex; }
+  .pay-success-icon { font-size: 3.5rem; }
+  .pay-success-title { font-family:'Space Grotesk',sans-serif; font-size: 1.3rem; font-weight: 700; color: #10b981; }
+  .pay-success-btn {
+    background: #10b981; color: #03180f; border: none; border-radius: 10px;
+    padding: 12px 28px; font-weight: 700; font-size: .95rem; cursor: pointer;
+  }
+  .pay-error { display: none; flex-direction: column; align-items: center; gap: 12px; }
+  .pay-error.show { display: flex; }
+  .pay-error-icon { font-size: 3rem; }
+  .pay-error-msg { font-size: .9rem; color: #f87171; text-align: center; max-width: 320px; }
+  .pay-error-btn {
+    background: rgba(255,255,255,.08); color: #e4e4e7; border: 1px solid rgba(255,255,255,.14);
+    border-radius: 10px; padding: 11px 24px; font-size: .9rem; cursor: pointer;
+  }
 </style>
 {% endblock %}
 
@@ -66,7 +131,7 @@
 
   <aside class="space-y-4">
     <section class="buy-card rounded-2xl p-5 text-center">
-      <div class="font-space text-4xl font-bold">{{ '%.2f'|format(account_detail.price) }} €</div>
+      <div class="font-space text-4xl font-bold">${{ '%.2f'|format(account_detail.price) }}</div>
       <div class="mt-1 text-sm">💎 {{ account_detail.vbucks }} V-Bucks included</div>
       <button id="buy-now" class="buy-now-btn mt-4 w-full rounded-xl py-3 text-sm font-bold tracking-wide cursor-pointer"><i class="ri-shopping-cart-line" aria-hidden="true"></i> PURCHASE NOW</button>
     </section>
@@ -109,6 +174,45 @@
     </section>
   </aside>
 </section>
+
+<!-- Recording Consent Modal -->
+<div id="rec-modal-backdrop" class="rec-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="rec-modal-title">
+  <div class="rec-modal">
+    <div class="rec-modal-icon">🎥</div>
+    <h2 id="rec-modal-title">Screen Recording Required</h2>
+    <p>
+      To protect both you and us during this purchase, you must be screen recording before proceeding.<br><br>
+      Please start your screen recording now, then click <strong>"I'm Recording — Continue"</strong> to proceed with your purchase.
+    </p>
+    <div class="rec-modal-btn-row">
+      <button id="rec-confirm" class="rec-confirm-btn">🔴 I'm Recording — Continue</button>
+      <button id="rec-cancel" class="rec-cancel-btn">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Payment Processing Overlay -->
+<div id="pay-overlay" class="pay-overlay" aria-live="polite">
+  <div id="pay-spinner-block">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:20px;">
+      <div class="pay-ring"></div>
+      <div class="pay-title">Processing Payment…</div>
+      <div class="pay-sub">Please wait while we secure your account.<br>This usually takes 5–15 seconds.</div>
+      <div class="pay-warn">⚠️ Do <strong>NOT</strong> refresh or close this page!<br>Doing so may invalidate your purchase.</div>
+    </div>
+  </div>
+  <div id="pay-success-block" class="pay-success">
+    <div class="pay-success-icon">✅</div>
+    <div class="pay-success-title">Purchase Successful!</div>
+    <div class="pay-sub" id="pay-success-msg"></div>
+    <button id="pay-success-btn" class="pay-success-btn">View My Accounts</button>
+  </div>
+  <div id="pay-error-block" class="pay-error">
+    <div class="pay-error-icon">❌</div>
+    <div class="pay-error-msg" id="pay-error-msg"></div>
+    <button id="pay-error-close-btn" class="pay-error-btn">Close</button>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -168,6 +272,78 @@
     }).join('');
   }
 
+  // ── Overlay helpers ──────────────────────────────────────────────
+  function showPayOverlay() {
+    const overlay = document.getElementById('pay-overlay');
+    document.getElementById('pay-spinner-block').style.display = '';
+    document.getElementById('pay-success-block').classList.remove('show');
+    document.getElementById('pay-error-block').classList.remove('show');
+    overlay.classList.add('open');
+  }
+
+  function showPaySuccess(message) {
+    document.getElementById('pay-spinner-block').style.display = 'none';
+    document.getElementById('pay-success-msg').textContent = message || '';
+    document.getElementById('pay-success-block').classList.add('show');
+  }
+
+  function showPayError(message) {
+    document.getElementById('pay-spinner-block').style.display = 'none';
+    document.getElementById('pay-error-msg').textContent = message || 'Purchase failed. Please try again.';
+    document.getElementById('pay-error-block').classList.add('show');
+  }
+
+  // ── Recording-consent modal ──────────────────────────────────────
+  function showRecordingModal(onConfirm) {
+    const backdrop = document.getElementById('rec-modal-backdrop');
+    backdrop.classList.add('open');
+
+    document.getElementById('rec-confirm').onclick = () => {
+      backdrop.classList.remove('open');
+      onConfirm();
+    };
+    document.getElementById('rec-cancel').onclick = () => {
+      backdrop.classList.remove('open');
+    };
+  }
+
+  // ── Purchase flow ────────────────────────────────────────────────
+  async function doPurchase(buyBtn) {
+    showPayOverlay();
+    try {
+      const detail = window.ACCOUNT_DETAIL || {};
+      const res = await fetch('/api/fortnite/buy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          item_id: Number(detail.item_id),
+          base_price: Number(detail.base_price || 0)
+        })
+      });
+      let data;
+      try { data = await res.json(); } catch (e) {
+        throw new Error('Server returned an unexpected response. Please try again.');
+      }
+      if (!res.ok) {
+        const code = String(data.error || '').toLowerCase();
+        const message = code === 'not_enough_balance'
+          ? 'Not enough balance. Please top up and try again.'
+          : code === 'confirm_buy_failed'
+            ? 'Account is no longer available. Please choose another account.'
+            : (data.message || data.error || 'Purchase failed. Please try again.');
+        throw new Error(message);
+      }
+      showPaySuccess(data.message || 'Your account is ready!');
+    } catch (e) {
+      showPayError(e.message || 'Purchase failed. Please try again.');
+    } finally {
+      if (buyBtn) {
+        buyBtn.disabled = false;
+        buyBtn.innerHTML = '<i class="ri-shopping-cart-line" aria-hidden="true"></i> PURCHASE NOW';
+      }
+    }
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     Promise.all([
       loadCategory('skins', 'outfit'),
@@ -176,42 +352,24 @@
       loadCategory('gliders', 'glider')
     ]);
 
+    document.getElementById('pay-success-btn')?.addEventListener('click', () => {
+      window.location.href = '/my-accounts';
+    });
+    document.getElementById('pay-error-close-btn')?.addEventListener('click', () => {
+      document.getElementById('pay-overlay').classList.remove('open');
+    });
+
     const buyBtn = document.getElementById('buy-now');
-    buyBtn?.addEventListener('click', async () => {
+    buyBtn?.addEventListener('click', () => {
       if (!window.KONVY_LOGGED_IN) {
         window.location.href = '/login';
         return;
       }
       buyBtn.disabled = true;
-      const original = buyBtn.textContent;
       buyBtn.textContent = 'Processing...';
-      try {
-        const detail = window.ACCOUNT_DETAIL || {};
-        const res = await fetch('/api/fortnite/buy', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            item_id: Number(detail.item_id),
-            base_price: Number(detail.base_price || 0)
-          })
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          const code = String(data.error || '').toLowerCase();
-          const message = code === 'not_enough_balance'
-            ? 'Not enough balance. Please top up and try again.'
-            : code === 'fast_buy_failed'
-              ? 'Account is no longer available. Please choose another account.'
-              : (data.message || data.error || 'Purchase failed. Please try again.');
-          throw new Error(message);
-        }
-        window.location.href = '/my-accounts';
-      } catch (e) {
-        alert(e.message || 'Purchase failed. Please try again.');
-      } finally {
-        buyBtn.disabled = false;
-        buyBtn.textContent = original;
-      }
+      // Step 1: show recording-consent modal
+      // Step 2: on confirm, show payment overlay and execute purchase
+      showRecordingModal(() => doPurchase(buyBtn));
     });
   });
 </script>
