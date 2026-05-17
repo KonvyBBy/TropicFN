@@ -4,37 +4,37 @@
 {% block extra_styles %}
 <style>
   :root {
-    --market-preview-grid-separator: rgba(142, 74, 255, 0.55);
+    --market-preview-grid-separator: rgba(0, 255, 135, 0.55);
     /* Header + paddings reserved so filters keep a viewport-bound scroll area. */
     --filters-offset: 260px;
   }
   .project-shell { background: transparent; }
   .bg-grid-pattern {
     background-image:
-      linear-gradient(rgba(16,185,129,0.025) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(16,185,129,0.025) 1px, transparent 1px);
+      linear-gradient(rgba(0,255,135,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,135,0.03) 1px, transparent 1px);
     background-size: 40px 40px;
   }
-  .project-card { background: rgba(24,24,27,.7); border: 1px solid rgba(255,255,255,.1); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
-  .project-input { background: rgba(7,10,18,.45); border: 1px solid rgba(255,255,255,.12); color: #eaeef8; }
+  .project-card { background: rgba(13,17,40,.78); border: 1px solid rgba(0,255,135,.14); box-shadow: 0 10px 34px rgba(0,0,0,.35); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+  .project-input { background: rgba(7,10,25,.62); border: 1px solid rgba(30,37,64,.95); color: #eaeef8; }
   .project-input::placeholder { color: #556080; }
-  .project-input:focus { border-color: rgba(16,185,129,.45) !important; }
-  .project-pill { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.24); color: #34d399; }
-  .project-btn { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.12); color: #a8b2d4; }
-  .project-btn:hover { color: #eaeef8; border-color: rgba(255,255,255,.25); }
-  .project-btn-primary { background: linear-gradient(135deg,#10b981,#34d399); color: #041208; }
+  .project-input:focus { border-color: rgba(0,255,135,.5) !important; }
+  .project-pill { background: rgba(0,255,135,0.12); border: 1px solid rgba(0,255,135,0.24); color: #8affcc; }
+  .project-btn { background: rgba(255,255,255,.03); border: 1px solid rgba(30,37,64,.95); color: #a8b2d4; }
+  .project-btn:hover { color: #eaeef8; border-color: rgba(0,255,135,.35); }
+  .project-btn-primary { background: linear-gradient(135deg,#00ff87,#00d26a); color: #041208; }
   .project-sign-btn {
-    border: 1px solid rgba(16,185,129,0.45);
-    background: rgba(16,185,129,0.14);
-    color: #d1fae5;
-    box-shadow: inset 0 0 20px rgba(16,185,129,0.12);
+    border: 1px solid rgba(0,255,135,0.45);
+    background: rgba(0,255,135,0.14);
+    color: #d5ffeb;
+    box-shadow: inset 0 0 20px rgba(0,255,135,0.12);
     animation: sign-btn-appear .45s ease-out both;
   }
-  .project-sign-btn:hover { border-color: rgba(16,185,129,0.75); background: rgba(16,185,129,0.2); }
+  .project-sign-btn:hover { border-color: rgba(0,255,135,0.75); background: rgba(0,255,135,0.2); }
   @keyframes sign-btn-appear { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
   .project-muted { color: #a8b2d4; }
   .filters-scroll { max-height: calc(100vh - var(--filters-offset)); overflow-y: auto; }
-  .filter-section { border: 1px solid rgba(255,255,255,.1); border-radius: .75rem; background: rgba(19,24,49,.35); }
+  .filter-section { border: 1px solid rgba(30,37,64,.95); border-radius: .75rem; background: rgba(19,24,49,.45); }
   .filter-head {
     width: 100%; display: flex; justify-content: space-between; align-items: center;
     padding: .65rem .75rem; font-size: .675rem; text-transform: uppercase; letter-spacing: .12em; font-weight: 700; color: #c3cae2;
@@ -43,7 +43,7 @@
   .filter-section[data-open="false"] .filter-body { display: none; }
   .filter-section[data-open="false"] .toggle-icon::before { content: '+'; }
   .filter-section[data-open="true"] .toggle-icon::before { content: '−'; }
-  .toolbar-tab.active { background: #10b981; color: #041208; }
+  .toolbar-tab.active { background: #00ff87; color: #041208; }
   .market-account-card {
     overflow: hidden; border-radius: 14px; border: 1px solid rgba(255,255,255,0.12);
     background: linear-gradient(180deg, rgba(12,17,38,0.94), rgba(9,13,28,0.96));
@@ -67,8 +67,8 @@
   .market-icon-item i { color: #38bdf8; font-size: .8rem; }
   .market-open-hint { margin-top: 10px; font-size: .69rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #6ee7b7; opacity: .85; }
   .market-account-card[role="button"] { cursor: pointer; transition: transform .16s ease, border-color .16s ease; }
-  .market-account-card[role="button"]:hover { transform: translateY(-2px); border-color: rgba(16,185,129,.35); }
-  .market-account-card[role="button"]:focus-visible { outline: 2px solid rgba(16,185,129,.6); outline-offset: 2px; }
+  .market-account-card[role="button"]:hover { transform: translateY(-2px); border-color: rgba(0,255,135,.35); }
+  .market-account-card[role="button"]:focus-visible { outline: 2px solid rgba(0,255,135,.6); outline-offset: 2px; }
   .mobile-filters-wrap {
     position: fixed; top: 0; left: 0; z-index: 60; width: 18rem; height: 100%;
     transform: translateX(-100%); transition: transform .25s ease;
