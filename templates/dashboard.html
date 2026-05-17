@@ -236,8 +236,8 @@
                 <input name="refund_credits_max" type="number" min="0" placeholder="up to" class="project-input h-8 rounded-md px-2 text-xs">
               </div>
               <div class="grid grid-cols-2 gap-1.5">
-                <input name="daybreak" type="number" min="0" placeholder="Last activity, from" class="project-input h-8 rounded-md px-2 text-xs">
-                <input name="daybreak_max" type="number" min="0" placeholder="up to" class="project-input h-8 rounded-md px-2 text-xs">
+                <input name="daybreak" type="number" min="0" placeholder="Last activity (days), from" class="project-input h-8 rounded-md px-2 text-xs">
+                <input name="daybreak_max" type="number" min="0" placeholder="up to (days)" class="project-input h-8 rounded-md px-2 text-xs">
               </div>
             </div>
           </div>
@@ -362,7 +362,10 @@
       window.setTimeout(() => {
         document.querySelectorAll('.sx-btn-group').forEach(group => {
           const btns = group.querySelectorAll('.sx-toggle-btn');
-          btns.forEach((b, i) => b.classList.toggle('active', i === 0));
+          btns.forEach(b => {
+            const isEmpty = (b.dataset.value ?? '') === '';
+            b.classList.toggle('active', isEmpty);
+          });
           const field = btns[0]?.dataset.field;
           if (field && hiddenInputs[field]) hiddenInputs[field].value = '';
         });

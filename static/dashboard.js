@@ -22,6 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const MIN_COSMETIC_SEARCH_LENGTH = 2;
   const MAX_COSMETIC_RESULTS = 10;
   const DEFAULT_COSMETIC_TYPES = ['outfit', 'pickaxe', 'emote', 'glider'];
+  const PREVIEW_TILE_COUNT = 8; // 2 rows × 4 columns in the card image grid
 
   // =============== AUTH NAVIGATION ===============
   function openAuthPage(mode = "login") {
@@ -470,7 +471,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // 8 preview image tiles (2 rows × 4 cols)
       const previews = Array.isArray(acc.preview_cosmetics) ? acc.preview_cosmetics : [];
-      const tiles = Array.from({length: 8}, (_, i) => {
+      const tiles = Array.from({length: PREVIEW_TILE_COUNT}, (_, i) => {
         const name = previews[i] || '';
         return `<div class="market-preview-tile"${name ? ` data-cosmetic-name="${escapeHtml(name)}"` : ''}></div>`;
       }).join('');
