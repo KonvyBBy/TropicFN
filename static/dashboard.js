@@ -194,7 +194,7 @@ document.addEventListener("DOMContentLoaded", () => {
       
       return `
         <div class="autocomplete-item" data-index="${idx}" data-name="${item.name}" data-id="${item.id || ''}">
-          ${icon ? `<img src="${icon}" alt="${item.name}" loading="lazy" decoding="async">` : ''}
+          ${icon ? `<img src="${icon}" alt="${item.name}" loading="lazy">` : ''}
           <div class="autocomplete-item-info">
             <div class="autocomplete-item-name">${item.name}</div>
             <div class="autocomplete-item-type">${type}</div>
