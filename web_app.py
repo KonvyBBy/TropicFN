@@ -1138,8 +1138,8 @@ app.secret_key = os.environ.get("SECRET_KEY", "dev-change-this")
 KONVY_ADMIN_PASSWORD = os.environ.get("KONVY_ADMIN_PASSWORD", "Kelvilo40")
 
 
-with app.app_context():
-    startup()
+@app.before_serving
+def startup():
     ensure_cosmetic_lookup_runtime_initialized()
 
 
