@@ -2246,11 +2246,11 @@ INDEX_HTML = """
       const KONVY_LOGGED_IN = {{ 'true' if logged_in else 'false' }};
 
       // Helper to post JSON
-        async function postJSON(url, data) {
-          const res = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
+      async function postJSON(url, data) {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
         });
         const json = await res.json();
         if (!res.ok) {
