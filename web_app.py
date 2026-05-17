@@ -1076,8 +1076,15 @@ def confirm_buy_account(item_id: int, price: float):
         raise RuntimeError(f"Confirm-buy returned non-JSON: {resp.status_code} - {resp.text[:300]}")
 
     if resp.status_code in (403, 404):
-        errors = " ".join(data.get("errors", []) if isinstance(data, dict) else [])
-        error_text = f"{errors} {data.get('message', '') if isinstance(data, dict) else ''}".lower()
+        error_parts: List[str] = []
+        if isinstance(data, dict):
+            raw_errors = data.get("errors", [])
+            if isinstance(raw_errors, list):
+                error_parts.extend(str(part) for part in raw_errors if part)
+            message = data.get("message")
+            if message:
+                error_parts.append(str(message))
+        error_text = " | ".join(error_parts).lower()
         if any(keyword in error_text for keyword in ACCOUNT_UNAVAILABLE_KEYWORDS):
             raise PurchaseFlowError(
                 "account_unavailable",
