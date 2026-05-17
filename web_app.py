@@ -65,7 +65,9 @@ def _normalize_cosmetic_type(cosmetic_type: Optional[str]) -> Optional[str]:
     if cosmetic_type is None:
         return None
     value = str(cosmetic_type).strip().lower()
-    return COSMETIC_TYPE_ALIASES.get(value, value or None)
+    if not value:
+        return None
+    return COSMETIC_TYPE_ALIASES.get(value, value)
 
 
 def _extract_cosmetic_icon_url(item: dict) -> Optional[str]:
@@ -221,7 +223,7 @@ def start_cosmetic_lookup_scheduler() -> None:
 
             now_ts = time.time()
             if last_refresh_ts <= 0:
-                sleep_seconds = 0
+                sleep_seconds = 60
             else:
                 age_seconds = max(now_ts - last_refresh_ts, 0)
                 sleep_seconds = max(COSMETIC_LOOKUP_REFRESH_INTERVAL_SECONDS - age_seconds, 0)
