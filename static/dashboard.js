@@ -212,7 +212,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const icon = item.images?.icon || item.images?.smallIcon || '';
       
       return `
-        <div class="autocomplete-item" data-index="${idx}" data-name="${item.name}">
+        <div class="autocomplete-item" data-index="${idx}" data-name="${item.name}" data-id="${item.id || ''}">
           ${icon ? `<img src="${icon}" alt="${item.name}" loading="lazy">` : ''}
           <div class="autocomplete-item-info">
             <div class="autocomplete-item-name">${item.name}</div>
@@ -231,6 +231,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let debounceTimer = null;
     
     input.addEventListener('input', (e) => {
+      input.removeAttribute('data-cosmetic-id');
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
         filterCosmetics(e.target.value, dropdown, allowedTypes);
@@ -260,6 +261,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const item = e.target.closest('.autocomplete-item');
       if (item) {
         input.value = item.dataset.name;
+        input.setAttribute('data-cosmetic-id', item.dataset.id || '');
         dropdown.classList.remove('show');
       }
     });
@@ -323,7 +325,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return trimmed;
   }
 
-  function buildSearchPayload(formData, items) {
+  function buildSearchPayload(formData, items, form) {
     const payload = {};
     if (Array.isArray(items) && items.length > 0) {
       payload.item = items.join(', ');
@@ -342,6 +344,30 @@ document.addEventListener("DOMContentLoaded", () => {
         payload[key] = normalized;
       }
     });
+
+    // Resolve cosmetic search inputs: replace text names with marketplace-compatible IDs.
+    // The fortnite-api.com IDs (stored in data-cosmetic-id) map to marketplace filter IDs
+    // by lowercasing and stripping the known prefix for each cosmetic type.
+    const cosmeticFieldPrefixes = {
+      'skin[]':    'cid_',
+      'dance[]':   'eid_',
+      'glider[]':  'glider_id_',
+      'pickaxe[]': '',  // keep full lowercase ID
+    };
+    function toCosmeticMarketId(rawId, prefix) {
+      const lowerId = rawId.toLowerCase();
+      return prefix && lowerId.startsWith(prefix) ? lowerId.slice(prefix.length) : lowerId;
+    }
+    for (const [fieldName, prefix] of Object.entries(cosmeticFieldPrefixes)) {
+      const inputEl = form ? form.querySelector(`input[name="${fieldName}"]`) : null;
+      const storedId = inputEl ? inputEl.getAttribute('data-cosmetic-id') : null;
+      if (storedId) {
+        payload[fieldName] = toCosmeticMarketId(storedId, prefix);
+      } else {
+        // No confirmed selection — remove the raw text name so it doesn't confuse the API.
+        delete payload[fieldName];
+      }
+    }
 
     const stwMode = String(formData.get('stw_mode') || '').trim();
     if (stwMode === 'include') payload['stw[]'] = [1];
@@ -506,7 +532,7 @@ document.addEventListener("DOMContentLoaded", () => {
     e.preventDefault();
     
     const fd = new FormData(searchForm);
-    const payload = buildSearchPayload(fd, []);
+    const payload = buildSearchPayload(fd, [], searchForm);
     const hasFilters = Object.keys(payload).length > 0;
 
     if (!hasFilters) {
@@ -540,6 +566,7 @@ document.addEventListener("DOMContentLoaded", () => {
   searchForm?.addEventListener('reset', () => {
     window.setTimeout(() => {
       document.querySelectorAll('.autocomplete-dropdown').forEach(d => d.classList.remove('show'));
+      document.querySelectorAll('.cosmetic-search-input').forEach(i => i.removeAttribute('data-cosmetic-id'));
     }, 0);
   });
 
