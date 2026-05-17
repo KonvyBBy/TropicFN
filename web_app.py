@@ -1151,9 +1151,14 @@ def confirm_buy_account(item_id: int, price: float):
                 502,
             )
 
-        has_balance_error = any(
-            marker in error_text or marker in error_code_raw.lower()
-            for marker in ("balance", "balance_id")
+        normalized_error_code = str(error_code_raw or "").lower()
+        has_balance_error = (
+            "balance_id" in error_text
+            or "balance_id" in normalized_error_code
+            or "insufficient balance" in error_text
+            or "not enough balance" in error_text
+            or "balance required" in error_text
+            or normalized_error_code == "balance"
         )
         if resp.status_code == 422 and has_balance_error:
             raise PurchaseFlowError(
