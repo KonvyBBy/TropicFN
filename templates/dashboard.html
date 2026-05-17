@@ -3,7 +3,11 @@
 
 {% block extra_styles %}
 <style>
-  :root { --market-preview-grid-separator: rgba(142, 74, 255, 0.55); --filters-offset: 260px; }
+  :root {
+    --market-preview-grid-separator: rgba(142, 74, 255, 0.55);
+    /* Header + paddings reserved so filters keep a viewport-bound scroll area. */
+    --filters-offset: 260px;
+  }
   .project-shell { background: transparent; }
   .bg-grid-pattern {
     background-image:

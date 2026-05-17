@@ -19,7 +19,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   const qs = (id) => document.getElementById(id);
-  const MIN_SEARCH_LENGTH = 2;
+  const MIN_COSMETIC_SEARCH_LENGTH = 2;
+  const MAX_COSMETIC_RESULTS = 10;
 
   // =============== AUTH NAVIGATION ===============
   function openAuthPage(mode = "login") {
@@ -125,7 +126,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function searchCosmetics(query, allowedTypes) {
     const q = String(query || "").trim().toLowerCase();
-    if (q.length < MIN_SEARCH_LENGTH) return [];
+    if (q.length < MIN_COSMETIC_SEARCH_LENGTH) return [];
 
     const normalizedAllowed = (allowedTypes || ['outfit', 'pickaxe', 'emote', 'glider'])
       .map(v => String(v).toLowerCase())
@@ -151,7 +152,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const name = String(item?.name || '').toLowerCase();
             return name.includes(q) && allowedTypeSet.has(itemType);
           })
-          .slice(0, 10);
+          .slice(0, MAX_COSMETIC_RESULTS);
         cosmeticsSearchCache.set(cacheKey, filtered);
         return filtered;
       })
@@ -174,7 +175,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function filterCosmetics(query, dropdown, allowedTypes) {
-    if (!query || query.length < MIN_SEARCH_LENGTH) {
+    if (!query || query.length < MIN_COSMETIC_SEARCH_LENGTH) {
       dropdown.classList.remove('show');
       return;
     }
