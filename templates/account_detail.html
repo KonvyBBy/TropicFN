@@ -196,8 +196,8 @@
   <div id="pay-spinner-block">
     <div style="display:flex;flex-direction:column;align-items:center;gap:20px;">
       <div class="pay-ring"></div>
-      <div class="pay-title">Processing Payment…</div>
-      <div class="pay-sub">Please wait while we secure your account.<br>This usually takes 5–15 seconds.</div>
+      <div class="pay-title" id="pay-title">Checking Account…</div>
+      <div class="pay-sub" id="pay-sub">Please wait while we confirm the account is still available.<br>After the check, we wait 5 seconds and then buy it.</div>
       <div class="pay-warn">⚠️ Do <strong>NOT</strong> refresh or close this page!<br>Doing so may invalidate your purchase.</div>
     </div>
   </div>
@@ -227,6 +227,30 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
+  }
+
+  function wait(ms) {
+    return new Promise((resolve) => window.setTimeout(resolve, ms));
+  }
+
+  const PURCHASE_CHECK_MESSAGE = 'Please wait while we verify the account is still available and prepare your purchase.';
+  const PURCHASE_READY_MESSAGE = 'The account is available. Preparing to complete your purchase...';
+  const PURCHASE_RUNNING_MESSAGE = 'The account is being purchased now.<br>Please keep this page open until it finishes.';
+
+  function getPurchaseErrorMessage(code, fallbackMessage) {
+    if (code === 'not_enough_balance') {
+      return 'Not enough balance. Please top up and try again.';
+    }
+    if (code === 'account_unavailable') {
+      return 'Account is no longer available. Please choose another account.';
+    }
+    if (code === 'price_changed') {
+      return 'The account price changed while it was being checked. Please try again.';
+    }
+    if (code === 'confirm_buy_failed') {
+      return 'Purchase failed. Please try again.';
+    }
+    return fallbackMessage || 'Purchase failed. Please try again.';
   }
 
   async function loadCategory(sectionId, apiType) {
@@ -278,6 +302,10 @@
     document.getElementById('pay-spinner-block').style.display = '';
     document.getElementById('pay-success-block').classList.remove('show');
     document.getElementById('pay-error-block').classList.remove('show');
+    const title = document.getElementById('pay-title');
+    const sub = document.getElementById('pay-sub');
+    if (title) title.textContent = 'Checking Account…';
+    if (sub) sub.textContent = PURCHASE_CHECK_MESSAGE;
     overlay.classList.add('open');
   }
 
@@ -312,12 +340,34 @@
     showPayOverlay();
     try {
       const detail = window.ACCOUNT_DETAIL || {};
+      const payTitle = document.getElementById('pay-title');
+      const paySub = document.getElementById('pay-sub');
+      const checkRes = await fetch('/api/fortnite/check-buy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          item_id: Number(detail.item_id)
+        })
+      });
+      let checkData;
+      try { checkData = await checkRes.json(); } catch (e) {
+        throw new Error('Server returned an unexpected response. Please try again.');
+      }
+      if (!checkRes.ok) {
+        const code = String(checkData.error || '').toLowerCase();
+        const message = getPurchaseErrorMessage(code, checkData.message || checkData.error);
+        throw new Error(message);
+      }
+      if (payTitle) payTitle.textContent = 'Account Checked…';
+      if (paySub) paySub.textContent = PURCHASE_READY_MESSAGE;
+      await wait(5000);
+      if (payTitle) payTitle.textContent = 'Buying Account…';
+      if (paySub) paySub.innerHTML = PURCHASE_RUNNING_MESSAGE;
       const res = await fetch('/api/fortnite/buy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          item_id: Number(detail.item_id),
-          base_price: Number(detail.base_price || 0)
+          item_id: Number(detail.item_id)
         })
       });
       let data;
@@ -326,11 +376,7 @@
       }
       if (!res.ok) {
         const code = String(data.error || '').toLowerCase();
-        const message = code === 'not_enough_balance'
-          ? 'Not enough balance. Please top up and try again.'
-          : code === 'confirm_buy_failed'
-            ? 'Account is no longer available. Please choose another account.'
-            : (data.message || data.error || 'Purchase failed. Please try again.');
+        const message = getPurchaseErrorMessage(code, data.message || data.error);
         throw new Error(message);
       }
       showPaySuccess(data.message || 'Your account is ready!');

@@ -54,6 +54,18 @@ COSMETIC_LOOKUP_RUNTIME_INITIALIZED = False
 COSMETIC_LOOKUP_RUNTIME_INIT_LOCK = threading.Lock()
 COSMETIC_LOGGER = logging.getLogger("cosmetic_lookup")
 COSMETIC_REFRESH_IN_PROGRESS = False
+PURCHASE_DELAY_AFTER_CHECK_SECONDS = 5
+ACCOUNT_UNAVAILABLE_MESSAGE = "Account is no longer available. Please choose another account."
+PRICE_CHANGED_MESSAGE = "The account price changed while we were checking it. Please try again."
+ACCOUNT_UNAVAILABLE_KEYWORDS = ("sold", "not found", "unavailable", "deleted", "archived")
+
+
+class PurchaseFlowError(Exception):
+    def __init__(self, code: str, message: str, status_code: int = 400):
+        super().__init__(message)
+        self.code = code
+        self.message = message
+        self.status_code = status_code
 
 def fortnite_api_get_outfit_icon_url_by_name(name: str):
     """
@@ -698,6 +710,57 @@ def find_account_by_item_id(item_id: int):
     return data.get("item") or data.get("data") or data
 
 
+def _extract_account_price(account: dict) -> float:
+    if not isinstance(account, dict):
+        raise PurchaseFlowError(
+            "account_unavailable",
+            ACCOUNT_UNAVAILABLE_MESSAGE,
+            409,
+        )
+
+    try:
+        price = float(account.get("price") or 0)
+    except (TypeError, ValueError):
+        price = 0.0
+
+    if price <= 0:
+        raise PurchaseFlowError(
+            "account_unavailable",
+            ACCOUNT_UNAVAILABLE_MESSAGE,
+            409,
+        )
+
+    return price
+
+
+def get_live_account_purchase_price(item_id: int) -> float:
+    account = find_account_by_item_id(item_id)
+    if not account:
+        raise PurchaseFlowError(
+            "account_unavailable",
+            ACCOUNT_UNAVAILABLE_MESSAGE,
+            409,
+        )
+    return _extract_account_price(account)
+
+
+def get_live_purchase_costs(item_id: int) -> Tuple[float, float, int]:
+    live_price = get_live_account_purchase_price(item_id)
+    user_price = live_price * get_lzt_multiplier_for_pricing()
+    cost_cents = int(round(user_price * 100))
+    return live_price, user_price, cost_cents
+
+
+def _not_enough_balance_response(balance_cents: int, cost_cents: int):
+    missing = (cost_cents - balance_cents) / 100
+    return jsonify(
+        {
+            "error": "not_enough_balance",
+            "message": f"Not enough balance. Missing ${missing:.2f}",
+        }
+    ), 400
+
+
 
 # ===================== FORTNITE / MARKET HELPERS =====================
 
@@ -1012,10 +1075,35 @@ def confirm_buy_account(item_id: int, price: float):
     except (ValueError, requests.exceptions.JSONDecodeError):
         raise RuntimeError(f"Confirm-buy returned non-JSON: {resp.status_code} - {resp.text[:300]}")
 
+    if resp.status_code == 404:
+        raise PurchaseFlowError(
+            "account_unavailable",
+            ACCOUNT_UNAVAILABLE_MESSAGE,
+            409,
+        )
+
     if resp.status_code == 403:
-        errors = " ".join(data.get("errors", []) if isinstance(data, dict) else [])
-        if "sold" in errors.lower():
-            raise RuntimeError("This listing has already been sold.")
+        error_parts: List[str] = []
+        if isinstance(data, dict):
+            raw_errors = data.get("errors", [])
+            if isinstance(raw_errors, list):
+                error_parts.extend(str(part) for part in raw_errors if part)
+            message = data.get("message")
+            if message:
+                error_parts.append(str(message))
+        error_text = " | ".join(error_parts).lower()
+        if any(keyword in error_text for keyword in ACCOUNT_UNAVAILABLE_KEYWORDS):
+            raise PurchaseFlowError(
+                "account_unavailable",
+                ACCOUNT_UNAVAILABLE_MESSAGE,
+                409,
+            )
+        if "price" in error_text:
+            raise PurchaseFlowError(
+                "price_changed",
+                PRICE_CHANGED_MESSAGE,
+                409,
+            )
 
     if not resp.ok:
         err_msg = ""
@@ -2191,9 +2279,13 @@ INDEX_HTML = """
         });
         const json = await res.json();
         if (!res.ok) {
-          throw new Error(json.error || 'Unknown error');
+          throw new Error(json.message || json.error || 'Unknown error');
         }
         return json;
+      }
+
+      function wait(ms) {
+        return new Promise((resolve) => window.setTimeout(resolve, ms));
       }
 
       // =========== HELPERS TO EXTRACT LOGIN STRINGS ===========
@@ -2314,13 +2406,14 @@ INDEX_HTML = """
                 }
 
                 btn.disabled = true;
-                btn.textContent = 'Buying...';
+                btn.textContent = 'Checking...';
                 try {
-                  const buyPayload = {
-                    item_id: Number(btn.dataset.itemId),
-                    base_price: Number(btn.dataset.basePrice)
-                  };
-                  const res = await postJSON('/api/fortnite/buy', buyPayload);
+                  const itemId = Number(btn.dataset.itemId);
+                  await postJSON('/api/fortnite/check-buy', { item_id: itemId });
+                  btn.textContent = 'Waiting 5s...';
+                  await wait(5000);
+                  btn.textContent = 'Buying...';
+                  const res = await postJSON('/api/fortnite/buy', { item_id: itemId });
                   const loginText = buildLoginDisplayText(res.purchase_result);
                   alert(res.message + '\\n\\n' + loginText);
                   await loadMyAccounts();
@@ -3875,33 +3968,60 @@ def api_fortnite_search():
         return jsonify({"error": "An unexpected error occurred. Please try again."}), 500
 
 
+@app.route("/api/fortnite/check-buy", methods=["POST"])
+@login_required_api
+def api_fortnite_check_buy():
+    data = request.json or {}
+    username = session["username"]
+    item_id = int(data.get("item_id") or 0)
+
+    if not item_id:
+        return jsonify({"error": "item_id required"}), 400
+
+    try:
+        _, user_price, cost_cents = get_live_purchase_costs(item_id)
+    except PurchaseFlowError as e:
+        return jsonify({"error": e.code, "message": e.message}), e.status_code
+
+    balance_cents = get_balance(username)
+
+    if balance_cents < cost_cents:
+        return _not_enough_balance_response(balance_cents, cost_cents)
+
+    return jsonify(
+        {
+            "message": f"Account checked. Waiting {PURCHASE_DELAY_AFTER_CHECK_SECONDS} seconds before buying.",
+            "price": round(user_price, 2),
+        }
+    )
+
+
 @app.route("/api/fortnite/buy", methods=["POST"])
 @login_required_api
 def api_fortnite_buy():
     data = request.json or {}
     username = session["username"]
     item_id = int(data.get("item_id") or 0)
-    base_price = float(data.get("base_price") or 0)
 
-    if not item_id or base_price <= 0:
-        return jsonify({"error": "item_id and base_price required"}), 400
+    if not item_id:
+        return jsonify({"error": "item_id required"}), 400
 
-    user_price = base_price * get_lzt_multiplier_for_pricing()
-    cost_cents = int(round(user_price * 100))
     starting_balance = get_balance(username)
 
+    try:
+        live_price, user_price, cost_cents = get_live_purchase_costs(item_id)
+    except PurchaseFlowError as e:
+        return jsonify({"error": e.code, "message": e.message}), e.status_code
+
     if starting_balance < cost_cents:
-        missing = (cost_cents - starting_balance) / 100
-        return jsonify(
-            {
-                "error": "not_enough_balance",
-                "message": f"Not enough balance. Missing ${missing:.2f}",
-            }
-        ), 400
+        return _not_enough_balance_response(starting_balance, cost_cents)
 
     # STEP 1: fast-buy on market
     try:
-        purchase_result = confirm_buy_account(item_id, base_price)
+        purchase_result = confirm_buy_account(item_id, live_price)
+    except PurchaseFlowError as e:
+        app.logger.warning("Purchase blocked for item %s: %s", item_id, e.message)
+        return jsonify({"error": e.code, "message": e.message}), e.status_code
     except Exception as e:
         app.logger.error("confirm_buy_account failed for item %s: %s", item_id, e)
         return jsonify({"error": "confirm_buy_failed", "message": "Purchase failed"}), 500
