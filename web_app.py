@@ -205,6 +205,7 @@ def start_cosmetic_lookup_scheduler() -> None:
 
     def _scheduler_loop():
         while True:
+            # Initial refresh is handled by initialize_cosmetic_lookup().
             time.sleep(COSMETIC_LOOKUP_REFRESH_SECONDS)
             refresh_cosmetic_lookup_from_api()
 
@@ -233,10 +234,9 @@ def fortnite_api_get_cosmetic_icon_url_by_name(name: str, cosmetic_type: str = N
 
     name_key = name.lower()
     normalized_type = _normalize_cosmetic_type(cosmetic_type)
-    with COSMETIC_LOOKUP_LOCK:
-        if normalized_type:
-            return (COSMETIC_LOOKUP_BY_TYPE.get(normalized_type) or {}).get(name_key)
-        return COSMETIC_LOOKUP.get(name_key)
+    if normalized_type:
+        return (COSMETIC_LOOKUP_BY_TYPE.get(normalized_type) or {}).get(name_key)
+    return COSMETIC_LOOKUP.get(name_key)
 
 
 
@@ -1105,7 +1105,7 @@ app.secret_key = os.environ.get("SECRET_KEY", "dev-change-this")
 KONVY_ADMIN_PASSWORD = os.environ.get("KONVY_ADMIN_PASSWORD", "Kelvilo40")
 
 
-@app.before_request
+@app.before_serving
 def _ensure_runtime_cosmetic_lookup():
     ensure_cosmetic_lookup_runtime_initialized()
 
