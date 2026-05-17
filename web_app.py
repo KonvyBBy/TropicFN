@@ -1075,7 +1075,14 @@ def confirm_buy_account(item_id: int, price: float):
     except (ValueError, requests.exceptions.JSONDecodeError):
         raise RuntimeError(f"Confirm-buy returned non-JSON: {resp.status_code} - {resp.text[:300]}")
 
-    if resp.status_code in (403, 404):
+    if resp.status_code == 404:
+        raise PurchaseFlowError(
+            "account_unavailable",
+            ACCOUNT_UNAVAILABLE_MESSAGE,
+            409,
+        )
+
+    if resp.status_code == 403:
         error_parts: List[str] = []
         if isinstance(data, dict):
             raw_errors = data.get("errors", [])

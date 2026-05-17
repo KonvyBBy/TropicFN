@@ -233,6 +233,10 @@
     return new Promise((resolve) => window.setTimeout(resolve, ms));
   }
 
+  const PURCHASE_CHECK_MESSAGE = 'Please wait while we verify the account is still available and prepare your purchase.';
+  const PURCHASE_READY_MESSAGE = 'The account is available. Preparing to complete your purchase...';
+  const PURCHASE_RUNNING_MESSAGE = 'The account is being purchased now.<br>Please keep this page open until it finishes.';
+
   function getPurchaseErrorMessage(code, fallbackMessage) {
     if (code === 'not_enough_balance') {
       return 'Not enough balance. Please top up and try again.';
@@ -301,7 +305,7 @@
     const title = document.getElementById('pay-title');
     const sub = document.getElementById('pay-sub');
     if (title) title.textContent = 'Checking Account…';
-    if (sub) sub.innerHTML = 'Please wait while we confirm the account is still available.<br>After the check, we wait 5 seconds and then buy it.';
+    if (sub) sub.textContent = PURCHASE_CHECK_MESSAGE;
     overlay.classList.add('open');
   }
 
@@ -339,7 +343,7 @@
       const payTitle = document.getElementById('pay-title');
       const paySub = document.getElementById('pay-sub');
       if (payTitle) payTitle.textContent = 'Checking Account…';
-      if (paySub) paySub.innerHTML = 'Please wait while we confirm the account is still available.<br>After the check, we wait 5 seconds and then buy it.';
+      if (paySub) paySub.textContent = PURCHASE_CHECK_MESSAGE;
       const checkRes = await fetch('/api/fortnite/check-buy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -357,10 +361,10 @@
         throw new Error(message);
       }
       if (payTitle) payTitle.textContent = 'Account Checked…';
-      if (paySub) paySub.innerHTML = 'The account passed the live check.<br>Waiting 5 seconds before buying it.';
+      if (paySub) paySub.textContent = PURCHASE_READY_MESSAGE;
       await wait(5000);
       if (payTitle) payTitle.textContent = 'Buying Account…';
-      if (paySub) paySub.innerHTML = 'The account is being purchased now.<br>Please keep this page open until it finishes.';
+      if (paySub) paySub.innerHTML = PURCHASE_RUNNING_MESSAGE;
       const res = await fetch('/api/fortnite/buy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
