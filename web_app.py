@@ -52,6 +52,7 @@ COSMETIC_LOOKUP_SCHEDULER_LOCK = threading.Lock()
 COSMETIC_LOOKUP_RUNTIME_INITIALIZED = False
 COSMETIC_LOOKUP_RUNTIME_INIT_LOCK = threading.Lock()
 COSMETIC_LOGGER = logging.getLogger("cosmetic_lookup")
+COSMETIC_REFRESH_IN_PROGRESS = False
 
 def fortnite_api_get_outfit_icon_url_by_name(name: str):
     """
@@ -134,7 +135,9 @@ def _load_cosmetic_lookup_from_disk() -> bool:
             global COSMETIC_LOOKUP, COSMETIC_LOOKUP_BY_TYPE, COSMETIC_LOOKUP_LAST_REFRESH_TS
             COSMETIC_LOOKUP = any_lookup
             COSMETIC_LOOKUP_BY_TYPE = normalized_by_type
-            COSMETIC_LOOKUP_LAST_REFRESH_TS = int(payload.get("updated_at") or 0)
+            raw_updated_at = int(payload.get("updated_at") or 0)
+            now_ts = int(time.time())
+            COSMETIC_LOOKUP_LAST_REFRESH_TS = min(max(raw_updated_at, 0), now_ts)
         return True
     except Exception:
         return False
@@ -142,9 +145,14 @@ def _load_cosmetic_lookup_from_disk() -> bool:
 
 def refresh_cosmetic_lookup_from_api() -> bool:
     started_at = time.time()
+    with COSMETIC_LOOKUP_LOCK:
+        global COSMETIC_REFRESH_IN_PROGRESS
+        if COSMETIC_REFRESH_IN_PROGRESS:
+            return False
+        COSMETIC_REFRESH_IN_PROGRESS = True
     try:
         COSMETIC_LOGGER.info("Starting cosmetic lookup refresh from Fortnite API")
-        response = requests.get(FORTNITE_COSMETICS_ALL_URL, timeout=30)
+        response = requests.get(FORTNITE_COSMETICS_ALL_URL, timeout=20)
         if response.status_code != 200:
             COSMETIC_LOGGER.warning(
                 "Cosmetic lookup refresh failed with status %s in %.2fs",
@@ -188,6 +196,9 @@ def refresh_cosmetic_lookup_from_api() -> bool:
             exc,
         )
         return False
+    finally:
+        with COSMETIC_LOOKUP_LOCK:
+            COSMETIC_REFRESH_IN_PROGRESS = False
 
 
 def initialize_cosmetic_lookup() -> None:
