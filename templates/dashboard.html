@@ -25,6 +25,20 @@
   border: 1px solid rgba(0,255,135,0.24);
   color: #00ff87;
 }
+.new-btn {
+  background: #131831;
+  border: 1px solid #1e2540;
+  color: #eaeef8;
+}
+.new-btn-muted {
+  background: #131831;
+  border: 1px solid #1e2540;
+  color: #a8b2d4;
+}
+.new-btn-primary {
+  background: linear-gradient(135deg,#00ff87,#00c864);
+  color: #041208;
+}
 {% endblock %}
 
 {% block content %}
@@ -46,10 +60,10 @@
 
     <div class="flex items-center gap-2 shrink-0">
       {% if logged_in %}
-      <a href="/balance" class="rounded-lg px-3 py-1.5 text-xs font-semibold" style="background:#131831;border:1px solid #1e2540;color:#eaeef8;">Balance: ${{ balance }}</a>
-      <a href="/my-accounts" class="rounded-lg px-3 py-1.5 text-xs font-semibold" style="background:#131831;border:1px solid #1e2540;color:#eaeef8;">My Accounts</a>
+      <a href="/balance" class="new-btn rounded-lg px-3 py-1.5 text-xs font-semibold">Balance: ${{ balance }}</a>
+      <a href="/my-accounts" class="new-btn rounded-lg px-3 py-1.5 text-xs font-semibold">My Accounts</a>
       {% else %}
-      <a href="/login" class="rounded-lg px-3 py-1.5 text-xs font-semibold" style="background:#131831;border:1px solid #1e2540;color:#eaeef8;">Sign In</a>
+      <a href="/login" class="new-btn rounded-lg px-3 py-1.5 text-xs font-semibold">Sign In</a>
       {% endif %}
     </div>
   </div>
@@ -59,7 +73,7 @@
       <div class="new-card rounded-2xl">
         <div class="flex items-center justify-between border-b px-4 py-3" style="border-color:#1e2540;">
           <h2 class="text-xs font-bold uppercase tracking-[0.16em]" style="color:#00ff87;">Filters</h2>
-          <button type="button" id="add-item-btn" class="rounded-lg px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide" style="background:#131831;border:1px solid #1e2540;color:#eaeef8;">+ Add</button>
+          <button type="button" id="add-item-btn" class="new-btn rounded-lg px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide">+ Add</button>
         </div>
 
         <form id="search-form" class="space-y-3 p-3">
@@ -74,7 +88,7 @@
                 >
                 <div class="autocomplete-dropdown"></div>
               </div>
-              <button type="button" class="remove-item-btn mt-2 hidden rounded-lg px-3 py-1.5 text-xs font-semibold" style="background:#131831;border:1px solid #1e2540;color:#a8b2d4;">Remove</button>
+              <button type="button" class="remove-item-btn new-btn-muted mt-2 hidden rounded-lg px-3 py-1.5 text-xs font-semibold">Remove</button>
             </div>
           </div>
 
@@ -93,7 +107,7 @@
             </label>
           </div>
 
-          <button type="submit" class="w-full rounded-xl px-4 py-2.5 text-xs font-bold uppercase tracking-[0.12em]" style="background:linear-gradient(135deg,#00ff87,#00c864);color:#041208;">
+          <button type="submit" class="new-btn-primary w-full rounded-xl px-4 py-2.5 text-xs font-bold uppercase tracking-[0.12em]">
             Search Accounts
           </button>
         </form>
@@ -104,7 +118,7 @@
       <div class="mb-3 flex flex-wrap items-center gap-2">
         <span class="new-pill rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em]">Live Marketplace</span>
         {% if logged_in %}
-        <span class="rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em]" style="background:#131831;border:1px solid #1e2540;color:#eaeef8;">Welcome {{ username }}</span>
+        <span class="new-btn rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em]">Welcome {{ username }}</span>
         {% endif %}
       </div>
 
