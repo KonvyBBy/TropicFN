@@ -55,6 +55,7 @@ COSMETIC_LOOKUP_RUNTIME_INIT_LOCK = threading.Lock()
 COSMETIC_LOGGER = logging.getLogger("cosmetic_lookup")
 COSMETIC_REFRESH_IN_PROGRESS = False
 PURCHASE_DELAY_AFTER_CHECK_SECONDS = 5
+FAST_BUY_MAX_RETRY_REQUEST_ATTEMPTS = 100
 ACCOUNT_UNAVAILABLE_MESSAGE = "Account is no longer available. Please choose another account."
 PRICE_CHANGED_MESSAGE = "The account price changed while we were checking it. Please try again."
 ACCOUNT_UNAVAILABLE_KEYWORDS = ("sold", "not found", "unavailable", "deleted", "archived")
@@ -1066,10 +1067,10 @@ def fetch_cheapest_accounts(
 
 def confirm_buy_account(item_id: int, price: float):
     """
-    Purchase an account using POST /{item_id}/confirm-buy.
+    Purchase an account using POST /{item_id}/fast-buy.
     Requires price (integer, current market price) and optionally balance_id.
     """
-    url = f"https://prod-api.lzt.market/{item_id}/confirm-buy"
+    url = f"https://prod-api.lzt.market/{item_id}/fast-buy"
     headers_fb = {
         "accept": "application/json",
         "content-type": "application/json",
@@ -1084,51 +1085,62 @@ def confirm_buy_account(item_id: int, price: float):
         except (ValueError, TypeError):
             pass
 
-    resp = requests.post(url, headers=headers_fb, json=payload, timeout=60)
+    for attempt in range(1, FAST_BUY_MAX_RETRY_REQUEST_ATTEMPTS + 1):
+        resp = requests.post(url, headers=headers_fb, json=payload, timeout=60)
 
-    # Try to parse JSON response; fall back to raising with raw text
-    try:
-        data = resp.json()
-    except (ValueError, requests.exceptions.JSONDecodeError):
-        raise RuntimeError(f"Confirm-buy returned non-JSON: {resp.status_code} - {resp.text[:300]}")
+        # Try to parse JSON response; fall back to raising with raw text
+        try:
+            data = resp.json()
+        except (ValueError, requests.exceptions.JSONDecodeError):
+            raise RuntimeError(f"Fast-buy returned non-JSON: {resp.status_code} - {resp.text[:300]}")
 
-    if resp.status_code == 404:
-        raise PurchaseFlowError(
-            "account_unavailable",
-            ACCOUNT_UNAVAILABLE_MESSAGE,
-            409,
-        )
-
-    if resp.status_code == 403:
         error_parts: List[str] = []
         if isinstance(data, dict):
             raw_errors = data.get("errors", [])
             if isinstance(raw_errors, list):
                 error_parts.extend(str(part) for part in raw_errors if part)
+            elif raw_errors:
+                error_parts.append(str(raw_errors))
             message = data.get("message")
             if message:
                 error_parts.append(str(message))
+            error_code = data.get("error")
+            if error_code:
+                error_parts.append(str(error_code))
         error_text = " | ".join(error_parts).lower()
-        if any(keyword in error_text for keyword in ACCOUNT_UNAVAILABLE_KEYWORDS):
+
+        if "retry_request" in error_text:
+            if attempt < FAST_BUY_MAX_RETRY_REQUEST_ATTEMPTS:
+                continue
+            raise RuntimeError("Fast-buy failed: retry_request returned too many times")
+
+        if resp.status_code == 404:
             raise PurchaseFlowError(
                 "account_unavailable",
                 ACCOUNT_UNAVAILABLE_MESSAGE,
                 409,
             )
-        if _is_price_changed_error(error_text):
-            raise PurchaseFlowError(
-                "price_changed",
-                PRICE_CHANGED_MESSAGE,
-                409,
-            )
 
-    if not resp.ok:
-        err_msg = ""
-        if isinstance(data, dict):
-            err_msg = " ".join(data.get("errors", [])) or data.get("message", "")
-        raise RuntimeError(f"Confirm-buy failed ({resp.status_code}): {err_msg or resp.text[:300]}")
+        if resp.status_code == 403:
+            if any(keyword in error_text for keyword in ACCOUNT_UNAVAILABLE_KEYWORDS):
+                raise PurchaseFlowError(
+                    "account_unavailable",
+                    ACCOUNT_UNAVAILABLE_MESSAGE,
+                    409,
+                )
+            if _is_price_changed_error(error_text):
+                raise PurchaseFlowError(
+                    "price_changed",
+                    PRICE_CHANGED_MESSAGE,
+                    409,
+                )
 
-    return data
+        if not resp.ok:
+            raise RuntimeError(f"Fast-buy failed ({resp.status_code}): {error_text or resp.text[:300]}")
+
+        return data
+
+    raise RuntimeError("Fast-buy failed unexpectedly")
 
 
 def get_latest_order():
@@ -2423,13 +2435,9 @@ INDEX_HTML = """
                 }
 
                 btn.disabled = true;
-                btn.textContent = 'Checking...';
+                btn.textContent = 'Buying...';
                 try {
                   const itemId = Number(btn.dataset.itemId);
-                  await postJSON('/api/fortnite/check-buy', { item_id: itemId });
-                  btn.textContent = 'Waiting 5s...';
-                  await wait(5000);
-                  btn.textContent = 'Buying...';
                   const res = await postJSON('/api/fortnite/buy', { item_id: itemId });
                   const loginText = buildLoginDisplayText(res.purchase_result);
                   alert(res.message + '\\n\\n' + loginText);
