@@ -1,127 +1,234 @@
-{% extends "base.html" %}
-{% block title %}Marketplace — Konvy Accounts{% endblock %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Marketplace — Konvy Accounts</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.0.0/fonts/remixicon.css" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            space: ['Space Grotesk', 'sans-serif'],
+            manrope: ['Manrope', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    html, body { margin: 0; padding: 0; background-color: #07091a; color: #eaeef8; font-family: 'Manrope', sans-serif; min-height: 100vh; overflow-x: hidden; }
 
-{% block extra_styles %}
-.project-shell {
-  background: #07091a;
-  border: 1px solid #1e2540;
-  border-radius: 1rem;
-  overflow: hidden;
-}
-.bg-grid-pattern {
-  background-image:
-    linear-gradient(rgba(0,255,135,0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,255,135,0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
-}
-.project-header {
-  position: sticky;
-  top: 0;
-  z-index: 35;
-  background: rgba(13, 17, 40, 0.95);
-  border-bottom: 1px solid #1e2540;
-  backdrop-filter: blur(10px);
-}
-.brand-badge {
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: 0.75rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0,255,135,0.12);
-  border: 1px solid rgba(0,255,135,0.32);
-  color: #00ff87;
-  font-weight: 800;
-}
-.project-card {
-  background: #0d1128;
-  border: 1px solid #1e2540;
-}
-.project-input {
-  background: #131831;
-  border: 1px solid #1e2540;
-  color: #eaeef8;
-}
-.project-input::placeholder { color: #556080; }
-.project-input:focus { border-color: rgba(0,255,135,.45) !important; }
-.project-pill {
-  background: rgba(0,255,135,0.12);
-  border: 1px solid rgba(0,255,135,0.24);
-  color: #00ff87;
-}
-.project-btn {
-  background: #131831;
-  border: 1px solid #1e2540;
-  color: #a8b2d4;
-}
-.project-btn:hover { color: #eaeef8; border-color: #2a3258; }
-.project-btn-primary {
-  background: linear-gradient(135deg,#00ff87,#00c864);
-  color: #041208;
-}
-.project-muted { color: #a8b2d4; }
-.filters-scroll {
-  max-height: calc(100vh - 210px);
-  overflow-y: auto;
-}
-.filter-section {
-  border: 1px solid #1e2540;
-  border-radius: .75rem;
-  background: rgba(19, 24, 49, .55);
-}
-.filter-head {
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: .65rem .75rem;
-  font-size: .675rem;
-  text-transform: uppercase;
-  letter-spacing: .12em;
-  font-weight: 700;
-  color: #c3cae2;
-}
-.filter-body { padding: .75rem; border-top: 1px solid #1e2540; }
-.filter-section[data-open="false"] .filter-body { display: none; }
-.filter-section[data-open="false"] .toggle-icon::before { content: '+'; }
-.filter-section[data-open="true"] .toggle-icon::before { content: '−'; }
-.toolbar-tab.active {
-  background: #00ff87;
-  color: #041208;
-}
-.mobile-filters-wrap {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 60;
-  width: 18rem;
-  height: 100%;
-  transform: translateX(-100%);
-  transition: transform .25s ease;
-}
-.mobile-filters-wrap.open { transform: translateX(0); }
-#mobile-filter-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 55;
-  display: none;
-  background: rgba(0,0,0,.7);
-}
-#mobile-filter-overlay.open { display: block; }
-@media (max-width: 1023px) {
-  .desktop-filters { display: none; }
-}
-@media (min-width: 1024px) {
-  .mobile-filter-toggle, .mobile-filters-wrap, #mobile-filter-overlay { display: none !important; }
-}
-{% endblock %}
+    .font-space { font-family: 'Space Grotesk', sans-serif; }
+    input:focus, textarea:focus, select:focus { outline: none; border-color: rgba(0,255,135,0.45) !important; }
 
-{% block content %}
-<div class="project-shell bg-grid-pattern" style="color:#eaeef8; margin:-1rem;">
+    /* Autocomplete dropdown */
+    .autocomplete-dropdown { display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 50; background: #18181b; border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; margin-top: 4px; overflow: hidden; max-height: 280px; overflow-y: auto; }
+    .autocomplete-dropdown.show { display: block; }
+    .autocomplete-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; cursor: pointer; transition: background 0.15s; }
+    .autocomplete-item:hover, .autocomplete-item.selected { background: rgba(255,255,255,0.06); }
+    .autocomplete-item img { width: 36px; height: 36px; object-fit: contain; border-radius: 6px; background: rgba(255,255,255,0.05); }
+    .autocomplete-item-name { font-size: 0.85rem; font-weight: 500; color: #fff; }
+    .autocomplete-item-type { font-size: 0.72rem; color: #a1a1aa; margin-top: 1px; }
+    .autocomplete-item-rarity { font-size: 0.7rem; padding: 2px 7px; border-radius: 99px; text-transform: capitalize; margin-left: auto; }
+    .rarity-legendary { background: rgba(255,175,0,0.15); color: #fbbf24; }
+    .rarity-epic { background: rgba(147,51,234,0.15); color: #c084fc; }
+    .rarity-rare { background: rgba(59,130,246,0.15); color: #60a5fa; }
+    .rarity-uncommon { background: rgba(34,197,94,0.15); color: #4ade80; }
+    .autocomplete-no-results { padding: 12px 14px; font-size: 0.82rem; color: #71717a; }
+
+    /* Processing overlay */
+    .processing-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
+    .processing-overlay.active { display: flex; }
+    .processing-content { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 24px; padding: 40px; text-align: center; max-width: 380px; }
+    .processing-spinner { width: 48px; height: 48px; border: 3px solid rgba(255,255,255,0.1); border-top-color: #10b981; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 20px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .processing-title { font-size: 1.1rem; font-weight: 600; color: #fff; margin-bottom: 8px; }
+    .processing-message { font-size: 0.85rem; color: #a1a1aa; margin-bottom: 12px; line-height: 1.5; }
+    .processing-warning { font-size: 0.8rem; color: #fbbf24; line-height: 1.5; }
+
+    /* Cosmetic type dialog */
+    .cosmetic-type-dialog { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 9000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(6px); }
+    .cosmetic-type-content { background: rgba(24,24,27,0.98); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 28px; text-align: center; max-width: 360px; width: 90%; }
+    .cosmetic-type-content h3 { font-size: 1rem; font-weight: 600; color: #fff; margin-bottom: 6px; }
+    .cosmetic-type-content p { font-size: 0.82rem; color: #a1a1aa; margin-bottom: 20px; }
+    .cosmetic-type-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+    .cosmetic-type-btn { padding: 14px 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; cursor: pointer; transition: all 0.15s; color: #e4e4e7; }
+    .cosmetic-type-btn:hover { background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.3); }
+    .type-emoji { display: block; font-size: 1.6rem; margin-bottom: 4px; }
+    .type-label { font-size: 0.78rem; font-weight: 500; }
+    .cosmetic-type-close { background: transparent; border: 1px solid rgba(255,255,255,0.1); color: #71717a; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 0.82rem; transition: all 0.15s; }
+    .cosmetic-type-close:hover { color: #fff; }
+
+    /* Skins modal */
+    .skins-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9000; overflow-y: auto; backdrop-filter: blur(8px); }
+    .skins-modal.open { display: flex; align-items: flex-start; justify-content: center; padding: 24px 16px; }
+    .skins-modal-content { background: #18181b; border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; width: 100%; max-width: 860px; }
+    .skins-modal-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .skins-modal-header h2 { font-size: 1rem; font-weight: 600; color: #fff; }
+    .modal-close-btn { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: #a1a1aa; width: 32px; height: 32px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; transition: all 0.15s; }
+    .modal-close-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    .skins-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; padding: 20px; }
+    .skins-grid img { width: 100%; aspect-ratio: 1; object-fit: contain; border-radius: 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); }
+    .skins-loader { display: none; flex-direction: column; align-items: center; justify-content: center; padding: 48px 24px; gap: 10px; }
+    .loader-spinner { width: 36px; height: 36px; border: 3px solid rgba(255,255,255,0.08); border-top-color: #10b981; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    .loader-text { font-size: 0.9rem; font-weight: 500; color: #fff; }
+    .loader-progress { font-size: 0.82rem; color: #a1a1aa; }
+    .loader-count { font-size: 0.75rem; color: #52525b; }
+
+    /* Naming modal */
+    .naming-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(6px); }
+    .naming-modal { background: rgba(24,24,27,0.98); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 28px; max-width: 380px; width: 90%; }
+    .naming-modal h3 { font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 8px; }
+    .naming-modal p { font-size: 0.85rem; color: #a1a1aa; margin-bottom: 20px; }
+    .naming-modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+    .btn-naming-submit { flex: 1; background: #10b981; color: #000; border: none; border-radius: 10px; padding: 10px; font-size: 0.875rem; font-weight: 600; cursor: pointer; }
+    .btn-naming-submit:hover { background: #059669; }
+    .btn-naming-skip { flex: 1; background: rgba(255,255,255,0.05); color: #a1a1aa; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 10px; font-size: 0.875rem; cursor: pointer; }
+
+    /* Pending topup banner */
+    #pending-topup-banner { display: none; position: sticky; top: 0; z-index: 50; width: 100%; }
+    #pending-topup-banner.visible { display: block; }
+    .pending-banner-inner { display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: rgba(251,191,36,0.12); border-bottom: 1px solid rgba(251,191,36,0.3); animation: banner-pulse 2.5s ease-in-out infinite; }
+    @keyframes banner-pulse { 0%, 100% { background: rgba(251,191,36,0.10); border-color: rgba(251,191,36,0.25); } 50% { background: rgba(251,191,36,0.20); border-color: rgba(251,191,36,0.55); } }
+    .pending-banner-icon { font-size: 1.1rem; flex-shrink: 0; animation: banner-icon-pulse 1.4s ease-in-out infinite; }
+    @keyframes banner-icon-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .pending-banner-text { font-size: 0.82rem; color: #fde68a; flex: 1; line-height: 1.4; }
+    .pending-banner-text strong { color: #fbbf24; }
+
+    /* Dashboard shell */
+    .project-shell {
+      background: #07091a;
+      min-height: 100vh;
+    }
+    .bg-grid-pattern {
+      background-image:
+        linear-gradient(rgba(0,255,135,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,135,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+    .project-header {
+      position: sticky;
+      top: 0;
+      z-index: 35;
+      background: rgba(13, 17, 40, 0.95);
+      border-bottom: 1px solid #1e2540;
+      backdrop-filter: blur(10px);
+    }
+    .brand-badge {
+      width: 2.25rem;
+      height: 2.25rem;
+      border-radius: 0.75rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,255,135,0.12);
+      border: 1px solid rgba(0,255,135,0.32);
+      color: #00ff87;
+      font-weight: 800;
+    }
+    .project-card {
+      background: #0d1128;
+      border: 1px solid #1e2540;
+    }
+    .project-input {
+      background: #131831;
+      border: 1px solid #1e2540;
+      color: #eaeef8;
+    }
+    .project-input::placeholder { color: #556080; }
+    .project-input:focus { border-color: rgba(0,255,135,.45) !important; }
+    .project-pill {
+      background: rgba(0,255,135,0.12);
+      border: 1px solid rgba(0,255,135,0.24);
+      color: #00ff87;
+    }
+    .project-btn {
+      background: #131831;
+      border: 1px solid #1e2540;
+      color: #a8b2d4;
+    }
+    .project-btn:hover { color: #eaeef8; border-color: #2a3258; }
+    .project-btn-primary {
+      background: linear-gradient(135deg,#00ff87,#00c864);
+      color: #041208;
+    }
+    .project-muted { color: #a8b2d4; }
+    .filters-scroll {
+      max-height: calc(100vh - 210px);
+      overflow-y: auto;
+    }
+    .filter-section {
+      border: 1px solid #1e2540;
+      border-radius: .75rem;
+      background: rgba(19, 24, 49, .55);
+    }
+    .filter-head {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: .65rem .75rem;
+      font-size: .675rem;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      font-weight: 700;
+      color: #c3cae2;
+    }
+    .filter-body { padding: .75rem; border-top: 1px solid #1e2540; }
+    .filter-section[data-open="false"] .filter-body { display: none; }
+    .filter-section[data-open="false"] .toggle-icon::before { content: '+'; }
+    .filter-section[data-open="true"] .toggle-icon::before { content: '−'; }
+    .toolbar-tab.active {
+      background: #00ff87;
+      color: #041208;
+    }
+    .mobile-filters-wrap {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 60;
+      width: 18rem;
+      height: 100%;
+      transform: translateX(-100%);
+      transition: transform .25s ease;
+    }
+    .mobile-filters-wrap.open { transform: translateX(0); }
+    #mobile-filter-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 55;
+      display: none;
+      background: rgba(0,0,0,.7);
+    }
+    #mobile-filter-overlay.open { display: block; }
+    @media (max-width: 1023px) {
+      .desktop-filters { display: none; }
+    }
+    @media (min-width: 1024px) {
+      .mobile-filter-toggle, .mobile-filters-wrap, #mobile-filter-overlay { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Pending topup animated banner -->
+  <div id="pending-topup-banner">
+    <div class="pending-banner-inner">
+      <span class="pending-banner-icon">⚠️</span>
+      <p class="pending-banner-text" id="pending-banner-msg">
+        <strong>Pending Top-Up:</strong> Your top-up is pending. Please wait for admin to verify it.
+      </p>
+    </div>
+  </div>
+
+<div class="project-shell bg-grid-pattern" style="color:#eaeef8;">
   <div id="announce-bar" class="relative flex items-center justify-center gap-2 border-b px-4 py-2 text-xs font-bold" style="border-color:rgba(0,255,135,.2);background:rgba(0,255,135,.08);color:#00ff87;">
     <span class="h-1.5 w-1.5 rounded-full" style="background:#00ff87;"></span>
-    <span>🎮 Join our Discord community for exclusive deals — discord.cg/fortniteaccount</span>
+    <span>lol</span>
     <button id="announce-close" class="absolute right-3 text-sm" style="color:#00ff87;">✕</button>
   </div>
 
@@ -189,7 +296,7 @@
             <button type="button" class="filter-head section-toggle">Price <span class="toggle-icon"></span></button>
             <div class="filter-body space-y-2">
               <div class="grid grid-cols-2 gap-2">
-                <input id="price-min" type="number" min="0" placeholder="Min" class="project-input h-9 rounded-lg px-2 text-xs">
+                <input id="price-min" name="pmin" type="number" min="0" placeholder="Min" class="project-input h-9 rounded-lg px-2 text-xs">
                 <input id="budget-input" name="budget" type="number" min="0" placeholder="Max" class="project-input h-9 rounded-lg px-2 text-xs">
               </div>
             </div>
@@ -218,8 +325,8 @@
                 <input name="skins" type="number" min="0" value="0" class="project-input h-9 w-full rounded-lg px-2 text-xs">
               </div>
               <div class="grid grid-cols-2 gap-2">
-                <input type="number" min="0" placeholder="Min V-Bucks" class="project-input h-9 rounded-lg px-2 text-xs">
-                <input type="number" min="0" placeholder="Max V-Bucks" class="project-input h-9 rounded-lg px-2 text-xs">
+                  <input name="vbmin" type="number" min="0" placeholder="Min V-Bucks" class="project-input h-9 rounded-lg px-2 text-xs">
+                  <input name="vbmax" type="number" min="0" placeholder="Max V-Bucks" class="project-input h-9 rounded-lg px-2 text-xs">
               </div>
             </div>
           </div>
@@ -282,9 +389,8 @@
     </div>
   </div>
 </div>
-{% endblock %}
+</div>
 
-{% block scripts %}
 <script>
   window.KONVY_LOGGED_IN = {{ 'true' if logged_in else 'false' }};
 </script>
@@ -362,4 +468,30 @@
     }
   })();
 </script>
-{% endblock %}
+
+{% if logged_in %}
+<script>
+  (function() {
+    async function checkPendingTopups() {
+      try {
+        const res = await fetch('/api/user/pending-topups');
+        if (!res.ok) return;
+        const data = await res.json();
+        const pending = data.pending || [];
+        if (pending.length > 0) {
+          const banner = document.getElementById('pending-topup-banner');
+          const msg = document.getElementById('pending-banner-msg');
+          const total = pending.reduce((s, t) => s + (t.amount_cents || 0), 0);
+          const fmt = '$' + (total / 100).toFixed(2);
+          msg.innerHTML = '<strong>⚠️ Pending Top-Up:</strong> Your top-up of <strong>' + fmt + '</strong> is pending. Please wait for admin to verify it.';
+          banner.classList.add('visible');
+        }
+      } catch(e) {}
+    }
+    checkPendingTopups();
+  })();
+</script>
+{% endif %}
+
+</body>
+</html>

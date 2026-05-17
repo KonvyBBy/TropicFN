@@ -9,7 +9,7 @@ import hmac
 import hashlib
 import base64
 import datetime
-from typing import List, Tuple, Optional, Set
+from typing import List, Tuple, Optional, Set, Dict, Any
 
 import requests
 from flask import (
@@ -541,6 +541,82 @@ def compute_days_ago(acc) -> Optional[int]:
     return max(days, 0)
 
 
+FORTNITE_MARKET_PARAM_KEYS = {
+    "page", "pmin", "pmax", "title", "order_by", "tag_id[]", "not_tag_id[]",
+    "public_tag_id[]", "not_public_tag_id[]", "origin[]", "not_origin[]", "user_id",
+    "nsb", "sb", "nsb_by_me", "sb_by_me", "currency", "email_login_data",
+    "email_provider[]", "email_type[]", "not_email_provider[]", "parse_same_item_ids",
+    "temp_email", "item_domain", "eg", "smin", "smax", "vbmin", "vbmax", "skin[]",
+    "pickaxe[]", "glider[]", "dance[]", "change_email", "platform[]",
+    "skins_shop_min", "skins_shop_max", "pickaxes_shop_min", "pickaxes_shop_max",
+    "dances_shop_min", "dances_shop_max", "gliders_shop_min", "gliders_shop_max",
+    "skins_shop_vbmin", "skins_shop_vbmax", "pickaxes_shop_vbmin", "pickaxes_shop_vbmax",
+    "dances_shop_vbmin", "dances_shop_vbmax", "gliders_shop_vbmin", "gliders_shop_vbmax",
+    "bp", "lmin", "lmax", "bp_lmin", "bp_lmax", "last_trans_date",
+    "last_trans_date_period", "no_trans", "xbox_linkable", "psn_linkable", "daybreak",
+    "rl_purchases", "reg", "reg_period", "refund_credits_min", "refund_credits_max",
+    "pickaxe_min", "pickaxe_max", "dmin", "dmax", "gmin", "gmax", "country[]",
+    "not_country[]", "stw[]", "not_stw[]",
+}
+
+
+def _as_float(value: Any) -> Optional[float]:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _as_int(value: Any) -> Optional[int]:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _clean_market_param_value(value: Any) -> Any:
+    if isinstance(value, list):
+        cleaned = []
+        for v in value:
+            if v is None:
+                continue
+            sv = str(v).strip() if isinstance(v, str) else v
+            if sv == "":
+                continue
+            cleaned.append(sv)
+        return cleaned or None
+    if isinstance(value, str):
+        value = value.strip()
+        return value or None
+    return value
+
+
+def build_market_search_params(payload: Dict[str, Any]) -> Dict[str, Any]:
+    params: Dict[str, Any] = {}
+
+    for key in FORTNITE_MARKET_PARAM_KEYS:
+        if key not in payload:
+            continue
+        cleaned = _clean_market_param_value(payload.get(key))
+        if cleaned is not None:
+            params[key] = cleaned
+
+    # Backward-compatible aliases from current dashboard payload.
+    days = _as_int(payload.get("days"))
+    if "daybreak" not in params and days is not None and days >= 0:
+        params["daybreak"] = days
+
+    skins = _as_int(payload.get("skins"))
+    if "smin" not in params and skins is not None and skins > 0:
+        params["smin"] = skins
+
+    budget = _as_float(payload.get("budget"))
+    if "pmax" not in params and budget is not None and budget > 0:
+        params["pmax"] = budget
+
+    return params
+
+
 # Replace the find_item_by_name function in web_app.py with this:
 
 def find_item_by_name(item_name: str, max_pages: int = 20):
@@ -622,6 +698,7 @@ def fetch_cheapest_accounts(
     item_filters: List[Tuple[str, str]],
     min_days: Optional[int],
     min_skins: Optional[int] = None,
+    extra_params: Optional[Dict[str, Any]] = None,
 ):
     """
     Get up to MAX_ACCOUNTS cheapest accounts that match filters.
@@ -629,6 +706,12 @@ def fetch_cheapest_accounts(
     base_params = {
         "order_by": "price_to_up",  # cheapest first
     }
+
+    if extra_params:
+        for key, value in extra_params.items():
+            if key == "page":
+                continue
+            base_params[key] = value
 
     # Build the filter parameters correctly
     for param_name, query_id in item_filters:
@@ -647,10 +730,10 @@ def fetch_cheapest_accounts(
             # For array parameters like dance[], pass as string (requests will handle it)
             base_params[param_name] = str(query_id)
 
-    if min_days is not None and min_days >= 0:
+    if "daybreak" not in base_params and min_days is not None and min_days >= 0:
         base_params["daybreak"] = min_days
 
-    if min_skins is not None and min_skins >= 0:
+    if "smin" not in base_params and min_skins is not None and min_skins >= 0:
         base_params["smin"] = min_skins
 
     all_accounts = []
@@ -3314,35 +3397,40 @@ def api_fortnite_search():
     try:
         data = request.json or {}
         item = data.get("item", "")
-        days = int(data.get("days") or 0)
-        skins = int(data.get("skins") or 0)
-        budget = float(data.get("budget") or 999999)
+        days = _as_int(data.get("days")) or 0
+        skins = _as_int(data.get("skins")) or 0
+        budget = _as_float(data.get("budget"))
+        if budget is None or budget <= 0:
+            budget = 999999
 
         raw_items = [s.strip() for s in item.split(",") if s.strip()]
-        if not raw_items:
-            return jsonify({"error": "You must provide at least one item name."}), 400
+        market_params = build_market_search_params(data)
+        has_direct_filters = bool(market_params)
+        if not raw_items and not has_direct_filters:
+            return jsonify({"error": "You must provide at least one item or one filter."}), 400
 
         item_results = []
         not_found = []
 
-        for name in raw_items:
-            try:
-                result = find_item_by_name(name)
-            except Exception as e:
-                app.logger.error("Error resolving item '%s': %s", name, e)
+        if raw_items:
+            for name in raw_items:
+                try:
+                    result = find_item_by_name(name)
+                except Exception as e:
+                    app.logger.error("Error resolving item '%s': %s", name, e)
+                    return jsonify(
+                        {"error": "Error resolving one or more items. Please try again."}
+                    ), 500
+
+                if not result:
+                    not_found.append(name)
+                else:
+                    item_results.append(result)
+
+            if not item_results and not has_direct_filters:
                 return jsonify(
-                    {"error": "Error resolving one or more items. Please try again."}
-                ), 500
-
-            if not result:
-                not_found.append(name)
-            else:
-                item_results.append(result)
-
-        if not item_results:
-            return jsonify(
-                {"error": "No items found on marketplace.", "not_found": not_found}
-            ), 404
+                    {"error": "No items found on marketplace.", "not_found": not_found}
+                ), 404
 
         item_filters: List[Tuple[str, str]] = []
         for param_name, query_id, raw_id, matched_title, item_type in item_results:
@@ -3352,10 +3440,11 @@ def api_fortnite_search():
         min_skins = skins if skins > 0 else None
 
         try:
-            accounts, base_params = fetch_cheapest_accounts(
+            accounts, _ = fetch_cheapest_accounts(
                 item_filters=item_filters,
                 min_days=min_days,
                 min_skins=min_skins,
+                extra_params=market_params,
             )
         except Exception as e:
             app.logger.error("Error fetching accounts: %s", e)
@@ -3474,10 +3563,6 @@ if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
-
-
-
-
 
 
 
