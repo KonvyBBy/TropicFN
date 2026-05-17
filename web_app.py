@@ -69,6 +69,12 @@ PRICE_CHANGED_KEYWORDS = (
     "actual price",
     "price mismatch",
 )
+BALANCE_ERROR_KEYWORDS = (
+    "balance_id",
+    "insufficient balance",
+    "not enough balance",
+    "balance required",
+)
 
 
 class PurchaseFlowError(Exception):
@@ -1097,6 +1103,7 @@ def confirm_buy_account(item_id: int, price: float):
             raise RuntimeError(f"Fast-buy returned non-JSON: {resp.status_code} - {resp.text[:300]}")
 
         error_parts: List[str] = []
+        error_code_raw = ""
         if isinstance(data, dict):
             raw_errors = data.get("errors", [])
             if isinstance(raw_errors, list):
@@ -1108,6 +1115,7 @@ def confirm_buy_account(item_id: int, price: float):
                 error_parts.append(str(message))
             error_code = data.get("error")
             if error_code:
+                error_code_raw = str(error_code)
                 error_parts.append(str(error_code))
         # Deduplicate while preserving API-provided order.
         error_parts = list(dict.fromkeys(error_parts))
@@ -1142,8 +1150,39 @@ def confirm_buy_account(item_id: int, price: float):
                     409,
                 )
 
+        if resp.status_code == 401:
+            raise PurchaseFlowError(
+                "market_auth_failed",
+                "Marketplace API token is invalid or expired.",
+                401,
+            )
+
+        normalized_error_text = str(error_text or "").lower()
+        normalized_error_code = str(error_code_raw or "").lower()
+        combined_balance_signal = f"{normalized_error_text} {normalized_error_code}"
+        has_balance_error = any(
+            keyword in combined_balance_signal
+            for keyword in BALANCE_ERROR_KEYWORDS
+        )
+        if resp.status_code == 422 and has_balance_error:
+            raise PurchaseFlowError(
+                "market_balance_required",
+                "Marketplace balance is not configured correctly. Please contact support.",
+                422,
+            )
+
         if not resp.ok:
-            raise RuntimeError(f"Fast-buy failed ({resp.status_code}): {error_text or resp.text[:300]}")
+            app.logger.warning(
+                "Fast-buy failed for item %s with status %s: %s",
+                item_id,
+                resp.status_code,
+                error_text or resp.text[:300],
+            )
+            raise PurchaseFlowError(
+                "confirm_buy_failed",
+                "Marketplace rejected the purchase request. Please try again.",
+                400,
+            )
 
         return data
 
@@ -4053,7 +4092,12 @@ def api_fortnite_buy():
         return jsonify({"error": e.code, "message": e.message}), e.status_code
     except Exception as e:
         app.logger.error("confirm_buy_account failed for item %s: %s", item_id, e)
-        return jsonify({"error": "confirm_buy_failed", "message": "Purchase failed"}), 500
+        return jsonify(
+            {
+                "error": "confirm_buy_failed",
+                "message": "Purchase failed due to an unexpected server error. Please try again.",
+            }
+        ), 500
 
     # STEP 2: optional, try to fetch latest order
     try:
