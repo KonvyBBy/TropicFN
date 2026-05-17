@@ -406,7 +406,7 @@ document.addEventListener("DOMContentLoaded", () => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ names: missing }),
         });
-        if (!res.ok) throw new Error("Failed to fetch cosmetic icons");
+        if (!res.ok) throw new Error(`Failed to fetch cosmetic icons: ${res.status}`);
         const data = await res.json();
         const icons = Array.isArray(data.icons) ? data.icons : [];
         const returnedNames = new Set();
@@ -427,8 +427,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const icon = previewIconCache.get(name);
       if (!icon) return;
       if (tile.hasAttribute('data-hydrated')) return;
-      tile.setAttribute('data-hydrated', '');
       tile.innerHTML = `<img src="${escapeHtml(icon)}" alt="${escapeHtml(name)}" loading="lazy">`;
+      tile.setAttribute('data-hydrated', '');
       tile.classList.add('has-image');
     });
   }
@@ -541,7 +541,13 @@ document.addEventListener("DOMContentLoaded", () => {
       previewBtn.onclick = openPreview;
       previewGrid?.addEventListener("click", openPreview);
       previewGrid?.addEventListener("keydown", (event) => {
-        if (event.key === "Enter" || event.key === " ") {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          openPreview();
+        }
+      });
+      previewGrid?.addEventListener("keyup", (event) => {
+        if (event.key === " ") {
           event.preventDefault();
           openPreview();
         }
