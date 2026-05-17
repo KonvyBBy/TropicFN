@@ -329,7 +329,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentSort = 'default';
   let lastSearchAccounts = [];
   const BOOLEAN_FILTER_KEYS = new Set(['email_login_data']);
-  const ENUM_FILTER_KEYS = new Set(['change_email', 'bp', 'xbox_linkable', 'psn_linkable', 'temp_email']);
+  const ENUM_FILTER_KEYS = new Set(['change_email', 'bp', 'xbox_linkable', 'psn_linkable']);
   const allowedFormKeys = new Set([
     'pmin', 'pmax', 'title', 'email_login_data', 'change_email',
     'xbox_linkable', 'psn_linkable', 'skin[]', 'pickaxe[]', 'dance[]', 'glider[]',

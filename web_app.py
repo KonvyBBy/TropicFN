@@ -614,7 +614,7 @@ def build_market_search_params(payload: Dict[str, Any]) -> Dict[str, Any]:
     if "pmax" not in params and budget is not None and budget > 0:
         params["pmax"] = budget
 
-    enum_filter_keys = {"change_email", "bp", "xbox_linkable", "psn_linkable", "temp_email", "rl_purchases"}
+    enum_filter_keys = {"change_email", "bp", "xbox_linkable", "psn_linkable", "temp_email"}
     for key in enum_filter_keys:
         if key not in params:
             continue
@@ -628,9 +628,7 @@ def build_market_search_params(payload: Dict[str, Any]) -> Dict[str, Any]:
 
     if "email_login_data" in params:
         value = params["email_login_data"]
-        if isinstance(value, bool):
-            pass
-        else:
+        if not isinstance(value, bool):
             lowered = str(value).strip().lower()
             if lowered in {"yes", "true", "1"}:
                 params["email_login_data"] = True
@@ -3611,7 +3609,6 @@ if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
-
 
 
 
