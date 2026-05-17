@@ -1154,12 +1154,13 @@ def confirm_buy_account(item_id: int, price: float):
             raise PurchaseFlowError(
                 "market_auth_failed",
                 "Marketplace API token is invalid or expired.",
-                502,
+                401,
             )
 
+        normalized_error_text = str(error_text or "").lower()
         normalized_error_code = str(error_code_raw or "").lower()
         has_balance_error = any(
-            keyword in error_text or keyword in normalized_error_code
+            keyword in normalized_error_text or keyword in normalized_error_code
             for keyword in BALANCE_ERROR_KEYWORDS
         )
         if resp.status_code == 422 and has_balance_error:
