@@ -303,13 +303,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const fd = new FormData(searchForm);
     const budgetInput = document.getElementById('budget-input');
     const priceMinInput = document.getElementById('price-min');
-    const budget = budgetInput.value ? parseFloat(budgetInput.value) : null;
+    const budget = budgetInput?.value ? parseFloat(budgetInput.value) : null;
     const pmin = priceMinInput?.value ? Number(priceMinInput.value) : 0;
     const skins = Number(fd.get('skins') || 0);
     const days = Number(fd.get('days') || 0);
     const vbmin = Number(fd.get('vbmin') || 0);
     const vbmax = Number(fd.get('vbmax') || 0);
-    const hasNonItemFilters = budgetInput.value || priceMinInput?.value || skins > 0 || days > 0 || vbmin > 0 || vbmax > 0;
+    const hasNonItemFilters = budgetInput?.value || priceMinInput?.value || skins > 0 || days > 0 || vbmin > 0 || vbmax > 0;
 
     if (items.length === 0 && !hasNonItemFilters) {
       alert('Please enter at least one item or set filters to search');
@@ -330,7 +330,6 @@ document.addEventListener("DOMContentLoaded", () => {
         skins,
         budget: budget,
         pmin: pmin > 0 ? pmin : undefined,
-        pmax: budget ?? undefined,
         vbmin: vbmin > 0 ? vbmin : undefined,
         vbmax: vbmax > 0 ? vbmax : undefined,
       });
