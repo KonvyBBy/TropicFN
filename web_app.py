@@ -34,7 +34,7 @@ from functools import wraps
 
 FORTNITE_COSMETICS_ALL_URL = "https://fortnite-api.com/v2/cosmetics/br"
 COSMETIC_ICON_CACHE_FILE = "cosmetic_icon_cache.json"
-COSMETIC_LOOKUP_REFRESH_SECONDS = 24 * 60 * 60
+COSMETIC_LOOKUP_REFRESH_INTERVAL_SECONDS = 24 * 60 * 60
 COSMETIC_TYPE_ALIASES = {
     "emote": "emote",
     "dance": "emote",
@@ -205,8 +205,18 @@ def start_cosmetic_lookup_scheduler() -> None:
 
     def _scheduler_loop():
         while True:
-            # Initial refresh is handled by initialize_cosmetic_lookup().
-            time.sleep(COSMETIC_LOOKUP_REFRESH_SECONDS)
+            with COSMETIC_LOOKUP_LOCK:
+                last_refresh_ts = COSMETIC_LOOKUP_LAST_REFRESH_TS
+
+            now_ts = time.time()
+            if last_refresh_ts <= 0:
+                sleep_seconds = 0
+            else:
+                age_seconds = max(now_ts - last_refresh_ts, 0)
+                sleep_seconds = max(COSMETIC_LOOKUP_REFRESH_INTERVAL_SECONDS - age_seconds, 0)
+
+            if sleep_seconds > 0:
+                time.sleep(sleep_seconds)
             refresh_cosmetic_lookup_from_api()
 
     thread = threading.Thread(target=_scheduler_loop, daemon=True)
@@ -225,8 +235,9 @@ def ensure_cosmetic_lookup_runtime_initialized() -> None:
 
 def fortnite_api_get_cosmetic_icon_url_by_name(name: str, cosmetic_type: str = None):
     """
-    Generic function to fetch cosmetic icon URLs by name.
-    cosmetic_type can be: 'outfit', 'pickaxe', 'emote', 'glider', or None (searches all types)
+    Generic O(1) in-memory cosmetic icon lookup by name.
+    cosmetic_type can be: 'outfit', 'pickaxe', 'emote', 'glider', or None (searches all types).
+    Runtime initialization must run first via ensure_cosmetic_lookup_runtime_initialized().
     """
     name = (name or "").strip()
     if not name:
