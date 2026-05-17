@@ -614,6 +614,31 @@ def build_market_search_params(payload: Dict[str, Any]) -> Dict[str, Any]:
     if "pmax" not in params and budget is not None and budget > 0:
         params["pmax"] = budget
 
+    enum_filter_keys = {"change_email", "bp", "xbox_linkable", "psn_linkable", "temp_email", "rl_purchases"}
+    for key in enum_filter_keys:
+        if key not in params:
+            continue
+        value = str(params.get(key) or "").strip().lower()
+        if value == "maybe":
+            value = "yes"
+        if value not in {"yes", "no", "nomatter"}:
+            params.pop(key, None)
+            continue
+        params[key] = value
+
+    if "email_login_data" in params:
+        value = params["email_login_data"]
+        if isinstance(value, bool):
+            pass
+        else:
+            lowered = str(value).strip().lower()
+            if lowered in {"yes", "true", "1"}:
+                params["email_login_data"] = True
+            elif lowered in {"no", "false", "0"}:
+                params["email_login_data"] = False
+            else:
+                params.pop("email_login_data", None)
+
     return params
 
 
@@ -3406,7 +3431,18 @@ def api_fortnite_search():
         raw_items = [s.strip() for s in item.split(",") if s.strip()]
         market_params = build_market_search_params(data)
         has_direct_filters = bool(market_params)
-        if not raw_items and not has_direct_filters:
+        paid_items_min = _as_int(data.get("paid_items_min"))
+        paid_items_max = _as_int(data.get("paid_items_max"))
+        daybreak_max = _as_int(data.get("daybreak_max"))
+        if paid_items_min is None:
+            legacy_paid_items_min = _as_int(data.get("rl_purchases"))
+            if legacy_paid_items_min is not None and legacy_paid_items_min >= 0:
+                paid_items_min = legacy_paid_items_min
+        has_local_filters = any(
+            value is not None and value >= 0
+            for value in (paid_items_min, paid_items_max, daybreak_max)
+        )
+        if not raw_items and not has_direct_filters and not has_local_filters:
             return jsonify({"error": "You must provide at least one item or one filter."}), 400
 
         item_results = []
@@ -3468,6 +3504,18 @@ def api_fortnite_search():
                 continue
 
             days_ago = compute_days_ago(acc)
+            if daybreak_max is not None and daybreak_max >= 0:
+                if days_ago is None or days_ago > daybreak_max:
+                    continue
+
+            rl_purchase_count = _as_int(acc.get("fortnite_rl_purchases"))
+            if paid_items_min is not None and paid_items_min >= 0:
+                if rl_purchase_count is None or rl_purchase_count < paid_items_min:
+                    continue
+            if paid_items_max is not None and paid_items_max >= 0:
+                if rl_purchase_count is None or rl_purchase_count > paid_items_max:
+                    continue
+
             last_played = f"{days_ago} days ago" if days_ago is not None else "N/A"
 
             result_accounts.append(
@@ -3563,8 +3611,6 @@ if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
-
-
 
 
 
