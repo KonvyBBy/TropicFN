@@ -1,0 +1,89 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Oxanium:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --background: #07091a;
+  --foreground: #eaeef8;
+  --card: #0d1128;
+  --card-hover: #131831;
+  --primary: #00ff87;
+  --primary-foreground: #000000;
+  --secondary: #131831;
+  --secondary-foreground: #a8b2d4;
+  --muted: #131831;
+  --muted-foreground: #556080;
+  --border: #1e2540;
+  --destructive: #ff3d5a;
+  --destructive-foreground: #ffffff;
+  --accent: #00d26a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: 'Rajdhani', system-ui, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+.bg-grid-pattern {
+  background-image:
+    linear-gradient(rgba(0,255,135,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,255,135,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+
+.glow-primary-sm {
+  box-shadow: 0 0 16px rgba(0, 255, 135, 0.12), inset 0 0 0 1px rgba(0, 255, 135, 0.2);
+}
+
+.text-glow {
+  text-shadow: 0 0 16px rgba(0, 255, 135, 0.8);
+}
+
+.gradient-primary {
+  background: linear-gradient(135deg, #00ff87, #00c864);
+}
+
+.gradient-card-overlay {
+  background: linear-gradient(to top, rgba(7,9,26,0.95) 0%, rgba(7,9,26,0.4) 50%, transparent 100%);
+}
+
+.section-border {
+  border-left: 2px solid var(--primary);
+  padding-left: 8px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.25s ease forwards;
+}
