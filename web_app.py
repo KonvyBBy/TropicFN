@@ -69,6 +69,12 @@ PRICE_CHANGED_KEYWORDS = (
     "actual price",
     "price mismatch",
 )
+BALANCE_ERROR_KEYWORDS = (
+    "balance_id",
+    "insufficient balance",
+    "not enough balance",
+    "balance required",
+)
 
 
 class PurchaseFlowError(Exception):
@@ -1152,13 +1158,9 @@ def confirm_buy_account(item_id: int, price: float):
             )
 
         normalized_error_code = str(error_code_raw or "").lower()
-        has_balance_error = (
-            "balance_id" in error_text
-            or "balance_id" in normalized_error_code
-            or "insufficient balance" in error_text
-            or "not enough balance" in error_text
-            or "balance required" in error_text
-            or normalized_error_code == "balance"
+        has_balance_error = any(
+            keyword in error_text or keyword in normalized_error_code
+            for keyword in BALANCE_ERROR_KEYWORDS
         )
         if resp.status_code == 422 and has_balance_error:
             raise PurchaseFlowError(
@@ -1168,9 +1170,15 @@ def confirm_buy_account(item_id: int, price: float):
             )
 
         if not resp.ok:
+            app.logger.warning(
+                "Fast-buy failed for item %s with status %s: %s",
+                item_id,
+                resp.status_code,
+                error_text or resp.text[:300],
+            )
             raise PurchaseFlowError(
                 "confirm_buy_failed",
-                f"Fast-buy failed ({resp.status_code}): {error_text or resp.text[:300]}",
+                "Marketplace rejected the purchase request. Please try again.",
                 400,
             )
 
