@@ -1161,13 +1161,20 @@ def confirm_buy_account(item_id: int, price: float):
                 )
                 time.sleep(FAST_BUY_RETRY_DELAY_SECONDS)
                 continue
+            raise PurchaseFlowError(
+                "confirm_buy_failed",
+                "Marketplace rejected the purchase request. Please try again.",
+                400,
+            )
 
         # --- Retry on HTTP-level transient conditions ---
         if resp.status_code == 429:
             if attempt < FAST_BUY_MAX_ATTEMPTS - 1:
                 retry_after = FAST_BUY_RATE_LIMIT_DELAY_SECONDS
                 try:
-                    retry_after = float(resp.headers.get("Retry-After", FAST_BUY_RATE_LIMIT_DELAY_SECONDS))
+                    retry_after_header = resp.headers.get("Retry-After", "")
+                    if retry_after_header:
+                        retry_after = float(retry_after_header)
                 except (ValueError, TypeError):
                     pass
                 app.logger.info(
@@ -1191,6 +1198,11 @@ def confirm_buy_account(item_id: int, price: float):
                 )
                 time.sleep(FAST_BUY_SERVER_ERROR_DELAY_SECONDS)
                 continue
+            raise PurchaseFlowError(
+                "confirm_buy_failed",
+                "Marketplace is experiencing issues. Please try again in a moment.",
+                503,
+            )
 
         # --- Terminal error classification ---
         if resp.status_code == 404:
