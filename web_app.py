@@ -1159,15 +1159,16 @@ def confirm_buy_account(item_id: int, price: float):
 
         normalized_error_text = str(error_text or "").lower()
         normalized_error_code = str(error_code_raw or "").lower()
+        combined_balance_signal = f"{normalized_error_text} {normalized_error_code}"
         has_balance_error = any(
-            keyword in normalized_error_text or keyword in normalized_error_code
+            keyword in combined_balance_signal
             for keyword in BALANCE_ERROR_KEYWORDS
         )
         if resp.status_code == 422 and has_balance_error:
             raise PurchaseFlowError(
                 "market_balance_required",
                 "Marketplace balance is not configured correctly. Please contact support.",
-                400,
+                422,
             )
 
         if not resp.ok:
