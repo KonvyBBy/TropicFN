@@ -388,6 +388,44 @@ document.addEventListener("DOMContentLoaded", () => {
       .replace(/'/g, '&#39;');
   }
 
+  const previewIconCache = new Map();
+
+  async function hydratePreviewIcons() {
+    const tiles = Array.from(document.querySelectorAll('.market-preview-tile[data-cosmetic-name]'));
+    if (!tiles.length) return;
+
+    const names = [...new Set(tiles
+      .map(tile => tile.dataset.cosmeticName || '')
+      .filter(Boolean))];
+    const missing = names.filter(name => !previewIconCache.has(name));
+
+    if (missing.length) {
+      try {
+        const res = await fetch("/api/skins/icons", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ names: missing, type: "outfit" }),
+        });
+        const data = await res.json();
+        const icons = Array.isArray(data.icons) ? data.icons : [];
+        missing.forEach(name => previewIconCache.set(name, null));
+        icons.forEach(icon => previewIconCache.set(icon.name, icon.icon || null));
+      } catch (e) {
+        missing.forEach(name => previewIconCache.set(name, null));
+      }
+    }
+
+    tiles.forEach(tile => {
+      const name = tile.dataset.cosmeticName || '';
+      const icon = previewIconCache.get(name);
+      if (!icon) return;
+      if (tile.dataset.hydrated === '1') return;
+      tile.dataset.hydrated = '1';
+      tile.innerHTML = `<img src="${escapeHtml(icon)}" alt="${escapeHtml(name)}" loading="lazy">`;
+      tile.classList.add('has-image');
+    });
+  }
+
   function getSortedAccounts(accounts) {
     const list = [...accounts];
     if (currentSort === 'cheap') list.sort((a, b) => (a.user_price || 0) - (b.user_price || 0));
@@ -430,13 +468,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     accounts.forEach(acc => {
       const card = document.createElement('div');
-      card.className = 'glass-panel group relative overflow-hidden rounded-2xl transition hover:border-white/20';
-      card.style.display = 'flex';
-      card.style.flexDirection = 'column';
-      card.style.padding = '0';
+      card.className = 'glass-panel market-account-card group';
 
       const warrantyTag = acc.last_played_days != null && acc.last_played_days >= 11
-        ? `<span style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:#34d399;padding:2px 8px;border-radius:99px;font-size:0.65rem;font-weight:700;">✓ Warranty</span>`
+        ? `<span class="market-chip market-chip--warranty">✓ Warranty</span>`
         : '';
 
       const numericPrice = Number(acc.user_price);
@@ -448,39 +483,41 @@ document.addEventListener("DOMContentLoaded", () => {
         const safe = String(name || '').trim();
         const initials = safe ? safe.split(/\s+/).slice(0, 2).map(p => p[0]).join('').toUpperCase() : '?';
         return `
-          <div title="${escapeHtml(safe)}" style="height:56px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:linear-gradient(135deg,rgba(59,130,246,0.15),rgba(16,185,129,0.18));display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.75rem;font-weight:700;letter-spacing:0.04em;">
-            ${escapeHtml(initials)}
+          <div class="market-preview-tile" title="${escapeHtml(safe)}" data-cosmetic-name="${escapeHtml(safe)}">
+            <span class="market-preview-fallback">${escapeHtml(initials)}</span>
           </div>
         `;
       }).join('');
       const cardTitle = escapeHtml(acc.title || `${acc.skins || 0} Skins | Fortnite Account`);
 
       card.innerHTML = `
-        <div style="padding:10px 12px 0;display:flex;align-items:center;justify-content:space-between;gap:8px;">
-          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+        <div class="market-card-head">
+          <div class="market-chip-row">
             ${warrantyTag}
           </div>
-          <div style="font-family:'Space Grotesk',sans-serif;font-size:1rem;font-weight:700;color:#00ff87;background:rgba(0,255,135,0.08);border:1px solid rgba(0,255,135,0.28);padding:3px 8px;border-radius:8px;">${formattedPrice} €</div>
+          <div class="market-price-badge">${formattedPrice} €</div>
         </div>
 
-        <div style="padding:8px 12px 0;">
-          <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;">
-            ${previewNames.length > 0 ? previewTiles : '<div style="grid-column:1/-1;height:56px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;color:#71717a;font-size:0.72rem;">No preview cosmetics</div>'}
+        <div class="market-preview-grid">
+          ${previewNames.length > 0 ? previewTiles : '<div class="market-preview-empty">No preview cosmetics</div>'}
+        </div>
+
+        <div class="market-card-main">
+          <div class="market-card-title">${cardTitle}</div>
+
+          <div class="market-stat-line">
+            <span class="market-stat-main">${acc.skins || 0} Skins</span>
+          </div>
+
+          <div class="market-icon-row">
+            <span class="market-icon-item"><i class="ri-t-shirt-2-line"></i> ${acc.skins || 0}</span>
+            <span class="market-icon-item"><i class="ri-coin-line"></i> ${acc.vbucks || 0}</span>
+            <span class="market-icon-item"><i class="ri-calendar-event-line"></i> ${escapeHtml(acc.last_played || "N/A")}</span>
           </div>
         </div>
 
-        <div style="padding:10px 12px 8px;border-bottom:1px solid rgba(255,255,255,0.08);">
-          <div style="font-size:1.02rem;font-weight:700;line-height:1.3;color:#f4f4f5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${cardTitle}</div>
-          <div style="display:flex;align-items:center;gap:12px;color:#8f98af;font-size:0.78rem;margin-top:6px;">
-            <span>🎭 ${acc.skins || 0}</span>
-            <span>💰 ${acc.vbucks || 0}</span>
-            <span>📅 ${escapeHtml(acc.last_played || "N/A")}</span>
-          </div>
-        </div>
-
-        <div style="padding:10px 12px 12px;display:flex;gap:8px;">
-          <button class="buy-btn" data-item-id="${acc.item_id}" data-base-price="${acc.base_price}"
-            style="flex:1;background:#10b981;color:#04110c;border:none;border-radius:10px;padding:10px;font-size:0.8rem;font-weight:700;cursor:pointer;transition:background 0.15s;">
+        <div class="market-card-actions">
+          <button class="buy-btn market-buy-btn" data-item-id="${acc.item_id}" data-base-price="${acc.base_price}">
             Buy Account
           </button>
         </div>
@@ -526,6 +563,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
       searchResults.appendChild(card);
     });
+
+    hydratePreviewIcons();
   }
 
   searchForm?.addEventListener('submit', async (e) => {
