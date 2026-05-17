@@ -55,6 +55,8 @@ COSMETIC_LOOKUP_RUNTIME_INIT_LOCK = threading.Lock()
 COSMETIC_LOGGER = logging.getLogger("cosmetic_lookup")
 COSMETIC_REFRESH_IN_PROGRESS = False
 PURCHASE_RECHECK_DELAY_SECONDS = 5
+ACCOUNT_UNAVAILABLE_MESSAGE = "Account is no longer available. Please choose another account."
+PRICE_CHANGED_MESSAGE = "The account price changed while we were checking it. Please try again."
 
 
 class PurchaseFlowError(Exception):
@@ -711,7 +713,7 @@ def _extract_account_price(account: dict) -> float:
     if not isinstance(account, dict):
         raise PurchaseFlowError(
             "account_unavailable",
-            "Account is no longer available. Please choose another account.",
+            ACCOUNT_UNAVAILABLE_MESSAGE,
             409,
         )
 
@@ -723,7 +725,7 @@ def _extract_account_price(account: dict) -> float:
     if price <= 0:
         raise PurchaseFlowError(
             "account_unavailable",
-            "Account is no longer available. Please choose another account.",
+            ACCOUNT_UNAVAILABLE_MESSAGE,
             409,
         )
 
@@ -735,10 +737,17 @@ def get_live_account_purchase_price(item_id: int) -> float:
     if not account:
         raise PurchaseFlowError(
             "account_unavailable",
-            "Account is no longer available. Please choose another account.",
+            ACCOUNT_UNAVAILABLE_MESSAGE,
             409,
         )
     return _extract_account_price(account)
+
+
+def get_live_purchase_costs(item_id: int) -> Tuple[float, float, int]:
+    live_price = get_live_account_purchase_price(item_id)
+    user_price = live_price * get_lzt_multiplier_for_pricing()
+    cost_cents = int(round(user_price * 100))
+    return live_price, user_price, cost_cents
 
 
 
@@ -1061,13 +1070,13 @@ def confirm_buy_account(item_id: int, price: float):
         if any(keyword in error_text for keyword in ("sold", "not found", "unavailable", "deleted", "archived")):
             raise PurchaseFlowError(
                 "account_unavailable",
-                "Account is no longer available. Please choose another account.",
+                ACCOUNT_UNAVAILABLE_MESSAGE,
                 409,
             )
         if "price" in error_text:
             raise PurchaseFlowError(
                 "price_changed",
-                "The account price changed while we were checking it. Please try again.",
+                PRICE_CHANGED_MESSAGE,
                 409,
             )
 
@@ -2237,17 +2246,21 @@ INDEX_HTML = """
       const KONVY_LOGGED_IN = {{ 'true' if logged_in else 'false' }};
 
       // Helper to post JSON
-      async function postJSON(url, data) {
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
+        async function postJSON(url, data) {
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
         });
         const json = await res.json();
         if (!res.ok) {
           throw new Error(json.message || json.error || 'Unknown error');
         }
         return json;
+      }
+
+      function wait(ms) {
+        return new Promise((resolve) => window.setTimeout(resolve, ms));
       }
 
       // =========== HELPERS TO EXTRACT LOGIN STRINGS ===========
@@ -2368,13 +2381,14 @@ INDEX_HTML = """
                 }
 
                 btn.disabled = true;
-                btn.textContent = 'Buying...';
+                btn.textContent = 'Checking...';
                 try {
-                  const buyPayload = {
-                    item_id: Number(btn.dataset.itemId),
-                    base_price: Number(btn.dataset.basePrice)
-                  };
-                  const res = await postJSON('/api/fortnite/buy', buyPayload);
+                  const itemId = Number(btn.dataset.itemId);
+                  await postJSON('/api/fortnite/check-buy', { item_id: itemId });
+                  btn.textContent = 'Waiting 5s...';
+                  await wait(5000);
+                  btn.textContent = 'Buying...';
+                  const res = await postJSON('/api/fortnite/buy', { item_id: itemId });
                   const loginText = buildLoginDisplayText(res.purchase_result);
                   alert(res.message + '\\n\\n' + loginText);
                   await loadMyAccounts();
@@ -3929,6 +3943,40 @@ def api_fortnite_search():
         return jsonify({"error": "An unexpected error occurred. Please try again."}), 500
 
 
+@app.route("/api/fortnite/check-buy", methods=["POST"])
+@login_required_api
+def api_fortnite_check_buy():
+    data = request.json or {}
+    username = session["username"]
+    item_id = int(data.get("item_id") or 0)
+
+    if not item_id:
+        return jsonify({"error": "item_id required"}), 400
+
+    try:
+        _, user_price, cost_cents = get_live_purchase_costs(item_id)
+    except PurchaseFlowError as e:
+        return jsonify({"error": e.code, "message": e.message}), e.status_code
+
+    balance_cents = get_balance(username)
+
+    if balance_cents < cost_cents:
+        missing = (cost_cents - balance_cents) / 100
+        return jsonify(
+            {
+                "error": "not_enough_balance",
+                "message": f"Not enough balance. Missing ${missing:.2f}",
+            }
+        ), 400
+
+    return jsonify(
+        {
+            "message": f"Account checked. Waiting {PURCHASE_RECHECK_DELAY_SECONDS} seconds before buying.",
+            "price": round(user_price, 2),
+        }
+    )
+
+
 @app.route("/api/fortnite/buy", methods=["POST"])
 @login_required_api
 def api_fortnite_buy():
@@ -3939,33 +3987,12 @@ def api_fortnite_buy():
     if not item_id:
         return jsonify({"error": "item_id required"}), 400
 
-    try:
-        checked_price = get_live_account_purchase_price(item_id)
-    except PurchaseFlowError as e:
-        return jsonify({"error": e.code, "message": e.message}), e.status_code
-
-    user_price = checked_price * get_lzt_multiplier_for_pricing()
-    cost_cents = int(round(user_price * 100))
     starting_balance = get_balance(username)
 
-    if starting_balance < cost_cents:
-        missing = (cost_cents - starting_balance) / 100
-        return jsonify(
-            {
-                "error": "not_enough_balance",
-                "message": f"Not enough balance. Missing ${missing:.2f}",
-            }
-        ), 400
-
-    time.sleep(PURCHASE_RECHECK_DELAY_SECONDS)
-
     try:
-        live_price = get_live_account_purchase_price(item_id)
+        live_price, user_price, cost_cents = get_live_purchase_costs(item_id)
     except PurchaseFlowError as e:
         return jsonify({"error": e.code, "message": e.message}), e.status_code
-
-    user_price = live_price * get_lzt_multiplier_for_pricing()
-    cost_cents = int(round(user_price * 100))
 
     if starting_balance < cost_cents:
         missing = (cost_cents - starting_balance) / 100

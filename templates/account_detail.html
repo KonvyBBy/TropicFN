@@ -229,6 +229,10 @@
       .replace(/'/g, '&#39;');
   }
 
+  function wait(ms) {
+    return new Promise((resolve) => window.setTimeout(resolve, ms));
+  }
+
   async function loadCategory(sectionId, apiType) {
     const detail = window.ACCOUNT_DETAIL || {};
     const names = Array.isArray(detail[sectionId]) ? detail[sectionId] : [];
@@ -319,13 +323,40 @@
       const payTitle = document.getElementById('pay-title');
       const paySub = document.getElementById('pay-sub');
       if (payTitle) payTitle.textContent = 'Checking Account…';
-      if (paySub) paySub.innerHTML = 'We are checking the live listing first.<br>If it is still there, the purchase starts after 5 seconds.';
+      if (paySub) paySub.innerHTML = 'Please wait while we confirm the account is still available.<br>After the check, we wait 5 seconds and then buy it.';
+      const checkRes = await fetch('/api/fortnite/check-buy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          item_id: Number(detail.item_id)
+        })
+      });
+      let checkData;
+      try { checkData = await checkRes.json(); } catch (e) {
+        throw new Error('Server returned an unexpected response. Please try again.');
+      }
+      if (!checkRes.ok) {
+        const code = String(checkData.error || '').toLowerCase();
+        let message = checkData.message || checkData.error || 'Purchase failed. Please try again.';
+        if (code === 'not_enough_balance') {
+          message = 'Not enough balance. Please top up and try again.';
+        } else if (code === 'account_unavailable') {
+          message = 'Account is no longer available. Please choose another account.';
+        } else if (code === 'price_changed') {
+          message = 'The account price changed while it was being checked. Please try again.';
+        }
+        throw new Error(message);
+      }
+      if (payTitle) payTitle.textContent = 'Account Checked…';
+      if (paySub) paySub.innerHTML = 'The account passed the live check.<br>Waiting 5 seconds before buying it.';
+      await wait(5000);
+      if (payTitle) payTitle.textContent = 'Buying Account…';
+      if (paySub) paySub.innerHTML = 'The account is being purchased now.<br>Please keep this page open until it finishes.';
       const res = await fetch('/api/fortnite/buy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          item_id: Number(detail.item_id),
-          base_price: Number(detail.base_price || 0)
+          item_id: Number(detail.item_id)
         })
       });
       let data;
