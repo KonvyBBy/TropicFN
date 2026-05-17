@@ -408,8 +408,14 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         const data = await res.json();
         const icons = Array.isArray(data.icons) ? data.icons : [];
-        missing.forEach(name => previewIconCache.set(name, null));
-        icons.forEach(icon => previewIconCache.set(icon.name, icon.icon || null));
+        const returnedNames = new Set();
+        icons.forEach(icon => {
+          previewIconCache.set(icon.name, icon.icon || null);
+          returnedNames.add(icon.name);
+        });
+        missing.forEach(name => {
+          if (!returnedNames.has(name)) previewIconCache.set(name, null);
+        });
       } catch (e) {
         missing.forEach(name => previewIconCache.set(name, null));
       }
@@ -526,13 +532,13 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
       `;
 
-      const previewBtn = card.querySelector(".preview-btn");
-      previewBtn.onclick = () => {
+      const openPreview = () => {
         showCosmeticTypeDialog(acc.item_id);
       };
-      card.querySelector(".market-preview-grid")?.addEventListener("click", () => {
-        showCosmeticTypeDialog(acc.item_id);
-      });
+      const previewBtn = card.querySelector(".preview-btn");
+      const previewGrid = card.querySelector(".market-preview-grid");
+      previewBtn.onclick = openPreview;
+      previewGrid?.addEventListener("click", openPreview);
 
       const buyBtn = card.querySelector(".buy-btn");
       buyBtn.onclick = async () => {
