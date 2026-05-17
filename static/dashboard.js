@@ -348,20 +348,21 @@ document.addEventListener("DOMContentLoaded", () => {
     // Resolve cosmetic search inputs: replace text names with marketplace-compatible IDs.
     // The fortnite-api.com IDs (stored in data-cosmetic-id) map to marketplace filter IDs
     // by lowercasing and stripping the known prefix for each cosmetic type.
-    const cosmeticFieldConfig = {
-      'skin[]':    { prefix: 'cid_',       strip: 4  },
-      'dance[]':   { prefix: 'eid_',       strip: 4  },
-      'glider[]':  { prefix: 'glider_id_', strip: 10 },
-      'pickaxe[]': null,  // keep full lowercase ID
+    const cosmeticFieldPrefixes = {
+      'skin[]':    'cid_',
+      'dance[]':   'eid_',
+      'glider[]':  'glider_id_',
+      'pickaxe[]': '',  // keep full lowercase ID
     };
-    for (const [fieldName, rule] of Object.entries(cosmeticFieldConfig)) {
+    function toCosmeticMarketId(rawId, prefix) {
+      const lowerId = rawId.toLowerCase();
+      return prefix && lowerId.startsWith(prefix) ? lowerId.slice(prefix.length) : lowerId;
+    }
+    for (const [fieldName, prefix] of Object.entries(cosmeticFieldPrefixes)) {
       const inputEl = form ? form.querySelector(`input[name="${fieldName}"]`) : null;
       const storedId = inputEl ? inputEl.getAttribute('data-cosmetic-id') : null;
       if (storedId) {
-        const lowerId = storedId.toLowerCase();
-        payload[fieldName] = rule
-          ? (lowerId.startsWith(rule.prefix) ? lowerId.slice(rule.strip) : lowerId)
-          : lowerId;
+        payload[fieldName] = toCosmeticMarketId(storedId, prefix);
       } else {
         // No confirmed selection — remove the raw text name so it doesn't confuse the API.
         delete payload[fieldName];
