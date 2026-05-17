@@ -72,8 +72,6 @@ PRICE_CHANGE_CONTEXT_KEYWORDS = (
     "different",
     "current",
     "actual",
-    "mismatch",
-    "match",
 )
 
 
@@ -91,13 +89,10 @@ def _is_price_changed_error(error_text: str) -> bool:
 
     normalized_error_text = str(error_text).lower()
 
-    if any(keyword in normalized_error_text for keyword in PRICE_CHANGED_KEYWORDS):
-        return True
-
     if "price" not in normalized_error_text:
         return False
 
-    return any(
+    return any(keyword in normalized_error_text for keyword in PRICE_CHANGED_KEYWORDS) or any(
         keyword in normalized_error_text
         for keyword in PRICE_CHANGE_CONTEXT_KEYWORDS
     )
