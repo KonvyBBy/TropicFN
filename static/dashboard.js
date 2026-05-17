@@ -351,6 +351,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (LINKABILITY_KEYS.has(key)) {
+      // "yes" is treated as "no extra constraint" for marketplace linkability filters.
       if (trimmed === 'yes') return undefined;
       if (trimmed in BOOL_NUMERIC) return BOOL_NUMERIC[trimmed];
       return undefined;
@@ -436,7 +437,8 @@ document.addEventListener("DOMContentLoaded", () => {
         ? `<span style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:#34d399;padding:2px 8px;border-radius:99px;font-size:0.65rem;font-weight:700;">✓ Warranty</span>`
         : '';
 
-      const formattedPrice = Number(acc.user_price || 0).toFixed(2);
+      const hasPrice = Number.isFinite(Number(acc.user_price));
+      const formattedPrice = hasPrice ? Number(acc.user_price).toFixed(2) : 'N/A';
 
       card.innerHTML = `
         <div style="padding:16px 18px 0;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
@@ -509,7 +511,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const accsRes = await postJSON("/api/fortnite/my-accounts");
             currentAccounts = accsRes.accounts || [];
           } catch (e) {
-            console.error("Failed to refresh purchased accounts after buy", e);
+            console.error("Failed to refresh purchased accounts after purchase", e);
           }
           const newIndex = currentAccounts.length - 1;
 
