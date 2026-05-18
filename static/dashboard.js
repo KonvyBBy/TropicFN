@@ -831,31 +831,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function copyToClipboard(text) {
     const value = String(text || "");
-    if (!value) return;
+    if (!value) return false;
+    if (!navigator.clipboard || !navigator.clipboard.writeText) return false;
     try {
       await navigator.clipboard.writeText(value);
-      return;
-    } catch (_) {}
-
-    const fallback = document.createElement("textarea");
-    fallback.value = value;
-    fallback.setAttribute("readonly", "");
-    fallback.style.position = "absolute";
-    fallback.style.left = "-9999px";
-    document.body.appendChild(fallback);
-    fallback.select();
-    document.execCommand("copy");
-    fallback.remove();
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   function buildCredRow(label, value) {
     const safeLabel = escapeHtml(label);
+    const safeAriaLabel = escapeHtml(`Copy ${label}`);
     const safeValue = escapeHtml(value || "N/A");
     return `
       <div class="my-account-row">
         <span class="my-account-row-label">${safeLabel}</span>
         <span class="my-account-row-value">${safeValue}</span>
-        <button type="button" class="my-account-copy-btn" data-copy="${safeValue}" aria-label="Copy ${safeLabel}">
+        <button type="button" class="my-account-copy-btn" data-copy="${safeValue}" aria-label="${safeAriaLabel}">
           <i class="ri-file-copy-line"></i>
         </button>
       </div>
@@ -868,9 +862,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     root.querySelectorAll(".my-account-copy-btn").forEach((btn) => {
       btn.addEventListener("click", async () => {
-        await copyToClipboard(btn.dataset.copy || "");
-        btn.classList.add("copied");
-        setTimeout(() => btn.classList.remove("copied"), 800);
+        const copied = await copyToClipboard(btn.dataset.copy || "");
+        if (copied) {
+          btn.classList.add("copied");
+          setTimeout(() => btn.classList.remove("copied"), 800);
+        }
       });
     });
 
@@ -893,6 +889,7 @@ document.addEventListener("DOMContentLoaded", () => {
         await postJSON("/api/fortnite/name-account", { purchase_index: accIndex, name: nextName });
         if (myAccounts[accIndex]) myAccounts[accIndex].name = nextName;
         status.textContent = "Saved.";
+        status.classList.remove("error");
       } catch (e) {
         status.textContent = e?.message || "Failed to save.";
         status.classList.add("error");
