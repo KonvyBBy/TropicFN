@@ -566,13 +566,7 @@ if not SHOPIFY_WEBHOOK_SECRET:
     print("WARNING: SHOPIFY_WEBHOOK_SECRET not set – /webhooks/shopify/order-paid will reject all requests.")
 
 # --- Discord purchase webhook ---
-DEFAULT_DISCORD_PURCHASE_WEBHOOK_URL = (
-    "https://discord.com/api/webhooks/1505767232528191711/"
-    "ymt9MXOVGKX2Eaz-h9oT8FxyCWesF9LW9WKFqmPggXciqvhx1Fht3Sp_fgKKcD8vGRFd"
-)
-DISCORD_PURCHASE_WEBHOOK_URL = (
-    os.environ.get("DISCORD_PURCHASE_WEBHOOK_URL", DEFAULT_DISCORD_PURCHASE_WEBHOOK_URL) or ""
-).strip()
+DISCORD_PURCHASE_WEBHOOK_URL = (os.environ.get("DISCORD_PURCHASE_WEBHOOK_URL") or "").strip()
 DISCORD_PURCHASE_WEBHOOK_TIMEOUT = int(os.environ.get("DISCORD_PURCHASE_WEBHOOK_TIMEOUT", "10"))
 DISCORD_PURCHASE_BANNER_URL = (
     "https://cdn.discordapp.com/attachments/1505680543633772775/1505767457875296356/"
