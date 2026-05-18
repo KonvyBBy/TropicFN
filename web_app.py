@@ -89,6 +89,7 @@ AUTH_ERROR_KEYWORDS = (
     "unauthorized",
     "token",
 )
+MAX_MARKETPLACE_ERROR_LENGTH = 180
 # Error text patterns that indicate a transient failure worth retrying.
 FAST_BUY_RETRYABLE_KEYWORDS = (
     "too many requests",
@@ -128,9 +129,8 @@ def _build_marketplace_error_message(
     if not first_error:
         return fallback_message
 
-    max_error_length = 180
-    if len(first_error) > max_error_length:
-        first_error = f"{first_error[:max_error_length - 3]}..."
+    if len(first_error) > MAX_MARKETPLACE_ERROR_LENGTH:
+        first_error = f"{first_error[:MAX_MARKETPLACE_ERROR_LENGTH - 3]}..."
 
     return f"{fallback_message} ({first_error})"
 
@@ -1272,7 +1272,7 @@ def confirm_buy_account(item_id: int, price: float):
             if has_auth_error:
                 raise PurchaseFlowError(
                     "market_auth_failed",
-                    "Marketplace API token does not have purchase access. Please update the token permissions.",
+                    "Marketplace API token does not have purchase access. Ensure the token includes required market/payment scopes.",
                     401,
                 )
             raise PurchaseFlowError(
