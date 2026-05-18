@@ -280,8 +280,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const mobileSortSelect = document.getElementById('mobile-sort-select');
   let currentSort = 'default';
   let lastSearchAccounts = [];
-  let autoSearchDebounceTimer = null;
+  let searchDebounceTimer = null;
   let searchRequestId = 0;
+  const initialSearchStateHtml = searchResults ? searchResults.innerHTML : '';
   const MAX_PREVIEW_COSMETICS = 8;
   const BOOLEAN_FILTER_KEYS = new Set(['email_login_data']);
   const ENUM_FILTER_KEYS = new Set(['change_email', 'bp']);
@@ -453,13 +454,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderInitialState() {
     if (!searchResults) return;
-    searchResults.innerHTML = `
-      <div class="col-span-full py-16 text-center">
-        <div class="mb-2 text-2xl">🎮</div>
-        <p class="text-sm font-semibold text-white">Use filters to find accounts</p>
-        <p class="mt-1 text-xs" style="color:#555;">Your results will appear here</p>
-      </div>
-    `;
+    searchResults.innerHTML = initialSearchStateHtml;
   }
 
   function renderEmptyState() {
@@ -583,8 +578,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function scheduleAutoSearch() {
-    clearTimeout(autoSearchDebounceTimer);
-    autoSearchDebounceTimer = setTimeout(() => {
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(() => {
       executeSearch({ showEmptyAlert: false });
     }, AUTO_SEARCH_DEBOUNCE_MS);
   }
@@ -610,8 +605,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   searchForm?.addEventListener('reset', () => {
     window.setTimeout(() => {
-      searchRequestId += 1;
-      clearTimeout(autoSearchDebounceTimer);
+      ++searchRequestId;
+      clearTimeout(searchDebounceTimer);
       lastSearchAccounts = [];
       renderInitialState();
       document.querySelectorAll('.autocomplete-dropdown').forEach(d => d.classList.remove('show'));
