@@ -23,6 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const MAX_COSMETIC_RESULTS = 10;
   const DEFAULT_COSMETIC_TYPES = ['outfit', 'pickaxe', 'emote', 'glider'];
   const PREVIEW_TILE_COUNT = 8; // 2 rows × 4 columns in the card image grid
+  const AUTO_SEARCH_DEBOUNCE_MS = 350;
 
   // =============== AUTH NAVIGATION ===============
   function openAuthPage(mode = "login") {
@@ -585,7 +586,7 @@ document.addEventListener("DOMContentLoaded", () => {
     clearTimeout(autoSearchDebounceTimer);
     autoSearchDebounceTimer = setTimeout(() => {
       executeSearch({ showEmptyAlert: false });
-    }, 350);
+    }, AUTO_SEARCH_DEBOUNCE_MS);
   }
 
   searchForm?.addEventListener('submit', async (e) => {
