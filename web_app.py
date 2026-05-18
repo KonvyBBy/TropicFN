@@ -167,6 +167,50 @@ def _extract_purchase_item_id(purchase_result: Any) -> Optional[int]:
         return None
 
 
+def _normalize_purchase_result_payload(payload: Any) -> Any:
+    """Preserve item fields while keeping full purchase-response metadata like login details."""
+    if not isinstance(payload, dict):
+        return payload
+
+    item = payload.get("item")
+    if not isinstance(item, dict):
+        data = payload.get("data")
+        if isinstance(data, dict):
+            item = data
+
+    if not isinstance(item, dict):
+        return payload
+
+    normalized = dict(item)
+    normalized["item"] = dict(item)
+    for key, value in payload.items():
+        if key not in ("item", "data"):
+            normalized[key] = value
+    return normalized
+
+
+def _fetch_purchase_result_by_item_id(item_id: int) -> Optional[dict]:
+    """Fetch the purchased item payload so delivery/login data is preserved."""
+    url = f"https://prod-api.lzt.market/{item_id}"
+    headers = {
+        "accept": "application/json",
+        "authorization": f"Bearer {MARKET_API_TOKEN}",
+    }
+
+    resp = requests.get(url, headers=headers, timeout=20)
+
+    if resp.status_code == 404:
+        return None
+
+    if resp.status_code != 200:
+        raise RuntimeError(
+            f"Failed to fetch account {item_id}: "
+            f"{resp.status_code} - {resp.text[:200]}"
+        )
+
+    return _normalize_purchase_result_payload(resp.json())
+
+
 def _recover_purchase_result(item_id: int, reason: str, initial_result: Optional[dict] = None) -> Optional[dict]:
     """Retry the item lookup after ambiguous purchase responses and return recovered credentials."""
     if isinstance(initial_result, dict) and _purchase_result_has_credentials(initial_result):
@@ -174,7 +218,7 @@ def _recover_purchase_result(item_id: int, reason: str, initial_result: Optional
 
     for attempt in range(PURCHASE_RECOVERY_MAX_ATTEMPTS):
         try:
-            recovered_result = find_account_by_item_id(item_id)
+            recovered_result = _fetch_purchase_result_by_item_id(item_id)
         except Exception as exc:
             app.logger.warning(
                 "Purchase recovery lookup failed for item %s after %s (attempt %s/%s): %s",
@@ -1319,8 +1363,8 @@ def find_account_by_item_id(item_id: int):
             f"{resp.status_code} - {resp.text[:200]}"
         )
 
-    data = resp.json()
-    return data.get("item") or data.get("data") or data
+    data = _normalize_purchase_result_payload(resp.json())
+    return data.get("item") or data
 
 
 def _extract_account_price(account: dict) -> float:
@@ -1674,7 +1718,6 @@ def confirm_buy_account(item_id: int):
         "content-type": "application/json",
         "authorization": f"Bearer {MARKET_API_TOKEN}",
     }
-    payload: Dict[str, Any] = {}
     account = find_account_by_item_id(item_id)
     if not account:
         raise PurchaseFlowError(
@@ -1683,15 +1726,19 @@ def confirm_buy_account(item_id: int):
             409,
         )
 
+    request_kwargs: Dict[str, Any] = {
+        "headers": headers_fb,
+        "timeout": 60,
+    }
     balance_id = os.environ.get("LZT_BALANCE_ID")
     if balance_id:
         try:
-            payload["balance_id"] = int(balance_id)
+            request_kwargs["json"] = {"balance_id": int(balance_id)}
         except (ValueError, TypeError):
             pass
 
     for attempt in range(FAST_BUY_MAX_ATTEMPTS):
-        resp = requests.post(url, headers=headers_fb, json=payload, timeout=60)
+        resp = requests.post(url, **request_kwargs)
 
         # Try to parse JSON response; retry on 5xx non-JSON (e.g. nginx error pages),
         # otherwise fall back to raising with raw text.
@@ -1882,7 +1929,13 @@ def confirm_buy_account(item_id: int):
                 400,
             )
 
-        return data
+        normalized_data = _normalize_purchase_result_payload(data)
+        delivery_result = _recover_purchase_result(
+            item_id,
+            "fast_buy_success",
+            normalized_data if isinstance(normalized_data, dict) else None,
+        )
+        return delivery_result or normalized_data
 
 def get_latest_order():
     """
