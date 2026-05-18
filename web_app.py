@@ -4243,6 +4243,37 @@ def my_accounts_page():
     )
 
 
+@app.route("/purchase-processing")
+@login_required_page
+def purchase_processing_page():
+    username = session["username"]
+    balance_cents = get_balance(username)
+    balance = f"{balance_cents / 100:.2f}"
+    has_topup = user_has_any_topup(username)
+
+    raw_item_id = request.args.get("item_id", "").strip()
+    item_title = request.args.get("title", "").strip() or "Fortnite Account"
+    item_id = 0
+    try:
+        item_id = int(raw_item_id)
+    except (TypeError, ValueError):
+        item_id = 0
+
+    if item_id <= 0:
+        return redirect(url_for("dashboard_page"))
+
+    return render_template(
+        "purchase_processing.html",
+        username=username,
+        balance=balance,
+        logged_in=True,
+        has_topup=has_topup,
+        active_page="home",
+        item_id=item_id,
+        item_title=item_title[:160],
+    )
+
+
 def _extract_cosmetic_names(account: dict, field_name: str) -> List[str]:
     values = account.get(field_name) or []
     if not isinstance(values, list):

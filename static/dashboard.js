@@ -987,7 +987,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // =============== MY ACCOUNTS ===============
   let myAccounts = [];
-  let accIndex = 0;
 
   /**
    * Formats a Unix timestamp (seconds) into a short local date string.
@@ -1068,40 +1067,53 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
 
-    const saveBtn = root.querySelector(".my-account-name-save");
-    const input = root.querySelector(".my-account-name-input");
-    const status = root.querySelector(".my-account-name-status");
-    if (!saveBtn || !input || !status) return;
+    root.querySelectorAll("[data-acc-toggle]").forEach((toggleBtn) => {
+      toggleBtn.addEventListener("click", () => {
+        const index = String(toggleBtn.dataset.accToggle || "");
+        const content = root.querySelector(`[data-acc-content="${index}"]`);
+        if (!content) return;
+        const willOpen = !content.classList.contains("is-open");
+        content.classList.toggle("is-open", willOpen);
+        toggleBtn.setAttribute("aria-expanded", willOpen ? "true" : "false");
+      });
+    });
 
-    const runSave = async () => {
-      const nextName = String(input.value || "").trim();
-      if (!nextName) {
-        status.textContent = "Enter a name first.";
-        status.classList.add("error");
-        return;
-      }
-      status.textContent = "Saving...";
-      status.classList.remove("error");
-      saveBtn.disabled = true;
-      try {
-        await postJSON("/api/fortnite/name-account", { purchase_index: accIndex, name: nextName });
-        if (myAccounts[accIndex]) myAccounts[accIndex].name = nextName;
-        status.textContent = "Saved.";
+    root.querySelectorAll(".my-account-name-save").forEach((saveBtn) => {
+      const purchaseIndex = Number(saveBtn.dataset.purchaseIndex || "-1");
+      const input = root.querySelector(`#my-account-name-input-${purchaseIndex}`);
+      const status = root.querySelector(`#my-account-name-status-${purchaseIndex}`);
+      if (!input || !status || !Number.isInteger(purchaseIndex) || purchaseIndex < 0) return;
+
+      const runSave = async () => {
+        const nextName = String(input.value || "").trim();
+        if (!nextName) {
+          status.textContent = "Enter a name first.";
+          status.classList.add("error");
+          return;
+        }
+        status.textContent = "Saving...";
         status.classList.remove("error");
-      } catch (e) {
-        status.textContent = e?.message || "Failed to save.";
-        status.classList.add("error");
-      } finally {
-        saveBtn.disabled = false;
-      }
-    };
+        saveBtn.disabled = true;
+        try {
+          await postJSON("/api/fortnite/name-account", { purchase_index: purchaseIndex, name: nextName });
+          if (myAccounts[purchaseIndex]) myAccounts[purchaseIndex].name = nextName;
+          status.textContent = "Saved.";
+          status.classList.remove("error");
+        } catch (e) {
+          status.textContent = e?.message || "Failed to save.";
+          status.classList.add("error");
+        } finally {
+          saveBtn.disabled = false;
+        }
+      };
 
-    saveBtn.addEventListener("click", runSave);
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        runSave();
-      }
+      saveBtn.addEventListener("click", runSave);
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          runSave();
+        }
+      });
     });
   }
 
@@ -1119,27 +1131,21 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const res = await postJSON("/api/fortnite/my-accounts");
       myAccounts = res.accounts || [];
-      accIndex = 0;
       renderAccount();
     } catch {
       view.textContent = "Failed to load accounts.";
     }
   }
 
-  function renderAccount() {
-    const view = qs("my-accounts-view");
-    const indicator = qs("account-indicator");
-    if (!view) return;
+  function getAccountTitle(item, skinsCount, fallbackIndex) {
+    const rawTitle = String(item?.title || item?.title_en || "").trim();
+    if (rawTitle) return rawTitle;
+    if (Number.isFinite(skinsCount) && skinsCount > 0) return `${skinsCount} Skins`;
+    return `Account ${fallbackIndex + 1}`;
+  }
 
-    if (!myAccounts.length) {
-      view.textContent = "No purchased accounts.";
-      if (indicator) indicator.textContent = "";
-      return;
-    }
-
-    const acc = myAccounts[accIndex];
+  function buildAccountCard(acc, cardIndex) {
     const item = acc.purchase_result?.item || {};
-    const accountName = String(acc.name || "").trim() || `Account ${accIndex + 1}`;
     const loginData = item.loginData || {};
     const emailData = item.emailLoginData || {};
     const parsedFortnite = splitRawCredentials(loginData.raw);
@@ -1156,64 +1162,75 @@ document.addEventListener("DOMContentLoaded", () => {
     const delivered = String(acc.purchase_result?.status || "").toLowerCase() === "ok";
     const purchaseDate = formatPurchaseDate(acc.timestamp);
     const displayPrice = formatPrice(item.priceWithSellerFee ?? item.price);
-    const accountNameInputId = `my-account-name-input-${accIndex}`;
+    const accountName = String(acc.name || "").trim() || `Account ${cardIndex + 1}`;
+    const accountNameInputId = `my-account-name-input-${cardIndex}`;
+    const accountNameStatusId = `my-account-name-status-${cardIndex}`;
+    const accountNumber = Number(item.item_id || item.fortnite_item_id || item.id || 0);
+    const accountTitle = getAccountTitle(item, skinsCount, cardIndex);
+    const isOpen = cardIndex === 0;
 
-    view.innerHTML = `
+    return `
       <article class="my-account-panel">
-        <div class="my-account-top">
-          <div>
-            <div class="my-account-title">${escapeHtml(`${skinsCount} Skins`)}</div>
-            <div class="my-account-date">${escapeHtml(purchaseDate)}</div>
-            <div class="my-account-state ${delivered ? "is-delivered" : ""}">
-              <i class="${delivered ? "ri-check-line" : "ri-time-line"}"></i>
-              <span>${delivered ? "Delivered" : "Pending"}</span>
+        <button type="button" class="my-account-summary" data-acc-toggle="${cardIndex}" aria-expanded="${isOpen ? "true" : "false"}">
+          <div class="my-account-top">
+            <div>
+              <div class="my-account-title">${escapeHtml(accountTitle)}</div>
+              <div class="my-account-date">${escapeHtml(purchaseDate)}</div>
+              ${accountNumber > 0 ? `<div class="my-account-id-chip">#${escapeHtml(String(accountNumber))}</div>` : ""}
+              <div class="my-account-state ${delivered ? "is-delivered" : ""}">
+                <i class="${delivered ? "ri-check-line" : "ri-time-line"}"></i>
+                <span>${delivered ? "Delivered" : "Pending"}</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="my-account-price">${escapeHtml(displayPrice)}</div>
+              <i class="ri-arrow-down-s-line my-account-summary-chevron" aria-hidden="true"></i>
             </div>
           </div>
-          <div class="my-account-price">${escapeHtml(displayPrice)}</div>
-        </div>
+        </button>
 
-        <div class="my-account-name-wrap">
-          <label class="my-account-name-label" for="${accountNameInputId}">Account Name</label>
-          <div class="my-account-name-controls">
-            <input id="${accountNameInputId}" type="text" class="my-account-name-input" maxlength="50" value="${escapeHtml(accountName)}" placeholder="Enter account name">
-            <button type="button" class="my-account-name-save">Save</button>
+        <div class="my-account-collapse ${isOpen ? "is-open" : ""}" data-acc-content="${cardIndex}">
+          <div class="my-account-name-wrap">
+            <label class="my-account-name-label" for="${accountNameInputId}">Account Name</label>
+            <div class="my-account-name-controls">
+              <input id="${accountNameInputId}" type="text" class="my-account-name-input" maxlength="50" value="${escapeHtml(accountName)}" placeholder="Enter account name">
+              <button type="button" class="my-account-name-save" data-purchase-index="${cardIndex}">Save</button>
+            </div>
+            <div class="my-account-name-status" id="${accountNameStatusId}" aria-live="polite"></div>
           </div>
-          <div class="my-account-name-status" aria-live="polite"></div>
+
+          <section class="my-account-section">
+            <h3>FORTNITE LOGIN</h3>
+            ${buildCredRow("Login", fortniteLogin)}
+            ${buildCredRow("Password", fortnitePassword)}
+            ${buildCredRow("Login & Password", fortniteCombo)}
+          </section>
+
+          <section class="my-account-section">
+            <h3>EMAIL ACCESS</h3>
+            ${buildCredRow("Login", emailLogin)}
+            ${buildCredRow("Password", emailPassword)}
+            ${buildCredRow("Old Password", emailOldPassword)}
+            ${buildCredRow("Secret Answer", emailSecretAnswer)}
+            ${buildCredRow("Login & Password", emailCombo)}
+          </section>
         </div>
-
-        <section class="my-account-section">
-          <h3>FORTNITE LOGIN</h3>
-          ${buildCredRow("Login", fortniteLogin)}
-          ${buildCredRow("Password", fortnitePassword)}
-          ${buildCredRow("Login & Password", fortniteCombo)}
-        </section>
-
-        <section class="my-account-section">
-          <h3>EMAIL ACCESS</h3>
-          ${buildCredRow("Login", emailLogin)}
-          ${buildCredRow("Password", emailPassword)}
-          ${buildCredRow("Old Password", emailOldPassword)}
-          ${buildCredRow("Secret Answer", emailSecretAnswer)}
-          ${buildCredRow("Login & Password", emailCombo)}
-        </section>
       </article>
     `;
-    bindMyAccountActions();
-
-    if (indicator) {
-      indicator.textContent = `Account ${accIndex + 1} / ${myAccounts.length}`;
-    }
   }
 
-  qs("prev-account")?.addEventListener("click", () => {
-    accIndex = Math.max(0, accIndex - 1);
-    renderAccount();
-  });
+  function renderAccount() {
+    const view = qs("my-accounts-view");
+    if (!view) return;
 
-  qs("next-account")?.addEventListener("click", () => {
-    accIndex = Math.min(myAccounts.length - 1, accIndex + 1);
-    renderAccount();
-  });
+    if (!myAccounts.length) {
+      view.textContent = "No purchased accounts.";
+      return;
+    }
+
+    view.innerHTML = myAccounts.map((acc, index) => buildAccountCard(acc, index)).join("");
+    bindMyAccountActions();
+  }
 
   if (window.KONVY_LOGGED_IN) {
     loadMyAccounts();
