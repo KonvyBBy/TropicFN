@@ -161,6 +161,7 @@
           const retryDelayMs = getRetryDelayMs(attempt);
           messageEl.textContent = `${errorMessage} Retrying automatically in ${Math.max(1, Math.ceil(retryDelayMs / 1000))}s. Please keep this page open.`;
           await sleep(retryDelayMs);
+          continue;
         }
 
         iconEl.className = 'purchase-error-ring mx-auto';
