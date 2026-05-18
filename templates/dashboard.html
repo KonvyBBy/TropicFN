@@ -147,18 +147,18 @@
   @media (max-width: 1023px) {
     .desktop-filters { display: none; }
     .filters-scroll { max-height: none; overflow-y: visible; }
-    .mobile-filter-toggle {
-      border-color: rgba(14, 244, 117, 0.9) !important;
-      color: #dcfce7 !important;
-      background: rgba(14, 244, 117, 0.12) !important;
+    #mobile-filter-toggle.mobile-filter-toggle {
+      border-color: rgba(14, 244, 117, 0.9);
+      color: #dcfce7;
+      background: rgba(14, 244, 117, 0.12);
       box-shadow:
         0 0 0 1px rgba(14, 244, 117, 0.45),
         0 0 18px rgba(14, 244, 117, 0.42);
       animation: mobileFilterPulse 1.35s ease-in-out infinite;
     }
-    .mobile-filter-toggle:hover {
-      border-color: rgba(14, 244, 117, 1) !important;
-      color: #f0fdf4 !important;
+    #mobile-filter-toggle.mobile-filter-toggle:hover {
+      border-color: rgba(14, 244, 117, 1);
+      color: #f0fdf4;
     }
   }
   @media (prefers-reduced-motion: reduce) {

@@ -239,6 +239,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!chipsContainer || !fieldName || !normalizedId || !normalizedName) return;
       const existingIds = getSelectedIds();
       if (existingIds.includes(normalizedId)) {
+        // Ignore duplicate selections so each cosmetic is only sent once in search payload.
         input.value = '';
         return;
       }

@@ -256,6 +256,9 @@
   const PURCHASE_CHECK_MESSAGE = 'Please wait while we verify the account is still available and prepare your purchase.';
   const PURCHASE_READY_MESSAGE = 'The account is available. Preparing to complete your purchase...';
   const PURCHASE_RUNNING_MESSAGE = 'The account is being purchased now.<br>Please keep this page open until it finishes.';
+  const PURCHASE_SUCCESS_DELIVERED_MESSAGE = 'You purchased it! Account details were delivered.';
+  const PURCHASE_SUCCESS_RECOVERED_MESSAGE = 'You purchased it! Account details are now available in My Accounts.';
+  const PURCHASE_SUCCESS_PROCESSING_MESSAGE = 'You purchased it! Account delivery is processing. Please check My Accounts.';
 
   function getPurchaseErrorMessage(code, fallbackMessage) {
     if (code === 'not_enough_balance') {
@@ -531,16 +534,16 @@
       if (!hasStructuredBuyPayload) {
         const recovered = await recoverSuccessfulPurchase(Number(detail.item_id));
         if (recovered) {
-          showPaySuccess('You purchased it! Account details are now available in My Accounts.', recovered.purchaseIndex);
+          showPaySuccess(PURCHASE_SUCCESS_RECOVERED_MESSAGE, recovered.purchaseIndex);
           return;
         }
-        showPaySuccess('You purchased it! Account delivery is processing. Please check My Accounts.', 0);
+        showPaySuccess(PURCHASE_SUCCESS_PROCESSING_MESSAGE, 0);
         return;
       }
       const purchaseIndex = Number.isInteger(parsedData.purchase_index)
         ? parsedData.purchase_index
         : (Array.isArray(parsedData.owned_accounts) ? parsedData.owned_accounts.length - 1 : 0);
-      showPaySuccess(parsedData.message || 'You purchased it! Account details were delivered.', purchaseIndex);
+      showPaySuccess(parsedData.message || PURCHASE_SUCCESS_DELIVERED_MESSAGE, purchaseIndex);
     } catch (e) {
       showPayError(e.message || 'Purchase failed. Please try again.');
     } finally {
