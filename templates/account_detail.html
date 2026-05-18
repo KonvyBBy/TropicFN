@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ account_detail.title }} — Konvy Accounts{% endblock %}
+{% block title %}{{ account_detail.title }} — ItemZ{% endblock %}
 
 {% block extra_styles %}
 <style>
@@ -25,7 +25,7 @@
   .detail-tile[data-rarity="dc"]           { border-color: #6366f1; }
   .detail-tile[data-rarity="icon"]         { border-color: #06b6d4; }
   .detail-tile[data-rarity="gaming_legends"] { border-color: #8b5cf6; }
-  .buy-card { border: 1px solid rgba(16,185,129,.45); background: linear-gradient(135deg,#10b981,#06d876); color: #03180f; }
+  .buy-card { border: 1px solid rgba(14,244,117,.45); background: linear-gradient(135deg,#0EF475,#06d876); color: #03180f; }
   .buy-now-btn { border: 1px solid rgba(3,24,15,.18); background: rgba(3,24,15,.14); color: #03180f; }
   .buy-now-btn:hover { background: rgba(3,24,15,.2); }
   .info-row { display: flex; justify-content: space-between; gap: 8px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,.08); }
@@ -49,10 +49,10 @@
   .rec-modal p { font-size: .88rem; color: #9ca3af; line-height: 1.55; margin-bottom: 20px; }
   .rec-modal-btn-row { display: flex; gap: 10px; justify-content: center; }
   .rec-confirm-btn {
-    background: #10b981; color: #03180f; border: none; border-radius: 10px;
+    background: #0EF475; color: #03180f; border: none; border-radius: 10px;
     padding: 11px 24px; font-weight: 700; font-size: .9rem; cursor: pointer; transition: background .15s;
   }
-  .rec-confirm-btn:hover { background: #059669; }
+  .rec-confirm-btn:hover { background: #0BC95E; }
   .rec-cancel-btn {
     background: rgba(255,255,255,.07); color: #9ca3af; border: 1px solid rgba(255,255,255,.1);
     border-radius: 10px; padding: 11px 20px; font-size: .9rem; cursor: pointer; transition: background .15s;
@@ -68,8 +68,8 @@
   .pay-overlay.open { display: flex; }
   .pay-ring {
     width: 72px; height: 72px; border-radius: 50%;
-    border: 5px solid rgba(16,185,129,.18);
-    border-top-color: #10b981;
+    border: 5px solid rgba(14,244,117,.18);
+    border-top-color: #0EF475;
     animation: spin 1s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -83,11 +83,25 @@
   .pay-success { display: none; flex-direction: column; align-items: center; gap: 14px; }
   .pay-success.show { display: flex; }
   .pay-success-icon { font-size: 3.5rem; }
-  .pay-success-title { font-family:'Space Grotesk',sans-serif; font-size: 1.3rem; font-weight: 700; color: #10b981; }
+  .pay-success-title { font-family:'Space Grotesk',sans-serif; font-size: 1.3rem; font-weight: 700; color: #0EF475; }
   .pay-success-btn {
-    background: #10b981; color: #03180f; border: none; border-radius: 10px;
+    background: #0EF475; color: #03180f; border: none; border-radius: 10px;
     padding: 12px 28px; font-weight: 700; font-size: .95rem; cursor: pointer;
   }
+  .pay-success-btn:hover { background: #0BC95E; }
+  /* Naming input inside overlay */
+  .pay-name-input {
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 10px; padding: 10px 14px; font-size: .95rem; color: #fff;
+    width: 100%; max-width: 280px; outline: none; margin-top: 4px;
+  }
+  .pay-name-input:focus { border-color: rgba(14,244,117,0.6); box-shadow: 0 0 0 1px rgba(14,244,117,0.25); }
+  .pay-name-row { display: flex; gap: 8px; margin-top: 4px; justify-content: center; flex-wrap: wrap; }
+  .pay-name-save { background: #0EF475; color: #03180f; border: none; border-radius: 10px; padding: 10px 20px; font-weight: 700; font-size: .9rem; cursor: pointer; }
+  .pay-name-save:hover { background: #0BC95E; }
+  .pay-name-skip { background: rgba(255,255,255,0.07); color: #a1a1aa; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 10px 16px; font-size: .9rem; cursor: pointer; }
+  .pay-name-skip:hover { background: rgba(255,255,255,0.12); color: #fff; }
+  .pay-name-error { font-size: .82rem; color: #f87171; margin-top: 6px; display: none; }
   .pay-error { display: none; flex-direction: column; align-items: center; gap: 12px; }
   .pay-error.show { display: flex; }
   .pay-error-icon { font-size: 3rem; }
@@ -205,7 +219,13 @@
     <div class="pay-success-icon">✅</div>
     <div class="pay-success-title">Purchase Successful!</div>
     <div class="pay-sub" id="pay-success-msg"></div>
-    <button id="pay-success-btn" class="pay-success-btn">View My Accounts</button>
+    <p style="font-size:.88rem;color:#a1a1aa;margin-top:4px;">Give this account a nickname so you can find it easily.</p>
+    <input id="pay-name-input" type="text" class="pay-name-input" placeholder="e.g. My Main Account" maxlength="50" />
+    <div class="pay-name-row">
+      <button id="pay-name-save" class="pay-name-save">Name My Account</button>
+      <button id="pay-name-skip" class="pay-name-skip">Skip</button>
+    </div>
+    <div id="pay-name-error" class="pay-name-error"></div>
   </div>
   <div id="pay-error-block" class="pay-error">
     <div class="pay-error-icon">❌</div>
@@ -315,10 +335,43 @@
     overlay.classList.add('open');
   }
 
-  function showPaySuccess(message) {
+  function showPaySuccess(message, purchaseIndex) {
     document.getElementById('pay-spinner-block').style.display = 'none';
     document.getElementById('pay-success-msg').textContent = message || '';
     document.getElementById('pay-success-block').classList.add('show');
+    // Store purchase index for naming
+    const saveBtn = document.getElementById('pay-name-save');
+    const skipBtn = document.getElementById('pay-name-skip');
+    const input = document.getElementById('pay-name-input');
+    const errEl = document.getElementById('pay-name-error');
+    if (input) { input.value = ''; input.focus(); }
+    if (errEl) errEl.style.display = 'none';
+
+    async function doName() {
+      const name = (input ? input.value : '').trim();
+      if (!name) {
+        if (errEl) { errEl.textContent = 'Please enter a name.'; errEl.style.display = 'block'; }
+        return;
+      }
+      try {
+        await fetch('/api/fortnite/name-account', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ purchase_index: purchaseIndex, name })
+        });
+      } catch (e) {}
+      window.location.href = '/my-accounts';
+    }
+
+    if (saveBtn) {
+      saveBtn.onclick = doName;
+    }
+    if (input) {
+      input.onkeydown = (e) => { if (e.key === 'Enter') doName(); };
+    }
+    if (skipBtn) {
+      skipBtn.onclick = () => { window.location.href = '/my-accounts'; };
+    }
   }
 
   function showPayError(message) {
@@ -385,7 +438,7 @@
         const message = getPurchaseErrorMessage(code, data.message || data.error);
         throw new Error(message);
       }
-      showPaySuccess(data.message || 'Your account is ready!');
+      showPaySuccess(data.message || 'Your account is ready!', Array.isArray(data.owned_accounts) ? data.owned_accounts.length - 1 : 0);
     } catch (e) {
       showPayError(e.message || 'Purchase failed. Please try again.');
     } finally {
@@ -404,9 +457,6 @@
       loadCategory('gliders', 'glider')
     ]);
 
-    document.getElementById('pay-success-btn')?.addEventListener('click', () => {
-      window.location.href = '/my-accounts';
-    });
     document.getElementById('pay-error-close-btn')?.addEventListener('click', () => {
       document.getElementById('pay-overlay').classList.remove('open');
     });

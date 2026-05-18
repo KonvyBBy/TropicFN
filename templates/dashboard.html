@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Marketplace — Konvy Accounts{% endblock %}
+{% block title %}Marketplace — ItemZ{% endblock %}
 
 {% block extra_styles %}
 <style>
@@ -14,8 +14,8 @@
   .project-pill { background: rgba(0,255,135,0.12); border: 1px solid rgba(0,255,135,0.24); color: #8affcc; }
   .project-btn { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,0.1); color: #888; }
   .project-btn:hover { color: #eaeef8; border-color: rgba(255,255,255,.2); }
-  .project-btn-primary { background: #00ff87; color: #041208; font-weight: 700; border: none; }
-  .project-btn-primary:hover { background: #00d26a; }
+  .project-btn-primary { background: #0EF475; color: #041208; font-weight: 700; border: none; }
+  .project-btn-primary:hover { background: #0BC95E; }
   .project-muted { color: #666; }
   .filters-scroll { max-height: calc(100vh - var(--filters-offset)); overflow-y: auto; }
   .filter-section { border: 1px solid rgba(255,255,255,0.07); border-radius: .65rem; background: #161616; }
@@ -35,7 +35,7 @@
     background: transparent; border: 1px solid rgba(255,255,255,0.1); color: #888;
   }
   .toolbar-tab:hover { color: #ddd; border-color: rgba(255,255,255,.2); }
-  .toolbar-tab.active { background: #00ff87; color: #000; border-color: #00ff87; }
+  .toolbar-tab.active { background: #0EF475; color: #000; border-color: #0EF475; }
 
   /* Button toggle groups (No matter / Yes / No) */
   .sx-btn-group { display: flex; gap: 4px; }
@@ -44,7 +44,7 @@
     border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,.04);
     color: #666; cursor: pointer; transition: all .15s; text-align: center;
   }
-  .sx-toggle-btn.active { background: #00ff87; border-color: #00ff87; color: #000; }
+  .sx-toggle-btn.active { background: #0EF475; border-color: #0EF475; color: #000; }
   .sx-toggle-btn:not(.active):hover { background: rgba(255,255,255,.08); color: #ddd; }
 
   /* Account cards - Skinex style */
@@ -55,7 +55,7 @@
     display: flex; flex-direction: column;
   }
   .market-account-card:hover { transform: translateY(-3px); box-shadow: 0 8px 28px rgba(0,0,0,0.55); border-color: rgba(255,255,255,0.14); }
-  .market-account-card:focus-visible { outline: 2px solid #00ff87; outline-offset: 2px; }
+  .market-account-card:focus-visible { outline: 2px solid #0EF475; outline-offset: 2px; }
 
   /* Card image section */
   .sx-card-imgs { position: relative; background: #111; }
@@ -70,7 +70,7 @@
   .market-preview-tile img { width: 100%; height: 100%; object-fit: cover; }
   .sx-price-badge {
     position: absolute; top: 7px; right: 7px;
-    background: rgba(0,0,0,0.82); color: #00ff87;
+    background: rgba(0,0,0,0.82); color: #0EF475;
     font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 5px;
     font-family: 'Space Grotesk', sans-serif;
   }
@@ -111,7 +111,7 @@
   <div id="mobile-filter-overlay"></div>
   <aside id="mobile-filters-wrap" class="mobile-filters-wrap p-3">
     <div class="mb-2 flex items-center justify-between">
-      <h2 class="text-xs font-bold uppercase tracking-[.16em]" style="color:#00ff87;">Filters</h2>
+      <h2 class="text-xs font-bold uppercase tracking-[.16em]" style="color:#0EF475;">Filters</h2>
       <button id="mobile-filter-close" class="project-btn h-8 w-8 rounded-lg text-xs">✕</button>
     </div>
     <div id="mobile-filters-slot"></div>
@@ -121,8 +121,8 @@
     <aside class="desktop-filters w-full shrink-0 lg:w-64 xl:w-72">
       <div class="project-card rounded-xl">
         <div class="flex items-center justify-between border-b px-4 py-2.5" style="border-color:rgba(255,255,255,.07);">
-          <h2 class="text-xs font-bold uppercase tracking-[0.14em]" style="color:#00ff87;">Filters</h2>
-          <button type="reset" form="search-form" class="project-btn rounded-md px-2 py-1 text-[10px] font-semibold uppercase tracking-wide" style="color:#00ff87;border-color:transparent;background:transparent;">Reset</button>
+          <h2 class="text-xs font-bold uppercase tracking-[0.14em]" style="color:#0EF475;">Filters</h2>
+          <button type="reset" form="search-form" class="project-btn rounded-md px-2 py-1 text-[10px] font-semibold uppercase tracking-wide" style="color:#0EF475;border-color:transparent;background:transparent;">Reset</button>
         </div>
         <form id="search-form" class="filters-scroll space-y-2 p-2.5">
           <div class="filter-section" data-open="true">

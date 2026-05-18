@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>{% block title %}Konvy Accounts{% endblock %}</title>
+  <title>{% block title %}ItemZ{% endblock %}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/remixicon@4.0.0/fonts/remixicon.css" rel="stylesheet">
@@ -40,8 +40,8 @@
 
     input:focus, textarea:focus, select:focus {
       outline: none;
-      border-color: rgba(0, 255, 135, 0.55) !important;
-      box-shadow: 0 0 0 1px rgba(0, 255, 135, 0.28);
+      border-color: rgba(14, 244, 117, 0.55) !important;
+      box-shadow: 0 0 0 1px rgba(14, 244, 117, 0.28);
     }
 
     /* Autocomplete dropdown styles */
@@ -63,7 +63,7 @@
     .processing-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
     .processing-overlay.active { display: flex; }
     .processing-content { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 24px; padding: 40px; text-align: center; max-width: 380px; }
-    .processing-spinner { width: 48px; height: 48px; border: 3px solid rgba(255,255,255,0.1); border-top-color: #00ff87; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 20px; }
+    .processing-spinner { width: 48px; height: 48px; border: 3px solid rgba(255,255,255,0.1); border-top-color: #0EF475; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 20px; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .processing-title { font-size: 1.1rem; font-weight: 600; color: #fff; margin-bottom: 8px; }
     .processing-message { font-size: 0.85rem; color: #a1a1aa; margin-bottom: 12px; line-height: 1.5; }
@@ -93,7 +93,7 @@
     .skins-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; padding: 20px; }
     .skins-grid img { width: 100%; aspect-ratio: 1; object-fit: contain; border-radius: 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); }
     .skins-loader { display: none; flex-direction: column; align-items: center; justify-content: center; padding: 48px 24px; gap: 10px; }
-    .loader-spinner { width: 36px; height: 36px; border: 3px solid rgba(255,255,255,0.08); border-top-color: #00ff87; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    .loader-spinner { width: 36px; height: 36px; border: 3px solid rgba(255,255,255,0.08); border-top-color: #0EF475; border-radius: 50%; animation: spin 0.8s linear infinite; }
     .loader-text { font-size: 0.9rem; font-weight: 500; color: #fff; }
     .loader-progress { font-size: 0.82rem; color: #a1a1aa; }
     .loader-count { font-size: 0.75rem; color: #52525b; }
@@ -104,8 +104,8 @@
     .naming-modal h3 { font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 8px; }
     .naming-modal p { font-size: 0.85rem; color: #a1a1aa; margin-bottom: 20px; }
     .naming-modal-actions { display: flex; gap: 10px; margin-top: 16px; }
-    .btn-naming-submit { flex: 1; background: #00ff87; color: #000; border: none; border-radius: 10px; padding: 10px; font-size: 0.875rem; font-weight: 600; cursor: pointer; }
-    .btn-naming-submit:hover { background: #00d26a; }
+    .btn-naming-submit { flex: 1; background: #0EF475; color: #000; border: none; border-radius: 10px; padding: 10px; font-size: 0.875rem; font-weight: 600; cursor: pointer; }
+    .btn-naming-submit:hover { background: #0BC95E; }
     .btn-naming-skip { flex: 1; background: rgba(255,255,255,0.05); color: #a1a1aa; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 10px; font-size: 0.875rem; cursor: pointer; }
 
     /* Pending topup banner */
@@ -154,7 +154,7 @@
     .notif-dropdown.open { display: block; }
     .notif-dropdown-header { padding: 14px 16px 10px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: space-between; }
     .notif-dropdown-header h3 { font-size: 0.85rem; font-weight: 600; color: #fff; }
-    .notif-mark-all { font-size: 0.72rem; color: #00ff87; cursor: pointer; background: none; border: none; padding: 0; }
+    .notif-mark-all { font-size: 0.72rem; color: #0EF475; cursor: pointer; background: none; border: none; padding: 0; }
     .notif-mark-all:hover { text-decoration: underline; }
     .notif-list { max-height: 300px; overflow-y: auto; }
     .notif-empty { padding: 24px 16px; text-align: center; font-size: 0.82rem; color: #52525b; }
@@ -164,7 +164,7 @@
     }
     .notif-item:last-child { border-bottom: none; }
     .notif-item:hover { background: rgba(255,255,255,0.04); }
-    .notif-item-icon { width: 32px; height: 32px; border-radius: 9px; background: rgba(0,255,135,0.14); border: 1px solid rgba(0,255,135,0.24); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.9rem; }
+    .notif-item-icon { width: 32px; height: 32px; border-radius: 9px; background: rgba(14,244,117,0.14); border: 1px solid rgba(14,244,117,0.24); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.9rem; }
     .notif-item-body { flex: 1; min-width: 0; }
     .notif-item-title { font-size: 0.8rem; font-weight: 600; color: #e4e4e7; }
     .notif-item-desc { font-size: 0.75rem; color: #71717a; margin-top: 2px; line-height: 1.4; }
@@ -191,10 +191,10 @@
     <div class="mx-auto max-w-[1400px] flex items-center justify-between gap-2 sm:gap-4">
         <div class="flex min-w-0 items-center gap-2 sm:gap-6 lg:gap-8">
           <a href="/dashboard" class="flex min-w-0 items-center gap-2.5 sm:gap-3">
-            <img src="https://storage.readdy-site.link/project_files/2c597b3c-b681-4ae1-be2e-32fd4db69a21/5bf4bd1f-2f5c-4d60-8eb2-8ee21dd76121_b80645519041812a6a9d729ace2f592e-1.png?v=4aba63448fbff6a833eca4217d9b6a1f"
-              alt="Konvy Accounts" class="h-8 w-8 rounded-lg object-cover sm:h-9 sm:w-9">
-            <span class="hidden font-space text-lg font-bold text-white sm:inline">Konvy Accounts</span>
-            <span class="truncate font-space text-[15px] font-bold text-white sm:hidden">Konvy</span>
+            <img src="{{ url_for('static', filename='itemz-logo.svg') }}"
+              alt="ItemZ" class="h-8 w-8 sm:h-9 sm:w-9">
+            <span class="hidden font-space text-lg font-bold sm:inline"><span style="color:#0EF475">Item</span><span class="text-white">Z</span></span>
+            <span class="truncate font-space text-[15px] font-bold sm:hidden"><span style="color:#0EF475">Item</span><span class="text-white">Z</span></span>
           </a>
           <nav class="hidden items-center gap-4 text-xs text-zinc-400 lg:flex lg:gap-5 lg:text-sm">
             <a href="/dashboard" class="transition hover:text-emerald-300 {% if active_page == 'home' %}text-emerald-400 font-medium{% endif %}">Marketplace</a>
@@ -227,17 +227,17 @@
               </div>
             </div>
           </div>
-          <a href="/balance" class="inline-flex items-center justify-center rounded-xl font-medium transition border border-[#00ff87]/35 bg-[#00ff87]/10 text-[#c6ffea] hover:border-[#00ff87]/65 hover:text-[#e8fff5] h-8 px-2.5 text-[11px] sm:h-10 sm:px-3 sm:text-sm whitespace-nowrap">
+          <a href="/balance" class="inline-flex items-center justify-center rounded-xl font-medium transition border border-[#0EF475]/35 bg-[#0EF475]/10 text-[#c6ffea] hover:border-[#0EF475]/65 hover:text-[#e8fff5] h-8 px-2.5 text-[11px] sm:h-10 sm:px-3 sm:text-sm whitespace-nowrap">
             Add Funds
           </a>
           <a href="/logout" class="inline-flex items-center justify-center rounded-xl font-medium transition border border-white/15 bg-white/5 text-zinc-400 hover:text-white h-8 px-2.5 text-[11px] sm:h-10 sm:px-3 sm:text-sm whitespace-nowrap">
             Logout
           </a>
           {% else %}
-          <a href="/login" class="inline-flex items-center justify-center rounded-xl font-medium transition border border-white/15 bg-white/5 text-white hover:border-[#00ff87]/60 hover:text-[#00ff87] h-8 px-2.5 text-[11px] sm:h-10 sm:px-3 sm:text-sm whitespace-nowrap">
+          <a href="/login" class="inline-flex items-center justify-center rounded-xl font-medium transition border border-white/15 bg-white/5 text-white hover:border-[#0EF475]/60 hover:text-[#0EF475] h-8 px-2.5 text-[11px] sm:h-10 sm:px-3 sm:text-sm whitespace-nowrap">
             Login
           </a>
-          <a href="/register" class="inline-flex items-center justify-center rounded-xl font-medium transition bg-[#00ff87] text-black hover:bg-[#00d26a] active:scale-[0.99] h-8 px-2.5 text-[11px] sm:h-10 sm:px-3 sm:text-sm whitespace-nowrap">
+          <a href="/register" class="inline-flex items-center justify-center rounded-xl font-medium transition bg-[#0EF475] text-black hover:bg-[#0BC95E] active:scale-[0.99] h-8 px-2.5 text-[11px] sm:h-10 sm:px-3 sm:text-sm whitespace-nowrap">
             Register
           </a>
           {% endif %}
@@ -246,10 +246,10 @@
 
       <!-- Mobile nav -->
       <nav class="mx-auto max-w-[1400px] mt-2 flex items-center gap-2 overflow-x-auto pb-1 text-xs text-zinc-300 lg:hidden px-0">
-        <a href="/dashboard" class="whitespace-nowrap rounded-lg border border-white/15 px-3 py-1.5 transition {% if active_page == 'home' %}bg-[#00ff87]/15 text-[#00ff87] border-[#00ff87]/30{% else %}bg-black/35 text-zinc-300 hover:text-white{% endif %}">Marketplace</a>
+        <a href="/dashboard" class="whitespace-nowrap rounded-lg border border-white/15 px-3 py-1.5 transition {% if active_page == 'home' %}bg-[#0EF475]/15 text-[#0EF475] border-[#0EF475]/30{% else %}bg-black/35 text-zinc-300 hover:text-white{% endif %}">Marketplace</a>
         {% if logged_in %}
-        <a href="/transactions" class="whitespace-nowrap rounded-lg border border-white/15 px-3 py-1.5 transition {% if active_page == 'transactions' %}bg-[#00ff87]/15 text-[#00ff87] border-[#00ff87]/30{% else %}bg-black/35 text-zinc-300 hover:text-white{% endif %}">History</a>
-        <a href="/my-accounts" class="whitespace-nowrap rounded-lg border border-white/15 px-3 py-1.5 transition {% if active_page == 'my-accounts' %}bg-[#00ff87]/15 text-[#00ff87] border-[#00ff87]/30{% else %}bg-black/35 text-zinc-300 hover:text-white{% endif %}">My Accounts</a>
+        <a href="/transactions" class="whitespace-nowrap rounded-lg border border-white/15 px-3 py-1.5 transition {% if active_page == 'transactions' %}bg-[#0EF475]/15 text-[#0EF475] border-[#0EF475]/30{% else %}bg-black/35 text-zinc-300 hover:text-white{% endif %}">History</a>
+        <a href="/my-accounts" class="whitespace-nowrap rounded-lg border border-white/15 px-3 py-1.5 transition {% if active_page == 'my-accounts' %}bg-[#0EF475]/15 text-[#0EF475] border-[#0EF475]/30{% else %}bg-black/35 text-zinc-300 hover:text-white{% endif %}">My Accounts</a>
         {% endif %}
       </nav>
   </header>
@@ -267,9 +267,9 @@
       <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
         <div class="space-y-3">
           <div class="flex items-center gap-3">
-            <img src="https://storage.readdy-site.link/project_files/2c597b3c-b681-4ae1-be2e-32fd4db69a21/5bf4bd1f-2f5c-4d60-8eb2-8ee21dd76121_b80645519041812a6a9d729ace2f592e-1.png?v=4aba63448fbff6a833eca4217d9b6a1f"
-              alt="Konvy Accounts" class="h-7 w-7 rounded-lg object-cover">
-            <span class="font-space text-sm font-semibold text-white">Konvy Accounts</span>
+            <img src="{{ url_for('static', filename='itemz-logo.svg') }}"
+              alt="ItemZ" class="h-7 w-7">
+            <span class="font-space text-sm font-semibold"><span style="color:#0EF475">Item</span><span class="text-white">Z</span></span>
           </div>
           <p class="text-xs text-zinc-500 leading-relaxed">Premium Fortnite account marketplace. Secure payments, instant delivery, verified sellers.</p>
         </div>
@@ -295,12 +295,12 @@
           <nav class="flex flex-col gap-2 text-xs text-zinc-500">
             <a href="/terms" class="transition hover:text-emerald-400">Terms of Service</a>
             <a href="/warranty" class="transition hover:text-emerald-400">Warranty Policy</a>
-            <span class="text-zinc-600">support@konvyaccounts.com</span>
+            <span class="text-zinc-600">support@itemz.gg</span>
           </nav>
         </div>
       </div>
       <div class="mt-8 border-t border-white/5 pt-6 text-center text-xs text-zinc-600">
-        &copy; 2026 Konvy Accounts. All rights reserved.
+        &copy; 2026 ItemZ. All rights reserved.
       </div>
     </div>
   </footer>
