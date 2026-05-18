@@ -782,21 +782,6 @@ def _extract_account_price(account: dict) -> float:
     return price
 
 
-def _extract_fast_buy_price(account: dict) -> Optional[int]:
-    if not isinstance(account, dict):
-        return None
-
-    try:
-        rub_price = int(account.get("rub_price") or 0)
-    except (TypeError, ValueError):
-        rub_price = 0
-
-    if rub_price > 0:
-        return rub_price
-
-    return None
-
-
 def get_live_account_purchase_price(item_id: int) -> float:
     account = find_account_by_item_id(item_id)
     if not account:
