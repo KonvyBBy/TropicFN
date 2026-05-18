@@ -782,21 +782,6 @@ def _extract_account_price(account: dict) -> float:
     return price
 
 
-def _extract_fast_buy_price(account: dict) -> Optional[int]:
-    if not isinstance(account, dict):
-        return None
-
-    try:
-        rub_price = int(account.get("rub_price") or 0)
-    except (TypeError, ValueError):
-        rub_price = 0
-
-    if rub_price > 0:
-        return rub_price
-
-    return None
-
-
 def get_live_account_purchase_price(item_id: int) -> float:
     account = find_account_by_item_id(item_id)
     if not account:
@@ -1114,7 +1099,7 @@ def fetch_cheapest_accounts(
 def confirm_buy_account(item_id: int):
     """
     Initiate a marketplace fast-buy purchase for an account item.
-    Sends marketplace price and optional balance_id when available.
+    Sends optional balance_id when available.
     If no balance_id is configured, the request is sent without it.
     Returns parsed marketplace JSON on success.
     Raises PurchaseFlowError for known purchase failures, including unavailable accounts.
@@ -1133,9 +1118,6 @@ def confirm_buy_account(item_id: int):
             ACCOUNT_UNAVAILABLE_MESSAGE,
             409,
         )
-    fast_buy_price = _extract_fast_buy_price(account)
-    if fast_buy_price is not None:
-        payload["price"] = fast_buy_price
 
     balance_id = os.environ.get("LZT_BALANCE_ID")
     if balance_id:
