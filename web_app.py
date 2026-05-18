@@ -426,6 +426,18 @@ SHOPIFY_WEBHOOK_SECRET = os.environ.get("SHOPIFY_WEBHOOK_SECRET")  # set in env
 if not SHOPIFY_WEBHOOK_SECRET:
     print("WARNING: SHOPIFY_WEBHOOK_SECRET not set – /webhooks/shopify/order-paid will reject all requests.")
 
+# --- Discord purchase webhook ---
+DISCORD_PURCHASE_WEBHOOK_URL = (os.environ.get("DISCORD_PURCHASE_WEBHOOK_URL") or "").strip()
+DISCORD_PURCHASE_WEBHOOK_TIMEOUT = int(os.environ.get("DISCORD_PURCHASE_WEBHOOK_TIMEOUT", "10"))
+DISCORD_PURCHASE_BANNER_URL = (
+    "https://cdn.discordapp.com/attachments/1505680543633772775/1505767457875296356/"
+    "ChatGPT_Image_May_17_2026_09_59_53_PM.png"
+)
+DISCORD_PURCHASE_THUMBNAIL_URL = (
+    "https://media.discordapp.net/attachments/1505680543633772775/1505767517589868545/"
+    "itemztrans.png?format=webp&quality=lossless&width=648&height=648"
+)
+
 # --- Fortnite browse limits ---
 MAX_ACCOUNTS = 50
 MAX_PAGES = 10
@@ -1026,6 +1038,142 @@ def add_purchase(username: str, purchase_result, latest_order) -> dict:
 def get_purchases(username: str):
     purchases = _load_purchases()
     return purchases.get(username, [])
+
+
+def _format_purchase_webhook_currency(amount: Any) -> str:
+    try:
+        numeric_amount = float(amount or 0)
+    except (TypeError, ValueError):
+        numeric_amount = 0.0
+    return f"€{numeric_amount:.2f}"
+
+
+def _get_purchase_item_summary(item: dict) -> str:
+    if not isinstance(item, dict):
+        return "Fortnite Account"
+
+    title = str(item.get("title_en") or item.get("title") or "").strip()
+    if title:
+        return title[:1024]
+
+    try:
+        skin_count = int(item.get("fortnite_skin_count") or 0)
+    except (TypeError, ValueError):
+        skin_count = 0
+
+    if skin_count > 0:
+        return f"{skin_count} Skins | Fortnite Account"
+    return "Fortnite Account"
+
+
+def _build_purchase_webhook_payload(
+    purchase_result: dict,
+    latest_order: Optional[dict],
+    user_price: float,
+) -> dict:
+    item = (purchase_result or {}).get("item") or {}
+    item_id = item.get("item_id") or item.get("fortnite_item_id") or "N/A"
+    product_summary = _get_purchase_item_summary(item)
+    order_ref = None
+    if isinstance(latest_order, dict):
+        order_ref = latest_order.get("order_id") or latest_order.get("id") or latest_order.get("order_number")
+
+    fields = [
+        {
+            "name": "👤 User",
+            "value": "Hidden",
+            "inline": True,
+        },
+        {
+            "name": "💳 Payment Method",
+            "value": "Balance",
+            "inline": True,
+        },
+        {
+            "name": "Status",
+            "value": "Purchased",
+            "inline": True,
+        },
+        {
+            "name": "Product",
+            "value": product_summary,
+            "inline": False,
+        },
+        {
+            "name": "💰 EUR Spent",
+            "value": _format_purchase_webhook_currency(user_price),
+            "inline": True,
+        },
+        {
+            "name": "⭐ Experience",
+            "value": "Premium checkout",
+            "inline": True,
+        },
+        {
+            "name": "🆔 Item ID",
+            "value": str(item_id),
+            "inline": True,
+        },
+    ]
+
+    if order_ref:
+        fields.append(
+            {
+                "name": "🧾 Order Ref",
+                "value": str(order_ref),
+                "inline": True,
+            }
+        )
+
+    return {
+        "username": "Itemz",
+        "avatar_url": DISCORD_PURCHASE_THUMBNAIL_URL,
+        "embeds": [
+            {
+                "title": "✅ Order Confirmed - Thank You!",
+                "description": "Your Fortnite account purchase was completed successfully.",
+                "color": 0x0EF475,
+                "author": {
+                    "name": "Itemz Purchase Notification",
+                    "icon_url": DISCORD_PURCHASE_THUMBNAIL_URL,
+                },
+                "thumbnail": {
+                    "url": DISCORD_PURCHASE_THUMBNAIL_URL,
+                },
+                "image": {
+                    "url": DISCORD_PURCHASE_BANNER_URL,
+                },
+                "fields": fields,
+                "footer": {
+                    "text": "Itemz • Purchase completed",
+                    "icon_url": DISCORD_PURCHASE_THUMBNAIL_URL,
+                },
+                "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            }
+        ],
+    }
+
+
+def send_purchase_discord_webhook(
+    purchase_result: dict,
+    latest_order: Optional[dict],
+    user_price: float,
+) -> None:
+    if not DISCORD_PURCHASE_WEBHOOK_URL:
+        return
+
+    payload = _build_purchase_webhook_payload(purchase_result, latest_order, user_price)
+    webhook_logger = logging.getLogger("purchase_webhook")
+
+    try:
+        response = requests.post(
+            DISCORD_PURCHASE_WEBHOOK_URL,
+            json=payload,
+            timeout=DISCORD_PURCHASE_WEBHOOK_TIMEOUT,
+        )
+        response.raise_for_status()
+    except requests.RequestException as exc:
+        webhook_logger.warning("Purchase webhook send failed: %s", exc)
 
 def find_account_by_item_id(item_id: int):
     """
@@ -4725,6 +4873,15 @@ def api_fortnite_buy():
     # STEP 4: store purchased account for this user
     purchase_entry = add_purchase(username, purchase_result, latest_order)
     owned_accounts = get_purchases(username)
+
+    try:
+        send_purchase_discord_webhook(
+            purchase_result=purchase_result,
+            latest_order=latest_order,
+            user_price=user_price,
+        )
+    except Exception as e:
+        app.logger.warning("Purchase webhook helper failed for item %s: %s", item_id, e)
 
     return jsonify(
         {
