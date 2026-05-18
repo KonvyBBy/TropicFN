@@ -10,7 +10,10 @@ import hashlib
 import base64
 import datetime
 import logging
+import random
+import smtplib
 import threading
+from email.message import EmailMessage
 from typing import List, Tuple, Optional, Set, Dict, Any
 
 import requests
@@ -389,6 +392,22 @@ SHOPIFY_ERROR_BODY_LIMIT = int(os.environ.get("SHOPIFY_ERROR_BODY_LIMIT", "200")
 if not SHOPIFY_ADMIN_TOKEN:
     print("WARNING: SHOPIFY_ADMIN_TOKEN not set â€“ /redeem will not work.")
 
+# --- Email / SMTP ---
+SMTP_HOST = (os.environ.get("SMTP_HOST") or "").strip()
+SMTP_USER = (os.environ.get("SMTP_USER") or "").strip()
+SMTP_PASS = "".join((os.environ.get("SMTP_PASS") or "").split())
+EMAIL_FROM = (os.environ.get("EMAIL_FROM") or SMTP_USER).strip()
+EMAIL_CODE_TTL_SECONDS = int(os.environ.get("EMAIL_CODE_TTL_SECONDS", "900"))
+try:
+    SMTP_PORT = int((os.environ.get("SMTP_PORT") or "0").strip() or "0")
+except ValueError:
+    SMTP_PORT = 0
+
+if any([SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, EMAIL_FROM]) and not all(
+    [SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, EMAIL_FROM]
+):
+    print("WARNING: SMTP config is incomplete â€“ email verification and password reset will not work.")
+
 # --- Shopify Webhook (for auto top-up) ---
 SHOPIFY_WEBHOOK_SECRET = os.environ.get("SHOPIFY_WEBHOOK_SECRET")  # set in env
 
@@ -487,15 +506,179 @@ def _save_users(users: dict):
         json.dump(users, f, indent=2)
 
 
-def create_user(username: str, password: str) -> bool:
+def _normalize_email(email: str) -> str:
+    return (email or "").strip().lower()
+
+
+def _generate_one_time_code() -> str:
+    return f"{random.randint(0, 999999):06d}"
+
+
+def _hash_one_time_code(code: str) -> str:
+    return hashlib.sha256((code or "").encode("utf-8")).hexdigest()
+
+
+def _is_email_configured() -> bool:
+    return all([SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, EMAIL_FROM])
+
+
+def _send_email_message(recipient: str, subject: str, body: str) -> Tuple[bool, str]:
+    if not _is_email_configured():
+        return False, "Email is not configured yet. Add SMTP env values first."
+
+    message = EmailMessage()
+    message["Subject"] = subject
+    message["From"] = EMAIL_FROM
+    message["To"] = recipient
+    message.set_content(body)
+
+    try:
+        if SMTP_PORT == 465:
+            with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=20) as server:
+                server.login(SMTP_USER, SMTP_PASS)
+                server.send_message(message)
+        else:
+            with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=20) as server:
+                server.ehlo()
+                server.starttls()
+                server.ehlo()
+                server.login(SMTP_USER, SMTP_PASS)
+                server.send_message(message)
+    except Exception as exc:
+        return False, f"Could not send email: {exc}"
+
+    return True, "Email sent."
+
+
+def find_username_by_email(email: str) -> Optional[str]:
+    normalized = _normalize_email(email)
+    if not normalized:
+        return None
+
+    users = _load_users()
+    for username, info in users.items():
+        if _normalize_email(info.get("email", "")) == normalized:
+            return username
+    return None
+
+
+def get_user_email(username: str) -> str:
+    users = _load_users()
+    return _normalize_email(users.get(username, {}).get("email", ""))
+
+
+def is_email_verified(username: str) -> bool:
+    users = _load_users()
+    info = users.get(username, {})
+    if not info.get("email"):
+        return True
+    return bool(info.get("email_verified"))
+
+
+def mark_email_verified(username: str) -> bool:
+    users = _load_users()
+    if username not in users:
+        return False
+    users[username]["email_verified"] = True
+    users[username].pop("email_verification_code_hash", None)
+    users[username].pop("email_verification_expires_at", None)
+    _save_users(users)
+    return True
+
+
+def update_user_password(username: str, password: str) -> bool:
+    users = _load_users()
+    if username not in users:
+        return False
+    users[username]["password_hash"] = generate_password_hash(password)
+    users[username].pop("password_reset_code_hash", None)
+    users[username].pop("password_reset_expires_at", None)
+    _save_users(users)
+    return True
+
+
+def _set_one_time_code(username: str, code_field: str, expiry_field: str, code: str) -> bool:
+    users = _load_users()
+    if username not in users:
+        return False
+    users[username][code_field] = _hash_one_time_code(code)
+    users[username][expiry_field] = int(time.time()) + EMAIL_CODE_TTL_SECONDS
+    _save_users(users)
+    return True
+
+
+def _verify_one_time_code(username: str, code_field: str, expiry_field: str, submitted_code: str) -> bool:
+    users = _load_users()
+    info = users.get(username)
+    if not info:
+        return False
+
+    expires_at = int(info.get(expiry_field) or 0)
+    stored_hash = info.get(code_field) or ""
+    if not stored_hash or expires_at < int(time.time()):
+        return False
+
+    submitted_hash = _hash_one_time_code((submitted_code or "").strip())
+    return hmac.compare_digest(stored_hash, submitted_hash)
+
+
+def send_email_verification_code(username: str) -> Tuple[bool, str]:
+    recipient = get_user_email(username)
+    if not recipient:
+        return False, "This account does not have an email address."
+
+    code = _generate_one_time_code()
+    if not _set_one_time_code(username, "email_verification_code_hash", "email_verification_expires_at", code):
+        return False, "Could not prepare verification code."
+
+    subject = "Your Konvy verification code"
+    body = (
+        f"Hi {username},\n\n"
+        f"Your Konvy email verification code is: {code}\n\n"
+        f"This code expires in {EMAIL_CODE_TTL_SECONDS // 60} minutes.\n"
+        "If you did not create this account, you can ignore this email.\n"
+    )
+    ok, msg = _send_email_message(recipient, subject, body)
+    if not ok:
+        return False, msg
+    return True, "We sent a 6-digit verification code to your email."
+
+
+def send_password_reset_code(username: str) -> Tuple[bool, str]:
+    recipient = get_user_email(username)
+    if not recipient:
+        return False, "This account does not have an email address."
+
+    code = _generate_one_time_code()
+    if not _set_one_time_code(username, "password_reset_code_hash", "password_reset_expires_at", code):
+        return False, "Could not prepare reset code."
+
+    subject = "Your Konvy password reset code"
+    body = (
+        f"Hi {username},\n\n"
+        f"Your Konvy password reset code is: {code}\n\n"
+        f"This code expires in {EMAIL_CODE_TTL_SECONDS // 60} minutes.\n"
+        "If you did not request a password reset, you can ignore this email.\n"
+    )
+    ok, msg = _send_email_message(recipient, subject, body)
+    if not ok:
+        return False, msg
+    return True, "We sent a 6-digit reset code to your email."
+
+
+def create_user(username: str, password: str, email: Optional[str] = None) -> bool:
     """
     Create a new user. Returns False if username already exists.
     """
     users = _load_users()
     if username in users:
         return False
+
+    normalized_email = _normalize_email(email or "")
     users[username] = {
         "password_hash": generate_password_hash(password),
+        "email": normalized_email,
+        "email_verified": False if normalized_email else True,
     }
     _save_users(users)
     return True
@@ -1835,10 +2018,12 @@ def get_account_skins(item_id):
 def login():
     if request.method == "GET":
         error = request.args.get("error", "")
+        message = request.args.get("message", "")
         username_prefill = request.args.get("u", "")
         return render_template(
             "login.html",
             error=error,
+            message=message,
             username_prefill=username_prefill,
             logged_in=False,
             balance="0.00",
@@ -1858,7 +2043,20 @@ def login():
             url_for("login", error="Your account has been suspended.", u=username)
         )
 
+    if not is_email_verified(username):
+        ok, msg = send_email_verification_code(username)
+        session["pending_verify_username"] = username
+        return redirect(
+            url_for(
+                "verify_email",
+                u=username,
+                message=msg if ok else "",
+                error="" if ok else f"Your account needs email verification. {msg}",
+            )
+        )
+
     session["username"] = username
+    session.pop("pending_verify_username", None)
     return redirect(url_for("index"))
 
 
@@ -1866,11 +2064,15 @@ def login():
 def register():
     if request.method == "GET":
         error = request.args.get("error", "")
+        message = request.args.get("message", "")
         username_prefill = request.args.get("u", "")
+        email_prefill = request.args.get("e", "")
         return render_template(
             "register.html",
             error=error,
+            message=message,
             username_prefill=username_prefill,
+            email_prefill=email_prefill,
             logged_in=False,
             balance="0.00",
             active_page="register",
@@ -1878,20 +2080,194 @@ def register():
 
     username = (request.form.get("username") or "").strip()
     password = request.form.get("password") or ""
+    email = _normalize_email(request.form.get("email") or "")
 
-    if not username or not password:
+    if not username or not password or not email:
         return redirect(
-            url_for("register", error="Username and password are required.", u=username)
+            url_for(
+                "register",
+                error="Username, email, and password are required.",
+                u=username,
+                e=email,
+            )
         )
 
-    created = create_user(username, password)
+    if "@" not in email or email.startswith("@") or email.endswith("@"):
+        return redirect(
+            url_for(
+                "register",
+                error="Enter a valid email address.",
+                u=username,
+                e=email,
+            )
+        )
+
+    if find_username_by_email(email):
+        return redirect(
+            url_for(
+                "register",
+                error="That email is already in use.",
+                u=username,
+                e=email,
+            )
+        )
+
+    created = create_user(username, password, email=email)
     if not created:
         return redirect(
-            url_for("register", error="That username is already taken.", u=username)
+            url_for(
+                "register",
+                error="That username is already taken.",
+                u=username,
+                e=email,
+            )
         )
 
+    session["pending_verify_username"] = username
+    ok, msg = send_email_verification_code(username)
+    return redirect(
+        url_for(
+            "verify_email",
+            u=username,
+            message=msg if ok else "Account created. Send the code once SMTP is configured.",
+            error="" if ok else msg,
+        )
+    )
+
+
+@app.route("/verify-email", methods=["GET", "POST"])
+def verify_email():
+    if request.method == "GET":
+        error = request.args.get("error", "")
+        message = request.args.get("message", "")
+        username_prefill = request.args.get("u", "") or session.get("pending_verify_username", "")
+        return render_template(
+            "verify_email.html",
+            error=error,
+            message=message,
+            username_prefill=username_prefill,
+            logged_in=False,
+            balance="0.00",
+            active_page="login",
+        )
+
+    username = (request.form.get("username") or session.get("pending_verify_username") or "").strip()
+    action = (request.form.get("action") or "verify").strip().lower()
+
+    if not username:
+        return redirect(url_for("verify_email", error="Enter your username first."))
+
+    if action == "resend":
+        ok, msg = send_email_verification_code(username)
+        session["pending_verify_username"] = username
+        return redirect(
+            url_for(
+                "verify_email",
+                u=username,
+                message=msg if ok else "",
+                error="" if ok else msg,
+            )
+        )
+
+    code = (request.form.get("code") or "").strip()
+    if not code:
+        return redirect(url_for("verify_email", u=username, error="Enter the 6-digit code."))
+
+    if not _verify_one_time_code(username, "email_verification_code_hash", "email_verification_expires_at", code):
+        return redirect(url_for("verify_email", u=username, error="Invalid or expired verification code."))
+
+    mark_email_verified(username)
     session["username"] = username
+    session.pop("pending_verify_username", None)
     return redirect(url_for("index"))
+
+
+@app.route("/forgot-password", methods=["GET", "POST"])
+def forgot_password():
+    if request.method == "GET":
+        error = request.args.get("error", "")
+        message = request.args.get("message", "")
+        identifier_prefill = request.args.get("i", "")
+        return render_template(
+            "forgot_password.html",
+            error=error,
+            message=message,
+            identifier_prefill=identifier_prefill,
+            logged_in=False,
+            balance="0.00",
+            active_page="login",
+        )
+
+    identifier = (request.form.get("identifier") or "").strip()
+    username = identifier if _load_users().get(identifier) else find_username_by_email(identifier)
+    if not username:
+        return redirect(
+            url_for(
+                "forgot_password",
+                error="We could not find that username or email.",
+                i=identifier,
+            )
+        )
+
+    ok, msg = send_password_reset_code(username)
+    if not ok:
+        return redirect(url_for("forgot_password", error=msg, i=identifier))
+
+    return redirect(url_for("reset_password", u=username, message=msg))
+
+
+@app.route("/reset-password", methods=["GET", "POST"])
+def reset_password():
+    if request.method == "GET":
+        error = request.args.get("error", "")
+        message = request.args.get("message", "")
+        username_prefill = request.args.get("u", "")
+        return render_template(
+            "reset_password.html",
+            error=error,
+            message=message,
+            username_prefill=username_prefill,
+            logged_in=False,
+            balance="0.00",
+            active_page="login",
+        )
+
+    username = (request.form.get("username") or "").strip()
+    code = (request.form.get("code") or "").strip()
+    password = request.form.get("password") or ""
+    confirm_password = request.form.get("confirm_password") or ""
+
+    if not username or not code or not password:
+        return redirect(
+            url_for(
+                "reset_password",
+                u=username,
+                error="Username, code, and new password are required.",
+            )
+        )
+
+    if password != confirm_password:
+        return redirect(
+            url_for(
+                "reset_password",
+                u=username,
+                error="Passwords do not match.",
+            )
+        )
+
+    if not _verify_one_time_code(username, "password_reset_code_hash", "password_reset_expires_at", code):
+        return redirect(
+            url_for(
+                "reset_password",
+                u=username,
+                error="Invalid or expired reset code.",
+            )
+        )
+
+    if not update_user_password(username, password):
+        return redirect(url_for("reset_password", u=username, error="Could not update that password."))
+
+    return redirect(url_for("login", u=username, message="Password reset complete. Please sign in."))
 
 @app.route("/secure")
 @login_required_page
