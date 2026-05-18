@@ -560,7 +560,7 @@ def _is_email_configured() -> bool:
     return all([SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, EMAIL_FROM])
 
 
-def _send_email_message(recipient: str, subject: str, body: str) -> Tuple[bool, str]:
+def _send_email_message(recipient: str, subject: str, body: str, html_body: str = "") -> Tuple[bool, str]:
     if not _is_email_configured():
         return False, "Email is not configured yet. Add SMTP env values first."
 
@@ -569,6 +569,8 @@ def _send_email_message(recipient: str, subject: str, body: str) -> Tuple[bool, 
     message["From"] = EMAIL_FROM
     message["To"] = recipient
     message.set_content(body)
+    if html_body:
+        message.add_alternative(html_body, subtype="html")
 
     try:
         if SMTP_PORT == 465:
@@ -586,6 +588,60 @@ def _send_email_message(recipient: str, subject: str, body: str) -> Tuple[bool, 
         return False, f"Could not send email: {exc}"
 
     return True, "Email sent."
+
+
+def _itemz_email_html(title: str, subtitle: str, code: str, expire_minutes: int, footer_note: str) -> str:
+    """Render a branded ItemZ HTML email."""
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>{title}</title></head>
+<body style="margin:0;padding:0;background:#0d0d0d;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#0d0d0d;min-height:100vh;">
+<tr><td align="center" style="padding:40px 16px;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;">
+
+    <!-- Logo / Brand -->
+    <tr><td align="center" style="padding-bottom:28px;">
+      <span style="font-family:'Segoe UI',Arial,sans-serif;font-size:26px;font-weight:900;letter-spacing:-0.5px;">
+        <span style="color:#0EF475;">Item</span><span style="color:#ffffff;">Z</span>
+      </span>
+    </td></tr>
+
+    <!-- Card -->
+    <tr><td style="background:#161616;border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:36px 32px;">
+
+      <!-- Title -->
+      <p style="margin:0 0 6px;font-size:22px;font-weight:700;color:#ffffff;">{title}</p>
+      <p style="margin:0 0 28px;font-size:14px;color:#a1a1aa;line-height:1.55;">{subtitle}</p>
+
+      <!-- Code box -->
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr><td align="center" style="padding:22px 0;background:#0d0d0d;border:1px solid rgba(14,244,117,0.25);border-radius:14px;">
+          <span style="font-size:38px;font-weight:900;letter-spacing:10px;color:#0EF475;font-family:'Courier New',monospace;">{code}</span>
+        </td></tr>
+      </table>
+
+      <p style="margin:20px 0 0;font-size:13px;color:#71717a;text-align:center;line-height:1.55;">
+        This code expires in <strong style="color:#e4e4e7;">{expire_minutes} minutes</strong>.<br>
+        {footer_note}
+      </p>
+
+    </td></tr>
+
+    <!-- Footer -->
+    <tr><td align="center" style="padding-top:24px;">
+      <p style="margin:0;font-size:12px;color:#3f3f46;">
+        &copy; 2026 ItemZ &nbsp;&bull;&nbsp;
+        <a href="mailto:support@itemz.gg" style="color:#0EF475;text-decoration:none;">support@itemz.gg</a>
+      </p>
+    </td></tr>
+
+  </table>
+</td></tr>
+</table>
+</body>
+</html>"""
 
 
 def find_username_by_email(email: str, users: Optional[dict] = None) -> Optional[str]:
@@ -668,14 +724,22 @@ def send_email_verification_code(username: str) -> Tuple[bool, str]:
     if not _set_one_time_code(username, "email_verification_code_hash", "email_verification_expires_at", code):
         return False, "Could not prepare verification code."
 
-    subject = "Your Konvy verification code"
+    expire_minutes = EMAIL_CODE_TTL_SECONDS // 60
+    subject = "Your ItemZ verification code"
     body = (
         f"Hi {username},\n\n"
-        f"Your Konvy email verification code is: {code}\n\n"
-        f"This code expires in {EMAIL_CODE_TTL_SECONDS // 60} minutes.\n"
+        f"Your ItemZ email verification code is: {code}\n\n"
+        f"This code expires in {expire_minutes} minutes.\n"
         "If you did not create this account, you can ignore this email.\n"
     )
-    ok, msg = _send_email_message(recipient, subject, body)
+    html_body = _itemz_email_html(
+        title="Verify Your Email",
+        subtitle=f"Hi {username}, enter the code below to verify your ItemZ account.",
+        code=code,
+        expire_minutes=expire_minutes,
+        footer_note="If you did not create an ItemZ account, you can safely ignore this email.",
+    )
+    ok, msg = _send_email_message(recipient, subject, body, html_body)
     if not ok:
         return False, msg
     return True, "We sent a 6-digit verification code to your email."
@@ -690,14 +754,22 @@ def send_password_reset_code(username: str) -> Tuple[bool, str]:
     if not _set_one_time_code(username, "password_reset_code_hash", "password_reset_expires_at", code):
         return False, "Could not prepare reset code."
 
-    subject = "Your Konvy password reset code"
+    expire_minutes = EMAIL_CODE_TTL_SECONDS // 60
+    subject = "Your ItemZ password reset code"
     body = (
         f"Hi {username},\n\n"
-        f"Your Konvy password reset code is: {code}\n\n"
-        f"This code expires in {EMAIL_CODE_TTL_SECONDS // 60} minutes.\n"
+        f"Your ItemZ password reset code is: {code}\n\n"
+        f"This code expires in {expire_minutes} minutes.\n"
         "If you did not request a password reset, you can ignore this email.\n"
     )
-    ok, msg = _send_email_message(recipient, subject, body)
+    html_body = _itemz_email_html(
+        title="Reset Your Password",
+        subtitle=f"Hi {username}, use the code below to reset your ItemZ password.",
+        code=code,
+        expire_minutes=expire_minutes,
+        footer_note="If you did not request a password reset, you can safely ignore this email.",
+    )
+    ok, msg = _send_email_message(recipient, subject, body, html_body)
     if not ok:
         return False, msg
     return True, "We sent a 6-digit reset code to your email."
@@ -1708,7 +1780,7 @@ LOGIN_HTML = """
 <!doctype html>
 <html>
   <head>
-    <title>Konvy Accounts â€“ Login</title>
+    <title>ItemZ â€“ Login</title>
     <style>
       * {
         box-sizing: border-box;
@@ -1878,7 +1950,7 @@ LOGIN_HTML = """
     <canvas id="snow-canvas"></canvas>
 
     <div class="auth-shell">
-      <div class="auth-title">Konvy Accounts</div>
+      <div class="auth-title">ItemZ</div>
       <div class="auth-heading">Sign in</div>
       <div class="auth-sub">Access your Fortnite account panel.</div>
 
@@ -2355,7 +2427,7 @@ INDEX_HTML = """
 <!doctype html>
 <html>
   <head>
-    <title>Konvy Accounts – Web Panel</title>
+    <title>ItemZ – Web Panel</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
       * {
@@ -2718,7 +2790,7 @@ INDEX_HTML = """
 
     <div class="app-shell">
       <div class="topbar">
-        <div class="topbar-title">Konvy Accounts â€“ Web Panel</div>
+        <div class="topbar-title">ItemZ â€“ Web Panel</div>
         <div class="topbar-user">
           {% if logged_in %}
             Logged in as <strong>{{ username }}</strong> |
@@ -2752,15 +2824,15 @@ INDEX_HTML = """
       <!-- TAB: TUTORIAL -->
       <div id="tab-tutorial" class="tab-panel">
         <div class="card">
-          <h2>How Konvy Accounts Works</h2>
+          <h2>How ItemZ Works</h2>
           <p class="small">
-            Watch this quick tutorial, then follow the steps below to use Konvy Accounts.
+            Watch this quick tutorial, then follow the steps below to use ItemZ.
           </p>
 
           <div class="yt-wrap">
             <iframe
               src="https://www.youtube.com/embed/uhL9-_EyKvM"
-              title="Konvy Accounts Tutorial"
+              title="ItemZ Tutorial"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowfullscreen>
             </iframe>
@@ -3284,7 +3356,7 @@ REGISTER_HTML = """
 <!doctype html>
 <html>
   <head>
-    <title>Konvy Accounts â€“ Register</title>
+    <title>ItemZ â€“ Register</title>
     <style>
       * {
         box-sizing: border-box;
@@ -3454,7 +3526,7 @@ REGISTER_HTML = """
     <canvas id="snow-canvas"></canvas>
 
     <div class="auth-shell">
-      <div class="auth-title">Konvy Accounts</div>
+      <div class="auth-title">ItemZ</div>
       <div class="auth-heading">Create account</div>
       <div class="auth-sub">Register to start buying Fortnite accounts.</div>
 
@@ -3542,7 +3614,7 @@ TUTORIAL_HTML = """
 <!doctype html>
 <html>
   <head>
-    <title>Konvy Accounts â€“ Tutorial</title>
+    <title>ItemZ â€“ Tutorial</title>
     <style>
       body {
         margin:0;
@@ -3609,7 +3681,7 @@ TUTORIAL_HTML = """
     <canvas id="snow-canvas"></canvas>
 
     <div class="tutorial-shell">
-      <h1>Konvy Accounts â€“ Tutorial</h1>
+      <h1>ItemZ â€“ Tutorial</h1>
       <p>Welcome! Watch this quick tutorial before using the site.</p>
 
       <div class="yt-wrap">
@@ -4660,6 +4732,7 @@ def api_fortnite_buy():
             "purchase_result": purchase_result,
             "latest_order": latest_order,
             "owned_accounts": owned_accounts,
+            "purchase_index": len(owned_accounts) - 1,
             "saved_entry": purchase_entry,
         }
     )

@@ -534,7 +534,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     searchResults.innerHTML = `
       <div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;gap:14px;">
-        <div style="width:36px;height:36px;border:3px solid rgba(255,255,255,0.08);border-top-color:#10b981;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+        <div style="width:36px;height:36px;border:3px solid rgba(255,255,255,0.08);border-top-color:#0EF475;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
         <div style="font-size:0.9rem;font-weight:500;color:#a1a1aa;">Searching for accounts...</div>
       </div>
     `;
