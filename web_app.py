@@ -81,6 +81,14 @@ BALANCE_ERROR_KEYWORDS = (
     "insufficient_funds",
     "insufficient funds",
 )
+AUTH_ERROR_KEYWORDS = (
+    "forbidden",
+    "access denied",
+    "permission",
+    "scope",
+    "unauthorized",
+    "token",
+)
 # Error text patterns that indicate a transient failure worth retrying.
 FAST_BUY_RETRYABLE_KEYWORDS = (
     "too many requests",
@@ -107,6 +115,24 @@ def _is_price_changed_error(error_text: str) -> bool:
     normalized_error_text = str(error_text).lower()
 
     return any(keyword in normalized_error_text for keyword in PRICE_CHANGED_KEYWORDS)
+
+
+def _build_marketplace_error_message(
+    fallback_message: str,
+    error_parts: List[str],
+) -> str:
+    if not error_parts:
+        return fallback_message
+
+    first_error = str(error_parts[0] or "").strip()
+    if not first_error:
+        return fallback_message
+
+    max_error_length = 180
+    if len(first_error) > max_error_length:
+        first_error = f"{first_error[:max_error_length - 3]}..."
+
+    return f"{fallback_message} ({first_error})"
 
 def fortnite_api_get_outfit_icon_url_by_name(name: str):
     """
@@ -1204,6 +1230,18 @@ def confirm_buy_account(item_id: int, price: float):
                 503,
             )
 
+        normalized_error_text = str(error_text or "").lower()
+        normalized_error_code = str(error_code_raw or "").lower()
+        combined_error_signal = f"{normalized_error_text} {normalized_error_code}"
+        has_balance_error = any(
+            keyword in combined_error_signal
+            for keyword in BALANCE_ERROR_KEYWORDS
+        )
+        has_auth_error = any(
+            keyword in combined_error_signal
+            for keyword in AUTH_ERROR_KEYWORDS
+        )
+
         # --- Terminal error classification ---
         if resp.status_code == 404:
             raise PurchaseFlowError(
@@ -1225,9 +1263,24 @@ def confirm_buy_account(item_id: int, price: float):
                     PRICE_CHANGED_MESSAGE,
                     409,
                 )
+            if has_balance_error:
+                raise PurchaseFlowError(
+                    "market_balance_required",
+                    "Marketplace balance is not configured correctly. Please contact support.",
+                    422,
+                )
+            if has_auth_error:
+                raise PurchaseFlowError(
+                    "market_auth_failed",
+                    "Marketplace API token does not have purchase access. Please update the token permissions.",
+                    401,
+                )
             raise PurchaseFlowError(
                 "market_access_denied",
-                "Marketplace denied access to this account. Please try another.",
+                _build_marketplace_error_message(
+                    "Marketplace rejected the purchase request.",
+                    error_parts,
+                ),
                 403,
             )
 
@@ -1238,13 +1291,6 @@ def confirm_buy_account(item_id: int, price: float):
                 401,
             )
 
-        normalized_error_text = str(error_text or "").lower()
-        normalized_error_code = str(error_code_raw or "").lower()
-        combined_balance_signal = f"{normalized_error_text} {normalized_error_code}"
-        has_balance_error = any(
-            keyword in combined_balance_signal
-            for keyword in BALANCE_ERROR_KEYWORDS
-        )
         if resp.status_code in (400, 422) and has_balance_error:
             raise PurchaseFlowError(
                 "market_balance_required",
