@@ -814,7 +814,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!Number.isFinite(tsNum) || tsNum <= 0) return "Unknown date";
     const date = new Date(tsNum * 1000);
     if (Number.isNaN(date.getTime())) return "Unknown date";
-    return date.toLocaleDateString(undefined, { month: "numeric", day: "numeric", year: "numeric" });
+    return date.toLocaleDateString(undefined, { month: "2-digit", day: "2-digit", year: "numeric" });
   }
 
   function formatPrice(rawPrice) {
@@ -869,7 +869,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     root.querySelectorAll(".my-account-copy-btn").forEach((btn) => {
       btn.addEventListener("click", async () => {
-        const copyValue = decodeURIComponent(btn.dataset.copy || "");
+        let copyValue = "";
+        try {
+          copyValue = decodeURIComponent(btn.dataset.copy || "");
+        } catch (_) {
+          copyValue = String(btn.dataset.copy || "");
+        }
         const copied = await copyToClipboard(copyValue);
         if (copied) {
           btn.classList.add("copied");
@@ -966,6 +971,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const delivered = String(acc.purchase_result?.status || "").toLowerCase() === "ok";
     const purchaseDate = formatPurchaseDate(acc.timestamp);
     const displayPrice = formatPrice(item.priceWithSellerFee ?? item.price);
+    const accountNameInputId = `my-account-name-input-${accIndex}`;
 
     view.innerHTML = `
       <article class="my-account-panel">
@@ -982,12 +988,12 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
 
         <div class="my-account-name-wrap">
-          <label class="my-account-name-label">Account Name</label>
+          <label class="my-account-name-label" for="${accountNameInputId}">Account Name</label>
           <div class="my-account-name-controls">
-            <input type="text" class="my-account-name-input" maxlength="50" value="${escapeHtml(accountName)}" placeholder="Enter account name">
+            <input id="${accountNameInputId}" type="text" class="my-account-name-input" maxlength="50" value="${escapeHtml(accountName)}" placeholder="Enter account name">
             <button type="button" class="my-account-name-save">Save</button>
           </div>
-          <div class="my-account-name-status"></div>
+          <div class="my-account-name-status" aria-live="polite"></div>
         </div>
 
         <section class="my-account-section">
