@@ -122,7 +122,7 @@ def _build_marketplace_error_message(
     return f"{fallback_message} ({first_error})"
 
 
-def _find_nested_value(obj: Any, key_name: str):
+def _find_nested_value(obj: Any, key_name: str) -> Any:
     """Recursively find a nested key and unwrap `{raw: ...}` marketplace fields."""
     if not isinstance(obj, dict):
         return None
@@ -1122,15 +1122,19 @@ def get_purchases(username: str):
     return purchases.get(username, [])
 
 
-def save_purchase_record(username: str, purchase_result, latest_order):
+def save_purchase_record(
+    username: str,
+    purchase_result: Any,
+    latest_order: Optional[dict],
+) -> Tuple[dict, list, int]:
     """Update an existing saved purchase for the same item or append a new purchase entry."""
     purchases = _load_purchases()
     user_list = purchases.get(username, [])
     item_id = _extract_purchase_item_id(purchase_result)
 
     if item_id is not None:
-        for index in range(len(user_list) - 1, -1, -1):
-            existing_entry = user_list[index] if isinstance(user_list[index], dict) else {}
+        for index, existing_value in reversed(list(enumerate(user_list))):
+            existing_entry = existing_value if isinstance(existing_value, dict) else {}
             existing_result = existing_entry.get("purchase_result")
             if _extract_purchase_item_id(existing_result) != item_id:
                 continue
@@ -5051,7 +5055,6 @@ def api_fortnite_buy():
         )
         if recovered_purchase_result:
             purchase_result = recovered_purchase_result
-        latest_order = latest_order if isinstance(latest_order, dict) else None
         if not balance_charged:
             add_balance(username, -cost_cents)
             balance_charged = True
