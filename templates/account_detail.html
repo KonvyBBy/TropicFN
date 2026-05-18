@@ -216,12 +216,12 @@
       try {
         const itemId = Number((window.ACCOUNT_DETAIL || {}).item_id || 0);
         if (!Number.isInteger(itemId) || itemId <= 0) {
-          throw new Error('Invalid account ID. Please refresh and try again.');
+          throw new Error('Invalid item ID. Please refresh and try again.');
         }
         const response = await postJSON('/api/fortnite/buy', { item_id: itemId });
         statusEl.textContent = response.message || 'Purchase successful.';
       } catch (error) {
-        statusEl.textContent = error?.message || 'Purchase failed.';
+        statusEl.textContent = error?.message || 'Purchase failed. Please try again or contact support if the issue persists.';
       } finally {
         buyBtn.disabled = false;
         buyBtn.textContent = originalLabel;
