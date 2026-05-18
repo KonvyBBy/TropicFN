@@ -1144,7 +1144,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return `Account ${fallbackIndex + 1}`;
   }
 
-  function getAccountItemId(acc) {
+  function getPurchaseItemId(acc) {
     const item = acc?.purchase_result?.item || {};
     // Canonical purchase payload field is item_id.
     // fortnite_item_id and id appear in older/alternate marketplace payload shapes.
@@ -1174,13 +1174,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const accountName = String(acc.name || "").trim() || `Account ${cardIndex + 1}`;
     const accountNameInputId = `my-account-name-input-${cardIndex}`;
     const accountNameStatusId = `my-account-name-status-${cardIndex}`;
-    const accountNumber = getAccountItemId(acc);
+    const accountNumber = getPurchaseItemId(acc);
     const accountTitle = getAccountTitle(item, skinsCount, cardIndex);
-    const isOpen = false;
-
     return `
       <article class="my-account-panel">
-        <button type="button" class="my-account-summary" data-acc-toggle="${cardIndex}" aria-expanded="${isOpen ? "true" : "false"}">
+        <button type="button" class="my-account-summary" data-acc-toggle="${cardIndex}" aria-expanded="false">
           <div class="my-account-top">
             <div>
               <div class="my-account-title">${escapeHtml(accountTitle)}</div>
@@ -1198,7 +1196,7 @@ document.addEventListener("DOMContentLoaded", () => {
           </div>
         </button>
 
-        <div class="my-account-collapse ${isOpen ? "is-open" : ""}" data-acc-content="${cardIndex}">
+        <div class="my-account-collapse" data-acc-content="${cardIndex}">
           <div class="my-account-name-wrap">
             <label class="my-account-name-label" for="${accountNameInputId}">Account Name</label>
             <div class="my-account-name-controls">
