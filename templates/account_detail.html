@@ -256,6 +256,9 @@
   const PURCHASE_CHECK_MESSAGE = 'Please wait while we verify the account is still available and prepare your purchase.';
   const PURCHASE_READY_MESSAGE = 'The account is available. Preparing to complete your purchase...';
   const PURCHASE_RUNNING_MESSAGE = 'The account is being purchased now.<br>Please keep this page open until it finishes.';
+  const PURCHASE_SUCCESS_DELIVERED_MESSAGE = 'You purchased it! Account details were delivered.';
+  const PURCHASE_SUCCESS_RECOVERED_MESSAGE = 'You purchased it! Account details are now available in My Accounts.';
+  const PURCHASE_SUCCESS_PROCESSING_MESSAGE = 'You purchased it! Account delivery is processing. Please check My Accounts.';
 
   function getPurchaseErrorMessage(code, fallbackMessage) {
     if (code === 'not_enough_balance') {
@@ -349,6 +352,16 @@
       console.error('Failed to recover purchase:', e);
     }
     return null;
+  }
+
+  async function readResponseData(response) {
+    const rawText = await response.text();
+    if (!rawText) return null;
+    try {
+      return JSON.parse(rawText);
+    } catch (_) {
+      return { rawText };
+    }
   }
 
   async function loadCategory(sectionId, apiType) {
@@ -480,13 +493,10 @@
           item_id: Number(detail.item_id)
         })
       });
-      let checkData;
-      try { checkData = await checkRes.json(); } catch (e) {
-        throw new Error('Server returned an unexpected response. Please try again.');
-      }
+      const checkData = await readResponseData(checkRes);
       if (!checkRes.ok) {
-        const code = String(checkData.error || '').toLowerCase();
-        const message = getPurchaseErrorMessage(code, checkData.message || checkData.error);
+        const code = String(checkData?.error || '').toLowerCase();
+        const message = getPurchaseErrorMessage(code, checkData?.message || checkData?.error);
         throw new Error(message);
       }
       if (payTitle) payTitle.textContent = 'Account Checked…';
@@ -501,29 +511,39 @@
           item_id: Number(detail.item_id)
         })
       });
-      let data;
-      try { data = await res.json(); } catch (e) {
-        const recovered = await recoverSuccessfulPurchase(Number(detail.item_id));
-        if (recovered) {
-          showPaySuccess(recovered.message, recovered.purchaseIndex);
-          return;
-        }
-        throw new Error('Server returned an unexpected response. Please try again.');
-      }
+      const data = await readResponseData(res);
       if (!res.ok) {
         const recovered = await recoverSuccessfulPurchase(Number(detail.item_id));
         if (recovered) {
           showPaySuccess(recovered.message, recovered.purchaseIndex);
           return;
         }
-        const code = String(data.error || '').toLowerCase();
-        const message = getPurchaseErrorMessage(code, data.message || data.error);
+        const code = String(data?.error || '').toLowerCase();
+        const message = getPurchaseErrorMessage(code, data?.message || data?.error);
         throw new Error(message);
       }
-      const purchaseIndex = Number.isInteger(data.purchase_index)
-        ? data.purchase_index
-        : (Array.isArray(data.owned_accounts) ? data.owned_accounts.length - 1 : 0);
-      showPaySuccess(data.message || 'Your account is ready!', purchaseIndex);
+      const parsedData = data && typeof data === 'object' ? data : null;
+      const hasStructuredBuyPayload = Boolean(
+        parsedData && (
+          Object.prototype.hasOwnProperty.call(parsedData, 'purchase_index') ||
+          Object.prototype.hasOwnProperty.call(parsedData, 'owned_accounts') ||
+          Object.prototype.hasOwnProperty.call(parsedData, 'purchase_result') ||
+          Object.prototype.hasOwnProperty.call(parsedData, 'message')
+        )
+      );
+      if (!hasStructuredBuyPayload) {
+        const recovered = await recoverSuccessfulPurchase(Number(detail.item_id));
+        if (recovered) {
+          showPaySuccess(PURCHASE_SUCCESS_RECOVERED_MESSAGE, recovered.purchaseIndex);
+          return;
+        }
+        showPaySuccess(PURCHASE_SUCCESS_PROCESSING_MESSAGE, 0);
+        return;
+      }
+      const purchaseIndex = Number.isInteger(parsedData.purchase_index)
+        ? parsedData.purchase_index
+        : (Array.isArray(parsedData.owned_accounts) ? parsedData.owned_accounts.length - 1 : 0);
+      showPaySuccess(parsedData.message || PURCHASE_SUCCESS_DELIVERED_MESSAGE, purchaseIndex);
     } catch (e) {
       showPayError(e.message || 'Purchase failed. Please try again.');
     } finally {

@@ -27,6 +27,46 @@
   .filter-section[data-open="false"] .filter-body { display: none; }
   .filter-section[data-open="false"] .toggle-icon::before { content: '›'; font-size: .9rem; }
   .filter-section[data-open="true"] .toggle-icon::before { content: '⌄'; font-size: .9rem; }
+  .selected-cosmetics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 6px;
+  }
+  .selected-cosmetic-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    max-width: 100%;
+    padding: 2px 6px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #b8fdd7;
+    background: rgba(14, 244, 117, 0.12);
+    border: 1px solid rgba(14, 244, 117, 0.35);
+  }
+  .selected-cosmetic-chip-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 10rem;
+  }
+  .selected-cosmetic-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    border-radius: 999px;
+    border: none;
+    background: rgba(0, 0, 0, 0.35);
+    color: #dcfce7;
+    font-size: 11px;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .selected-cosmetic-remove:hover { background: rgba(0, 0, 0, 0.55); }
 
   /* Sort tabs */
   .toolbar-tab {
@@ -107,6 +147,36 @@
   @media (max-width: 1023px) {
     .desktop-filters { display: none; }
     .filters-scroll { max-height: none; overflow-y: visible; }
+    #mobile-filter-toggle.mobile-filter-toggle {
+      border-color: rgba(14, 244, 117, 0.9);
+      color: #dcfce7;
+      background: rgba(14, 244, 117, 0.12);
+      box-shadow:
+        0 0 0 1px rgba(14, 244, 117, 0.45),
+        0 0 18px rgba(14, 244, 117, 0.42);
+      animation: mobileFilterPulse 1.35s ease-in-out infinite;
+    }
+    #mobile-filter-toggle.mobile-filter-toggle:hover {
+      border-color: rgba(14, 244, 117, 1);
+      color: #f0fdf4;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .mobile-filter-toggle { animation: none !important; }
+  }
+  @keyframes mobileFilterPulse {
+    0%, 100% {
+      box-shadow:
+        0 0 0 1px rgba(14, 244, 117, 0.45),
+        0 0 16px rgba(14, 244, 117, 0.35);
+      transform: translateY(0);
+    }
+    50% {
+      box-shadow:
+        0 0 0 2px rgba(14, 244, 117, 0.8),
+        0 0 28px rgba(14, 244, 117, 0.62);
+      transform: translateY(-1px);
+    }
   }
   @media (min-width: 1024px) { .mobile-filter-toggle, .mobile-filters-wrap, #mobile-filter-overlay { display: none !important; } }
 </style>
@@ -160,21 +230,25 @@
             <div class="filter-body space-y-2">
               <div class="text-[9px] font-bold uppercase tracking-[.12em] mb-1" style="color:#666;">Outfits</div>
               <div class="autocomplete-wrapper" style="position:relative;">
+                <div class="selected-cosmetics" data-cosmetic-field="skin[]"></div>
                 <input name="skin[]" type="text" data-cosmetic-type="outfit" placeholder="Search outfits..." class="cosmetic-search-input project-input h-8 w-full rounded-md px-2.5 text-xs" autocomplete="off">
                 <div class="autocomplete-dropdown"></div>
               </div>
               <div class="text-[9px] font-bold uppercase tracking-[.12em] mb-1" style="color:#666;">Pickaxes</div>
               <div class="autocomplete-wrapper" style="position:relative;">
+                <div class="selected-cosmetics" data-cosmetic-field="pickaxe[]"></div>
                 <input name="pickaxe[]" type="text" data-cosmetic-type="pickaxe" placeholder="Search pickaxes..." class="cosmetic-search-input project-input h-8 w-full rounded-md px-2.5 text-xs" autocomplete="off">
                 <div class="autocomplete-dropdown"></div>
               </div>
               <div class="text-[9px] font-bold uppercase tracking-[.12em] mb-1" style="color:#666;">Emotes</div>
               <div class="autocomplete-wrapper" style="position:relative;">
+                <div class="selected-cosmetics" data-cosmetic-field="dance[]"></div>
                 <input name="dance[]" type="text" data-cosmetic-type="emote" placeholder="Search emotes..." class="cosmetic-search-input project-input h-8 w-full rounded-md px-2.5 text-xs" autocomplete="off">
                 <div class="autocomplete-dropdown"></div>
               </div>
               <div class="text-[9px] font-bold uppercase tracking-[.12em] mb-1" style="color:#666;">Gliders</div>
               <div class="autocomplete-wrapper" style="position:relative;">
+                <div class="selected-cosmetics" data-cosmetic-field="glider[]"></div>
                 <input name="glider[]" type="text" data-cosmetic-type="glider" placeholder="Search gliders..." class="cosmetic-search-input project-input h-8 w-full rounded-md px-2.5 text-xs" autocomplete="off">
                 <div class="autocomplete-dropdown"></div>
               </div>

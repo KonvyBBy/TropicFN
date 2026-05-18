@@ -219,6 +219,66 @@ document.addEventListener("DOMContentLoaded", () => {
   function setupAutocomplete(input, dropdown, allowedTypes) {
     let selectedIndex = -1;
     let debounceTimer = null;
+    const fieldName = String(input.getAttribute('name') || '');
+    const chipsContainer = input.parentElement?.querySelector(`.selected-cosmetics[data-cosmetic-field="${fieldName}"]`);
+
+    function getSelectedIds() {
+      if (!chipsContainer) return [];
+      return Array.from(chipsContainer.querySelectorAll('.selected-cosmetic-chip'))
+        .map((chip) => String(chip.getAttribute('data-cosmetic-id') || ''))
+        .filter(Boolean);
+    }
+
+    function emitFilterChange() {
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    function addSelectedCosmetic(itemId, itemName) {
+      const normalizedId = String(itemId || '').trim();
+      const normalizedName = String(itemName || '').trim();
+      if (!chipsContainer || !fieldName || !normalizedId || !normalizedName) return;
+      const existingIds = getSelectedIds();
+      if (existingIds.includes(normalizedId)) {
+        // Ignore duplicate selections so each cosmetic is only sent once in search payload.
+        input.value = '';
+        return;
+      }
+
+      const chip = document.createElement('span');
+      chip.className = 'selected-cosmetic-chip';
+      chip.setAttribute('data-cosmetic-id', normalizedId);
+
+      const chipLabel = document.createElement('span');
+      chipLabel.className = 'selected-cosmetic-chip-label';
+      chipLabel.textContent = normalizedName;
+
+      const removeButton = document.createElement('button');
+      removeButton.type = 'button';
+      removeButton.className = 'selected-cosmetic-remove';
+      removeButton.setAttribute('aria-label', `Remove ${normalizedName}`);
+      removeButton.textContent = '×';
+
+      chip.appendChild(chipLabel);
+      chip.appendChild(removeButton);
+
+      const hidden = document.createElement('input');
+      hidden.type = 'hidden';
+      hidden.name = fieldName;
+      hidden.value = normalizedId;
+      hidden.className = 'selected-cosmetic-value';
+      hidden.setAttribute('data-cosmetic-id', normalizedId);
+      chip.appendChild(hidden);
+
+      removeButton.addEventListener('click', () => {
+        chip.remove();
+        emitFilterChange();
+      });
+
+      chipsContainer.appendChild(chip);
+      input.value = '';
+      input.removeAttribute('data-cosmetic-id');
+      emitFilterChange();
+    }
     
     input.addEventListener('input', (e) => {
       input.removeAttribute('data-cosmetic-id');
@@ -250,9 +310,7 @@ document.addEventListener("DOMContentLoaded", () => {
     dropdown.addEventListener('click', (e) => {
       const item = e.target.closest('.autocomplete-item');
       if (item) {
-        input.value = item.dataset.name;
-        input.setAttribute('data-cosmetic-id', item.dataset.id || '');
-        input.dispatchEvent(new Event('change', { bubbles: true }));
+        addSelectedCosmetic(item.dataset.id, item.dataset.name);
         dropdown.classList.remove('show');
       }
     });
@@ -351,14 +409,15 @@ document.addEventListener("DOMContentLoaded", () => {
       return prefix && lowerId.startsWith(prefix) ? lowerId.slice(prefix.length) : lowerId;
     }
     for (const [fieldName, prefix] of Object.entries(cosmeticFieldPrefixes)) {
-      const inputEl = form ? form.querySelector(`input[name="${fieldName}"]`) : null;
-      const storedId = inputEl ? inputEl.getAttribute('data-cosmetic-id') : null;
-      if (storedId) {
-        payload[fieldName] = toCosmeticMarketId(storedId, prefix);
-      } else {
-        // No confirmed selection — remove the raw text name so it doesn't confuse the API.
-        delete payload[fieldName];
-      }
+      const selectedInputs = form
+        ? Array.from(form.querySelectorAll(`input.selected-cosmetic-value[name="${fieldName}"]`))
+        : [];
+      const selectedIds = selectedInputs
+        .map((hiddenInput) => toCosmeticMarketId(hiddenInput.value || '', prefix))
+        .filter(Boolean);
+      if (selectedIds.length === 1) payload[fieldName] = selectedIds[0];
+      else if (selectedIds.length > 1) payload[fieldName] = selectedIds;
+      else delete payload[fieldName];
     }
 
     const pmax = Number(payload.pmax || 0);
@@ -598,6 +657,7 @@ document.addEventListener("DOMContentLoaded", () => {
       lastSearchAccounts = [];
       document.querySelectorAll('.autocomplete-dropdown').forEach(d => d.classList.remove('show'));
       document.querySelectorAll('.cosmetic-search-input').forEach(i => i.removeAttribute('data-cosmetic-id'));
+      document.querySelectorAll('.selected-cosmetic-chip').forEach(chip => chip.remove());
       executeSearch({ showEmptyAlert: false });
     }, 0);
   });
