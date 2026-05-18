@@ -1098,8 +1098,8 @@ def fetch_cheapest_accounts(
 
 def confirm_buy_account(item_id: int):
     """
-    Purchase an account using POST /{item_id}/fast-buy.
-    Uses optional balance_id if configured.
+    Initiate a marketplace fast-buy purchase for an account item.
+    Sends balance_id when configured; otherwise sends an empty JSON body.
     """
     url = f"https://prod-api.lzt.market/{item_id}/fast-buy"
     headers_fb = {
