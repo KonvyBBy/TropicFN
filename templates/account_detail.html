@@ -25,91 +25,9 @@
   .detail-tile[data-rarity="dc"]           { border-color: #6366f1; }
   .detail-tile[data-rarity="icon"]         { border-color: #06b6d4; }
   .detail-tile[data-rarity="gaming_legends"] { border-color: #8b5cf6; }
-  .buy-card { border: 1px solid rgba(14,244,117,.45); background: linear-gradient(135deg,#0EF475,#06d876); color: #03180f; }
-  .buy-now-btn { border: 1px solid rgba(3,24,15,.18); background: rgba(3,24,15,.14); color: #03180f; }
-  .buy-now-btn:hover { background: rgba(3,24,15,.2); }
   .info-row { display: flex; justify-content: space-between; gap: 8px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,.08); }
   .info-row:last-child { border-bottom: none; }
   .reliable-info-header { font-size: .6rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #aaa; }
-
-  /* ── Recording-Consent Modal ── */
-  .rec-modal-backdrop {
-    display: none; position: fixed; inset: 0; z-index: 200;
-    background: rgba(0,0,0,.78); align-items: center; justify-content: center;
-  }
-  .rec-modal-backdrop.open { display: flex; }
-  .rec-modal {
-    background: #0d1424; border: 1px solid rgba(255,255,255,.12); border-radius: 20px;
-    padding: 32px 28px; max-width: 420px; width: 92%; text-align: center;
-    animation: recModalIn .25s ease;
-  }
-  @keyframes recModalIn { from { opacity:0; transform: scale(.92); } to { opacity:1; transform: scale(1); } }
-  .rec-modal-icon { font-size: 3rem; margin-bottom: 12px; }
-  .rec-modal h2 { font-family:'Space Grotesk',sans-serif; font-size: 1.2rem; font-weight: 700; color:#fff; margin-bottom: 8px; }
-  .rec-modal p { font-size: .88rem; color: #9ca3af; line-height: 1.55; margin-bottom: 20px; }
-  .rec-modal-btn-row { display: flex; gap: 10px; justify-content: center; }
-  .rec-confirm-btn {
-    background: #0EF475; color: #03180f; border: none; border-radius: 10px;
-    padding: 11px 24px; font-weight: 700; font-size: .9rem; cursor: pointer; transition: background .15s;
-  }
-  .rec-confirm-btn:hover { background: #0BC95E; }
-  .rec-cancel-btn {
-    background: rgba(255,255,255,.07); color: #9ca3af; border: 1px solid rgba(255,255,255,.1);
-    border-radius: 10px; padding: 11px 20px; font-size: .9rem; cursor: pointer; transition: background .15s;
-  }
-  .rec-cancel-btn:hover { background: rgba(255,255,255,.12); }
-
-  /* ── Payment-Processing Overlay ── */
-  .pay-overlay {
-    display: none; position: fixed; inset: 0; z-index: 300;
-    background: rgba(3,6,18,.93); align-items: center; justify-content: center;
-    flex-direction: column; gap: 24px;
-  }
-  .pay-overlay.open { display: flex; }
-  .pay-ring {
-    width: 72px; height: 72px; border-radius: 50%;
-    border: 5px solid rgba(14,244,117,.18);
-    border-top-color: #0EF475;
-    animation: spin 1s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .pay-title { font-family:'Space Grotesk',sans-serif; font-size: 1.4rem; font-weight: 700; color: #fff; }
-  .pay-sub { font-size: .9rem; color: #9ca3af; text-align: center; line-height: 1.6; max-width: 320px; }
-  .pay-warn {
-    background: rgba(234,179,8,.08); border: 1px solid rgba(234,179,8,.3);
-    border-radius: 10px; padding: 10px 18px;
-    font-size: .82rem; color: #fbbf24; text-align: center; max-width: 340px;
-  }
-  .pay-success { display: none; flex-direction: column; align-items: center; gap: 14px; }
-  .pay-success.show { display: flex; }
-  .pay-success-icon { font-size: 3.5rem; }
-  .pay-success-title { font-family:'Space Grotesk',sans-serif; font-size: 1.3rem; font-weight: 700; color: #0EF475; }
-  .pay-success-btn {
-    background: #0EF475; color: #03180f; border: none; border-radius: 10px;
-    padding: 12px 28px; font-weight: 700; font-size: .95rem; cursor: pointer;
-  }
-  .pay-success-btn:hover { background: #0BC95E; }
-  /* Naming input inside overlay */
-  .pay-name-input {
-    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.18);
-    border-radius: 10px; padding: 10px 14px; font-size: .95rem; color: #fff;
-    width: 100%; max-width: 280px; outline: none; margin-top: 4px;
-  }
-  .pay-name-input:focus { border-color: rgba(14,244,117,0.6); box-shadow: 0 0 0 1px rgba(14,244,117,0.25); }
-  .pay-name-row { display: flex; gap: 8px; margin-top: 4px; justify-content: center; flex-wrap: wrap; }
-  .pay-name-save { background: #0EF475; color: #03180f; border: none; border-radius: 10px; padding: 10px 20px; font-weight: 700; font-size: .9rem; cursor: pointer; }
-  .pay-name-save:hover { background: #0BC95E; }
-  .pay-name-skip { background: rgba(255,255,255,0.07); color: #a1a1aa; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 10px 16px; font-size: .9rem; cursor: pointer; }
-  .pay-name-skip:hover { background: rgba(255,255,255,0.12); color: #fff; }
-  .pay-name-error { font-size: .82rem; color: #f87171; margin-top: 6px; display: none; }
-  .pay-error { display: none; flex-direction: column; align-items: center; gap: 12px; }
-  .pay-error.show { display: flex; }
-  .pay-error-icon { font-size: 3rem; }
-  .pay-error-msg { font-size: .9rem; color: #f87171; text-align: center; max-width: 320px; }
-  .pay-error-btn {
-    background: rgba(255,255,255,.08); color: #e4e4e7; border: 1px solid rgba(255,255,255,.14);
-    border-radius: 10px; padding: 11px 24px; font-size: .9rem; cursor: pointer;
-  }
 </style>
 {% endblock %}
 
@@ -144,10 +62,10 @@
   </div>
 
   <aside class="space-y-4">
-    <section class="buy-card rounded-2xl p-5 text-center">
+    <section class="detail-panel rounded-2xl p-5 text-center">
       <div class="font-space text-4xl font-bold">${{ '%.2f'|format(account_detail.price) }}</div>
-      <div class="mt-1 text-sm">💎 {{ account_detail.vbucks }} V-Bucks included</div>
-      <button id="buy-now" class="buy-now-btn mt-4 w-full rounded-xl py-3 text-sm font-bold tracking-wide cursor-pointer"><i class="ri-shopping-cart-line" aria-hidden="true"></i> PURCHASE NOW</button>
+      <div class="mt-1 text-sm text-zinc-400">💎 {{ account_detail.vbucks }} V-Bucks included</div>
+      <p class="mt-3 text-sm text-zinc-400">Instant buy is not available on this page right now.</p>
     </section>
 
     <section class="detail-panel rounded-2xl p-5">
@@ -189,56 +107,11 @@
   </aside>
 </section>
 
-<!-- Recording Consent Modal -->
-<div id="rec-modal-backdrop" class="rec-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="rec-modal-title">
-  <div class="rec-modal">
-    <div class="rec-modal-icon">🎥</div>
-    <h2 id="rec-modal-title">Screen Recording Required</h2>
-    <p>
-      To protect both you and us during this purchase, you must be screen recording before proceeding.<br><br>
-      Please start your screen recording now, then click <strong>"I'm Recording — Continue"</strong> to proceed with your purchase.
-    </p>
-    <div class="rec-modal-btn-row">
-      <button id="rec-confirm" class="rec-confirm-btn">🔴 I'm Recording — Continue</button>
-      <button id="rec-cancel" class="rec-cancel-btn">Cancel</button>
-    </div>
-  </div>
-</div>
-
-<!-- Payment Processing Overlay -->
-<div id="pay-overlay" class="pay-overlay" aria-live="polite">
-  <div id="pay-spinner-block">
-    <div style="display:flex;flex-direction:column;align-items:center;gap:20px;">
-      <div class="pay-ring"></div>
-      <div class="pay-title" id="pay-title">Checking Account…</div>
-      <div class="pay-sub" id="pay-sub">Please wait while we confirm the account is still available.<br>After the check, we wait 5 seconds and then buy it.</div>
-      <div class="pay-warn">⚠️ Do <strong>NOT</strong> refresh or close this page!<br>Doing so may invalidate your purchase.</div>
-    </div>
-  </div>
-  <div id="pay-success-block" class="pay-success">
-    <div class="pay-success-icon">✅</div>
-    <div class="pay-success-title">Purchase Successful!</div>
-    <div class="pay-sub" id="pay-success-msg"></div>
-    <p style="font-size:.88rem;color:#a1a1aa;margin-top:4px;">Give this account a nickname so you can find it easily.</p>
-    <input id="pay-name-input" type="text" class="pay-name-input" placeholder="e.g. My Main Account" maxlength="50" />
-    <div class="pay-name-row">
-      <button id="pay-name-save" class="pay-name-save">Name My Account</button>
-      <button id="pay-name-skip" class="pay-name-skip">Skip</button>
-    </div>
-    <div id="pay-name-error" class="pay-name-error"></div>
-  </div>
-  <div id="pay-error-block" class="pay-error">
-    <div class="pay-error-icon">❌</div>
-    <div class="pay-error-msg" id="pay-error-msg"></div>
-    <button id="pay-error-close-btn" class="pay-error-btn">Close</button>
-  </div>
-</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
   window.ACCOUNT_DETAIL = {{ account_detail|tojson }};
-  window.KONVY_LOGGED_IN = {{ 'true' if logged_in else 'false' }};
 
   function escapeHtml(value) {
     return String(value ?? '')
@@ -247,121 +120,6 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
-  }
-
-  function wait(ms) {
-    return new Promise((resolve) => window.setTimeout(resolve, ms));
-  }
-
-  const PURCHASE_CHECK_MESSAGE = 'Please wait while we verify the account is still available and prepare your purchase.';
-  const PURCHASE_READY_MESSAGE = 'The account is available. Preparing to complete your purchase...';
-  const PURCHASE_RUNNING_MESSAGE = 'The account is being purchased now.<br>Please keep this page open until it finishes.';
-  const PURCHASE_SUCCESS_DELIVERED_MESSAGE = 'You purchased it! Account details were delivered.';
-  const PURCHASE_SUCCESS_RECOVERED_MESSAGE = 'You purchased it! Account details are now available in My Accounts.';
-  const PURCHASE_SUCCESS_PROCESSING_MESSAGE = 'You purchased it! Account delivery is processing. Please check My Accounts.';
-
-  function getPurchaseErrorMessage(code, fallbackMessage) {
-    if (code === 'not_enough_balance') {
-      return 'Not enough balance. Please top up and try again.';
-    }
-    if (code === 'account_unavailable') {
-      return 'Account is no longer available. Please choose another account.';
-    }
-    if (code === 'price_changed') {
-      return 'The account price changed while it was being checked. Please try again.';
-    }
-    if (code === 'market_auth_failed') {
-      return 'Authentication issue detected. Please contact support.';
-    }
-    if (code === 'market_balance_required') {
-      return 'Marketplace balance is not configured correctly. Please contact support.';
-    }
-    if (code === 'confirm_buy_failed') {
-      return fallbackMessage || 'Purchase failed. Please try again.';
-    }
-    return fallbackMessage || 'Purchase failed. Please try again.';
-  }
-
-  /** Recursively search nested purchase data for a key and unwrap `{ raw: ... }` values. */
-  function findNestedValue(obj, keyName) {
-    if (!obj || typeof obj !== 'object') return null;
-    if (Object.prototype.hasOwnProperty.call(obj, keyName)) {
-      const value = obj[keyName];
-      if (value && typeof value === 'object' && 'raw' in value) {
-        return value.raw;
-      }
-      return value;
-    }
-    if (Array.isArray(obj)) {
-      for (const item of obj) {
-        const found = findNestedValue(item, keyName);
-        if (found !== null && found !== '') {
-          return found;
-        }
-      }
-      return null;
-    }
-    for (const key of Object.keys(obj)) {
-      const child = obj[key];
-      if (child && typeof child === 'object') {
-        const found = findNestedValue(child, keyName);
-        if (found !== null && found !== '') {
-          return found;
-        }
-      }
-    }
-    return null;
-  }
-
-  /** Extract a positive numeric item ID from common purchase payload field names. */
-  function extractPurchaseItemId(purchaseResult) {
-    let rawItemId = findNestedValue(purchaseResult, 'item_id');
-    if (rawItemId === null || rawItemId === '') {
-      rawItemId = findNestedValue(purchaseResult, 'fortnite_item_id');
-    }
-    if (rawItemId === null || rawItemId === '') {
-      rawItemId = findNestedValue(purchaseResult, 'itemId');
-    }
-    const itemId = Number(rawItemId);
-    return Number.isFinite(itemId) && itemId > 0 ? itemId : null;
-  }
-
-  /** Re-read My Accounts and return the matching saved purchase when a buy response is ambiguous. */
-  async function recoverSuccessfulPurchase(itemId) {
-    try {
-      const res = await fetch('/api/fortnite/my-accounts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({})
-      });
-      if (!res.ok) return null;
-      const data = await res.json();
-      const accounts = Array.isArray(data.accounts) ? data.accounts : [];
-      for (let index = accounts.length - 1; index >= 0; index -= 1) {
-        const account = accounts[index] || {};
-        const purchaseResult = account.purchase_result || {};
-        const purchaseItemId = extractPurchaseItemId(purchaseResult);
-        if (purchaseItemId === Number(itemId)) {
-          return {
-            purchaseIndex: index,
-            message: 'Purchase completed. Your account details were recovered from My Accounts.'
-          };
-        }
-      }
-    } catch (e) {
-      console.error('Failed to recover purchase:', e);
-    }
-    return null;
-  }
-
-  async function readResponseData(response) {
-    const rawText = await response.text();
-    if (!rawText) return null;
-    try {
-      return JSON.parse(rawText);
-    } catch (_) {
-      return { rawText };
-    }
   }
 
   async function loadCategory(sectionId, apiType) {
@@ -407,153 +165,6 @@
     }).join('');
   }
 
-  // ── Overlay helpers ──────────────────────────────────────────────
-  function showPayOverlay() {
-    const overlay = document.getElementById('pay-overlay');
-    document.getElementById('pay-spinner-block').style.display = '';
-    document.getElementById('pay-success-block').classList.remove('show');
-    document.getElementById('pay-error-block').classList.remove('show');
-    const title = document.getElementById('pay-title');
-    const sub = document.getElementById('pay-sub');
-    if (title) title.textContent = 'Checking Account…';
-    if (sub) sub.textContent = PURCHASE_CHECK_MESSAGE;
-    overlay.classList.add('open');
-  }
-
-  function showPaySuccess(message, purchaseIndex) {
-    document.getElementById('pay-spinner-block').style.display = 'none';
-    document.getElementById('pay-success-msg').textContent = message || '';
-    document.getElementById('pay-success-block').classList.add('show');
-    // Store purchase index for naming
-    const saveBtn = document.getElementById('pay-name-save');
-    const skipBtn = document.getElementById('pay-name-skip');
-    const input = document.getElementById('pay-name-input');
-    const errEl = document.getElementById('pay-name-error');
-    if (input) { input.value = ''; input.focus(); }
-    if (errEl) errEl.style.display = 'none';
-
-    async function doName() {
-      const name = (input ? input.value : '').trim();
-      if (!name) {
-        if (errEl) { errEl.textContent = 'Please enter a name.'; errEl.style.display = 'block'; }
-        return;
-      }
-      try {
-        await fetch('/api/fortnite/name-account', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ purchase_index: purchaseIndex, name })
-        });
-      } catch (e) {}
-      window.location.href = '/my-accounts';
-    }
-
-    if (saveBtn) {
-      saveBtn.onclick = doName;
-    }
-    if (input) {
-      input.onkeydown = (e) => { if (e.key === 'Enter') doName(); };
-    }
-    if (skipBtn) {
-      skipBtn.onclick = () => { window.location.href = '/my-accounts'; };
-    }
-  }
-
-  function showPayError(message) {
-    document.getElementById('pay-spinner-block').style.display = 'none';
-    document.getElementById('pay-error-msg').textContent = message || 'Purchase failed. Please try again.';
-    document.getElementById('pay-error-block').classList.add('show');
-  }
-
-  // ── Recording-consent modal ──────────────────────────────────────
-  function showRecordingModal(onConfirm) {
-    const backdrop = document.getElementById('rec-modal-backdrop');
-    backdrop.classList.add('open');
-
-    document.getElementById('rec-confirm').onclick = () => {
-      backdrop.classList.remove('open');
-      onConfirm();
-    };
-    document.getElementById('rec-cancel').onclick = () => {
-      backdrop.classList.remove('open');
-    };
-  }
-
-  // ── Purchase flow ────────────────────────────────────────────────
-  async function doPurchase(buyBtn) {
-    showPayOverlay();
-    try {
-      const detail = window.ACCOUNT_DETAIL || {};
-      const payTitle = document.getElementById('pay-title');
-      const paySub = document.getElementById('pay-sub');
-      const checkRes = await fetch('/api/fortnite/check-buy', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          item_id: Number(detail.item_id)
-        })
-      });
-      const checkData = await readResponseData(checkRes);
-      if (!checkRes.ok) {
-        const code = String(checkData?.error || '').toLowerCase();
-        const message = getPurchaseErrorMessage(code, checkData?.message || checkData?.error);
-        throw new Error(message);
-      }
-      if (payTitle) payTitle.textContent = 'Account Checked…';
-      if (paySub) paySub.textContent = PURCHASE_READY_MESSAGE;
-      await wait(5000);
-      if (payTitle) payTitle.textContent = 'Buying Account…';
-      if (paySub) paySub.innerHTML = PURCHASE_RUNNING_MESSAGE;
-      const res = await fetch('/api/fortnite/buy', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          item_id: Number(detail.item_id)
-        })
-      });
-      const data = await readResponseData(res);
-      if (!res.ok) {
-        const recovered = await recoverSuccessfulPurchase(Number(detail.item_id));
-        if (recovered) {
-          showPaySuccess(recovered.message, recovered.purchaseIndex);
-          return;
-        }
-        const code = String(data?.error || '').toLowerCase();
-        const message = getPurchaseErrorMessage(code, data?.message || data?.error);
-        throw new Error(message);
-      }
-      const parsedData = data && typeof data === 'object' ? data : null;
-      const hasStructuredBuyPayload = Boolean(
-        parsedData && (
-          Object.prototype.hasOwnProperty.call(parsedData, 'purchase_index') ||
-          Object.prototype.hasOwnProperty.call(parsedData, 'owned_accounts') ||
-          Object.prototype.hasOwnProperty.call(parsedData, 'purchase_result') ||
-          Object.prototype.hasOwnProperty.call(parsedData, 'message')
-        )
-      );
-      if (!hasStructuredBuyPayload) {
-        const recovered = await recoverSuccessfulPurchase(Number(detail.item_id));
-        if (recovered) {
-          showPaySuccess(PURCHASE_SUCCESS_RECOVERED_MESSAGE, recovered.purchaseIndex);
-          return;
-        }
-        showPaySuccess(PURCHASE_SUCCESS_PROCESSING_MESSAGE, 0);
-        return;
-      }
-      const purchaseIndex = Number.isInteger(parsedData.purchase_index)
-        ? parsedData.purchase_index
-        : (Array.isArray(parsedData.owned_accounts) ? parsedData.owned_accounts.length - 1 : 0);
-      showPaySuccess(parsedData.message || PURCHASE_SUCCESS_DELIVERED_MESSAGE, purchaseIndex);
-    } catch (e) {
-      showPayError(e.message || 'Purchase failed. Please try again.');
-    } finally {
-      if (buyBtn) {
-        buyBtn.disabled = false;
-        buyBtn.innerHTML = '<i class="ri-shopping-cart-line" aria-hidden="true"></i> PURCHASE NOW';
-      }
-    }
-  }
-
   document.addEventListener('DOMContentLoaded', () => {
     Promise.all([
       loadCategory('skins', 'outfit'),
@@ -561,23 +172,6 @@
       loadCategory('emotes', 'emote'),
       loadCategory('gliders', 'glider')
     ]);
-
-    document.getElementById('pay-error-close-btn')?.addEventListener('click', () => {
-      document.getElementById('pay-overlay').classList.remove('open');
-    });
-
-    const buyBtn = document.getElementById('buy-now');
-    buyBtn?.addEventListener('click', () => {
-      if (!window.KONVY_LOGGED_IN) {
-        window.location.href = '/login';
-        return;
-      }
-      buyBtn.disabled = true;
-      buyBtn.textContent = 'Processing...';
-      // Step 1: show recording-consent modal
-      // Step 2: on confirm, show payment overlay and execute purchase
-      showRecordingModal(() => doPurchase(buyBtn));
-    });
   });
 </script>
 {% endblock %}

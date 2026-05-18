@@ -5059,7 +5059,7 @@ def api_fortnite_buy():
     starting_balance = get_balance(username)
 
     try:
-        live_price, user_price, cost_cents = get_live_purchase_costs(item_id)
+        _, user_price, cost_cents = get_live_purchase_costs(item_id)
     except PurchaseFlowError as e:
         return jsonify({"error": e.code, "message": e.message}), e.status_code
 
