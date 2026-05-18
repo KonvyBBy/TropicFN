@@ -531,16 +531,16 @@
       if (!hasStructuredBuyPayload) {
         const recovered = await recoverSuccessfulPurchase(Number(detail.item_id));
         if (recovered) {
-          showPaySuccess('✅ You purchased it! Account details are now available in My Accounts.', recovered.purchaseIndex);
+          showPaySuccess('You purchased it! Account details are now available in My Accounts.', recovered.purchaseIndex);
           return;
         }
-        showPaySuccess('✅ You purchased it! Account delivery is processing. Please check My Accounts.', 0);
+        showPaySuccess('You purchased it! Account delivery is processing. Please check My Accounts.', 0);
         return;
       }
       const purchaseIndex = Number.isInteger(parsedData.purchase_index)
         ? parsedData.purchase_index
         : (Array.isArray(parsedData.owned_accounts) ? parsedData.owned_accounts.length - 1 : 0);
-      showPaySuccess(parsedData.message || '✅ You purchased it! Account details were delivered.', purchaseIndex);
+      showPaySuccess(parsedData.message || 'You purchased it! Account details were delivered.', purchaseIndex);
     } catch (e) {
       showPayError(e.message || 'Purchase failed. Please try again.');
     } finally {

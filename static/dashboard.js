@@ -246,10 +246,19 @@ document.addEventListener("DOMContentLoaded", () => {
       const chip = document.createElement('span');
       chip.className = 'selected-cosmetic-chip';
       chip.setAttribute('data-cosmetic-id', normalizedId);
-      chip.innerHTML = `
-        <span class="selected-cosmetic-chip-label">${escapeHtml(normalizedName)}</span>
-        <button type="button" class="selected-cosmetic-remove" aria-label="Remove ${escapeHtml(normalizedName)}">×</button>
-      `;
+
+      const chipLabel = document.createElement('span');
+      chipLabel.className = 'selected-cosmetic-chip-label';
+      chipLabel.textContent = normalizedName;
+
+      const removeButton = document.createElement('button');
+      removeButton.type = 'button';
+      removeButton.className = 'selected-cosmetic-remove';
+      removeButton.setAttribute('aria-label', `Remove ${normalizedName}`);
+      removeButton.textContent = '×';
+
+      chip.appendChild(chipLabel);
+      chip.appendChild(removeButton);
 
       const hidden = document.createElement('input');
       hidden.type = 'hidden';
@@ -259,7 +268,7 @@ document.addEventListener("DOMContentLoaded", () => {
       hidden.setAttribute('data-cosmetic-id', normalizedId);
       chip.appendChild(hidden);
 
-      chip.querySelector('.selected-cosmetic-remove')?.addEventListener('click', () => {
+      removeButton.addEventListener('click', () => {
         chip.remove();
         emitFilterChange();
       });

@@ -161,6 +161,9 @@
       color: #f0fdf4 !important;
     }
   }
+  @media (prefers-reduced-motion: reduce) {
+    .mobile-filter-toggle { animation: none !important; }
+  }
   @keyframes mobileFilterPulse {
     0%, 100% {
       box-shadow:
