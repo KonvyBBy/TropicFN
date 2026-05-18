@@ -123,6 +123,7 @@ def _build_marketplace_error_message(
 
 
 def _find_nested_value(obj: Any, key_name: str):
+    """Recursively find a nested key and unwrap `{raw: ...}` marketplace fields."""
     if not isinstance(obj, dict):
         return None
 
@@ -146,6 +147,7 @@ def _find_nested_value(obj: Any, key_name: str):
 
 
 def _purchase_result_has_credentials(purchase_result: Any) -> bool:
+    """Return True when marketplace purchase data includes Epic or email login details."""
     return bool(
         _find_nested_value(purchase_result, "loginData")
         or _find_nested_value(purchase_result, "emailLoginData")
@@ -153,6 +155,7 @@ def _purchase_result_has_credentials(purchase_result: Any) -> bool:
 
 
 def _extract_purchase_item_id(purchase_result: Any) -> Optional[int]:
+    """Extract an item identifier from common marketplace purchase payload shapes."""
     raw_item_id = (
         _find_nested_value(purchase_result, "item_id")
         or _find_nested_value(purchase_result, "fortnite_item_id")
@@ -165,6 +168,7 @@ def _extract_purchase_item_id(purchase_result: Any) -> Optional[int]:
 
 
 def _recover_purchase_result(item_id: int, reason: str, initial_result: Optional[dict] = None) -> Optional[dict]:
+    """Retry the item lookup after ambiguous purchase responses and return recovered credentials."""
     if isinstance(initial_result, dict) and _purchase_result_has_credentials(initial_result):
         return initial_result
 
@@ -1119,6 +1123,7 @@ def get_purchases(username: str):
 
 
 def save_purchase_record(username: str, purchase_result, latest_order):
+    """Update an existing saved purchase for the same item or append a new purchase entry."""
     purchases = _load_purchases()
     user_list = purchases.get(username, [])
     item_id = _extract_purchase_item_id(purchase_result)

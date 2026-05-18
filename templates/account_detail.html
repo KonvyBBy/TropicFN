@@ -279,6 +279,7 @@
     return fallbackMessage || 'Purchase failed. Please try again.';
   }
 
+  /** Recursively search nested purchase data for a key and unwrap `{ raw: ... }` values. */
   function findNestedValue(obj, keyName) {
     if (!obj || typeof obj !== 'object') return null;
     if (Object.prototype.hasOwnProperty.call(obj, keyName)) {
@@ -287,6 +288,15 @@
         return value.raw;
       }
       return value;
+    }
+    if (Array.isArray(obj)) {
+      for (const item of obj) {
+        const found = findNestedValue(item, keyName);
+        if (found !== null && found !== '') {
+          return found;
+        }
+      }
+      return null;
     }
     for (const key of Object.keys(obj)) {
       const child = obj[key];
@@ -300,6 +310,7 @@
     return null;
   }
 
+  /** Extract a positive numeric item ID from common purchase payload field names. */
   function extractPurchaseItemId(purchaseResult) {
     const rawItemId =
       findNestedValue(purchaseResult, 'item_id') ??
@@ -309,6 +320,7 @@
     return Number.isFinite(itemId) && itemId > 0 ? itemId : null;
   }
 
+  /** Re-read My Accounts and return the matching saved purchase when a buy response is ambiguous. */
   async function recoverSuccessfulPurchase(itemId) {
     try {
       const res = await fetch('/api/fortnite/my-accounts', {
@@ -330,7 +342,9 @@
           };
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error('Failed to recover purchase:', e);
+    }
     return null;
   }
 
