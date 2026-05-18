@@ -278,22 +278,20 @@ document.addEventListener("DOMContentLoaded", () => {
   const searchResults = document.getElementById('search-results');
   const sortButtons = Array.from(document.querySelectorAll('.toolbar-tab[data-sort]'));
   const mobileSortSelect = document.getElementById('mobile-sort-select');
-  let currentSort = 'default';
+  let currentSort = 'cheap';
   let lastSearchAccounts = [];
   let searchDebounceTimer = null;
   let searchRequestId = 0;
   const initialSearchStateHtml = searchResults ? searchResults.innerHTML : '';
   const MAX_PREVIEW_COSMETICS = 8;
-  const BOOLEAN_FILTER_KEYS = new Set(['email_login_data']);
-  const ENUM_FILTER_KEYS = new Set(['change_email', 'bp']);
+  const BOOLEAN_FILTER_KEYS = new Set([]);
+  const ENUM_FILTER_KEYS = new Set(['change_email']);
   const allowedFormKeys = new Set([
-    'pmin', 'pmax', 'email_login_data', 'change_email',
+    'pmin', 'pmax', 'change_email',
     'skin[]', 'pickaxe[]', 'dance[]', 'glider[]',
     'smin', 'smax', 'pickaxe_min', 'pickaxe_max', 'dmin', 'dmax', 'gmin', 'gmax',
     'vbmin', 'vbmax', 'lmin', 'lmax', 'paid_items_min', 'paid_items_max',
-    'refund_credits_min', 'refund_credits_max', 'daybreak', 'daybreak_max',
-    'bp', 'bp_lmin', 'bp_lmax', 'country[]',
-    'stw_mode'
+    'refund_credits_min', 'refund_credits_max', 'daybreak', 'daybreak_max'
   ]);
 
   function normalizePayloadValue(key, value) {
@@ -327,7 +325,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     formData.forEach((value, key) => {
       if (!allowedFormKeys.has(key)) return;
-      if (key === 'stw_mode') return;
       const normalized = normalizePayloadValue(key, value);
       if (normalized == null) return;
 
@@ -362,10 +359,6 @@ document.addEventListener("DOMContentLoaded", () => {
         delete payload[fieldName];
       }
     }
-
-    const stwMode = String(formData.get('stw_mode') || '').trim();
-    if (stwMode === 'include') payload['stw[]'] = [1];
-    if (stwMode === 'exclude') payload['not_stw[]'] = [1];
 
     const pmax = Number(payload.pmax || 0);
     if (pmax > 0) payload.budget = pmax;
@@ -541,15 +534,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const fd = new FormData(searchForm);
     const payload = buildSearchPayload(fd, [], searchForm);
     const hasFilters = Object.keys(payload).length > 0;
-
     if (!hasFilters) {
-      lastSearchAccounts = [];
-      if (showEmptyAlert) {
-        alert('Please set at least one filter to search');
-      } else {
-        renderInitialState();
-      }
-      return;
+      payload['pickaxe[]'] = 'defaultpickaxe';
+      currentSort = 'cheap';
     }
 
     const requestId = ++searchRequestId;
@@ -608,11 +595,148 @@ document.addEventListener("DOMContentLoaded", () => {
       ++searchRequestId;
       clearTimeout(searchDebounceTimer);
       lastSearchAccounts = [];
-      renderInitialState();
       document.querySelectorAll('.autocomplete-dropdown').forEach(d => d.classList.remove('show'));
       document.querySelectorAll('.cosmetic-search-input').forEach(i => i.removeAttribute('data-cosmetic-id'));
+      executeSearch({ showEmptyAlert: false });
     }, 0);
   });
+
+  function startDashboardTutorial() {
+    const isMobile = window.matchMedia('(max-width: 1023px)').matches;
+    const steps = isMobile
+      ? [
+          { selector: '#mobile-filter-toggle', title: 'Filters', text: 'Tap here to open filters and adjust your search.' },
+          { selector: '#search-results', title: 'Results', text: 'Accounts will appear here in a grid.' },
+          { selector: '#result-count', title: 'Live Count', text: 'This shows how many accounts match right now.' },
+        ]
+      : [
+          { selector: '#search-form', title: 'Filters Panel', text: 'Use this panel to set your account filters.' },
+          { selector: '#search-form button[type="submit"]', title: 'Search', text: 'Press Search Accounts any time to refresh results.' },
+          { selector: '#search-results', title: 'Results Grid', text: 'Click any account card to open full account details.' },
+          { selector: '#result-count', title: 'Result Count', text: 'This updates automatically when search results change.' },
+        ];
+
+    const validSteps = steps.filter(step => document.querySelector(step.selector));
+    if (!validSteps.length) return;
+
+    const old = document.getElementById('dashboard-tutorial-overlay');
+    if (old) old.remove();
+
+    if (!document.getElementById('dashboard-tutorial-style')) {
+      const style = document.createElement('style');
+      style.id = 'dashboard-tutorial-style';
+      style.textContent = `
+        .dashboard-tutorial-highlight { position: relative; z-index: 1203 !important; border-radius: 10px; box-shadow: 0 0 0 3px rgba(14,244,117,.9), 0 0 28px rgba(14,244,117,.45); animation: tutorialPulse 1.2s ease-in-out infinite; }
+        @keyframes tutorialPulse { 0%,100% { box-shadow: 0 0 0 3px rgba(14,244,117,.9), 0 0 18px rgba(14,244,117,.35); } 50% { box-shadow: 0 0 0 5px rgba(14,244,117,1), 0 0 32px rgba(14,244,117,.65); } }
+      `;
+      document.head.appendChild(style);
+    }
+
+    const overlay = document.createElement('div');
+    overlay.id = 'dashboard-tutorial-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:1200;background:rgba(2,8,20,.75);';
+
+    const card = document.createElement('div');
+    card.style.cssText = 'position:fixed;left:50%;bottom:20px;transform:translateX(-50%);width:min(92vw,440px);z-index:1204;background:#0f172a;border:1px solid rgba(14,244,117,.4);border-radius:14px;padding:14px;color:#eafef3;box-shadow:0 20px 45px rgba(0,0,0,.6);';
+
+    const titleEl = document.createElement('div');
+    titleEl.style.cssText = 'font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#0EF475;';
+    const textEl = document.createElement('p');
+    textEl.style.cssText = 'margin:8px 0 0;font-size:13px;line-height:1.45;color:#d1fae5;';
+    const controls = document.createElement('div');
+    controls.style.cssText = 'margin-top:12px;display:flex;justify-content:flex-end;gap:8px;';
+
+    const skipBtn = document.createElement('button');
+    skipBtn.type = 'button';
+    skipBtn.textContent = 'Skip';
+    skipBtn.style.cssText = 'border:1px solid rgba(255,255,255,.25);background:transparent;color:#cbd5e1;border-radius:9px;padding:7px 12px;font-size:12px;font-weight:700;';
+
+    const nextBtn = document.createElement('button');
+    nextBtn.type = 'button';
+    nextBtn.textContent = 'Next';
+    nextBtn.style.cssText = 'border:none;background:#0EF475;color:#03140b;border-radius:9px;padding:7px 14px;font-size:12px;font-weight:800;';
+
+    controls.appendChild(skipBtn);
+    controls.appendChild(nextBtn);
+    card.appendChild(titleEl);
+    card.appendChild(textEl);
+    card.appendChild(controls);
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+
+    let currentStep = 0;
+    let highlighted = null;
+
+    const clearHighlight = () => {
+      if (highlighted) highlighted.classList.remove('dashboard-tutorial-highlight');
+      highlighted = null;
+    };
+
+    const closeTutorial = () => {
+      clearHighlight();
+      overlay.remove();
+      localStorage.setItem('konvy_tutorial_seen_v1', '1');
+    };
+
+    const renderStep = () => {
+      clearHighlight();
+      const step = validSteps[currentStep];
+      if (!step) return closeTutorial();
+      const target = document.querySelector(step.selector);
+      if (!target) return closeTutorial();
+
+      highlighted = target;
+      highlighted.classList.add('dashboard-tutorial-highlight');
+      highlighted.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      titleEl.textContent = `${step.title} (${currentStep + 1}/${validSteps.length})`;
+      textEl.textContent = step.text;
+      nextBtn.textContent = currentStep === validSteps.length - 1 ? 'Finish' : 'Next';
+    };
+
+    nextBtn.addEventListener('click', () => {
+      currentStep += 1;
+      if (currentStep >= validSteps.length) {
+        closeTutorial();
+        return;
+      }
+      renderStep();
+    });
+    skipBtn.addEventListener('click', closeTutorial);
+
+    renderStep();
+  }
+
+  function promptDashboardTutorial() {
+    if (!searchForm || !searchResults) return;
+    if (localStorage.getItem('konvy_tutorial_seen_v1') === '1') return;
+    const existing = document.getElementById('dashboard-tutorial-prompt');
+    if (existing) return;
+
+    const prompt = document.createElement('div');
+    prompt.id = 'dashboard-tutorial-prompt';
+    prompt.style.cssText = 'position:fixed;inset:0;z-index:1190;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:16px;';
+    prompt.innerHTML = `
+      <div style="width:min(94vw,420px);background:#0b1222;border:1px solid rgba(14,244,117,.35);border-radius:14px;padding:16px;color:#e5f8ee;">
+        <div style="font-size:14px;font-weight:800;color:#0EF475;letter-spacing:.08em;text-transform:uppercase;">Need a quick tutorial?</div>
+        <p style="margin-top:9px;font-size:13px;line-height:1.45;color:#d1fae5;">We can guide you through filters and results with an animated step-by-step tour.</p>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px;">
+          <button type="button" data-action="no" style="border:1px solid rgba(255,255,255,.24);background:transparent;color:#cbd5e1;border-radius:9px;padding:7px 12px;font-size:12px;font-weight:700;">No thanks</button>
+          <button type="button" data-action="yes" style="border:none;background:#0EF475;color:#03140b;border-radius:9px;padding:7px 12px;font-size:12px;font-weight:800;">Start tutorial</button>
+        </div>
+      </div>
+    `;
+
+    const closePrompt = () => prompt.remove();
+    prompt.addEventListener('click', (event) => {
+      const button = event.target.closest('button[data-action]');
+      if (!button) return;
+      const action = button.getAttribute('data-action');
+      closePrompt();
+      if (action === 'yes') startDashboardTutorial();
+      else localStorage.setItem('konvy_tutorial_seen_v1', '1');
+    });
+    document.body.appendChild(prompt);
+  }
 
   // =============== COSMETIC TYPE DIALOG ===============
   window.showCosmeticTypeDialog = (itemId) => {
@@ -1032,5 +1156,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (window.KONVY_LOGGED_IN) {
     loadMyAccounts();
+  }
+
+  if (searchForm && searchResults) {
+    executeSearch({ showEmptyAlert: false });
+    window.setTimeout(promptDashboardTutorial, 450);
   }
 });
