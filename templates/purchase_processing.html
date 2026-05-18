@@ -96,8 +96,9 @@
 
 {% block scripts %}
 <script>
-  const AUTO_RETRY_MAX_ATTEMPTS = 25;
-  const AUTO_RETRY_DELAY_MS = 2000;
+  const AUTO_RETRY_MAX_ATTEMPTS = 12;
+  const AUTO_RETRY_BASE_DELAY_MS = 1200;
+  const AUTO_RETRY_MAX_DELAY_MS = 8000;
 
   async function postJSON(url, payload) {
     const response = await fetch(url, {
@@ -126,6 +127,11 @@
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
+  function getRetryDelayMs(attempt) {
+    const exponentialDelay = AUTO_RETRY_BASE_DELAY_MS * Math.pow(1.35, Math.max(0, attempt - 1));
+    return Math.min(Math.round(exponentialDelay), AUTO_RETRY_MAX_DELAY_MS);
+  }
+
   document.addEventListener('DOMContentLoaded', async () => {
     const iconEl = document.getElementById('purchase-state-icon');
     const titleEl = document.getElementById('purchase-state-title');
@@ -152,16 +158,16 @@
           iconEl.innerHTML = '';
           titleEl.textContent = 'Still processing your purchase';
           subtitleEl.textContent = `Auto retry ${attempt}/${AUTO_RETRY_MAX_ATTEMPTS}...`;
-          messageEl.textContent = `${errorMessage} Retrying automatically. Please keep this page open.`;
-          await sleep(AUTO_RETRY_DELAY_MS);
-          continue;
+          const retryDelayMs = getRetryDelayMs(attempt);
+          messageEl.textContent = `${errorMessage} Retrying automatically in ${Math.max(1, Math.ceil(retryDelayMs / 1000))}s. Please keep this page open.`;
+          await sleep(retryDelayMs);
         }
 
         iconEl.className = 'purchase-error-ring mx-auto';
         iconEl.innerHTML = '<i class="ri-close-line text-4xl text-red-300"></i>';
-        titleEl.textContent = 'Purchase still processing';
-        subtitleEl.textContent = 'We are continuing to handle your order automatically.';
-        messageEl.textContent = 'Your order could not be confirmed yet. Please wait a moment and check My Accounts.';
+        titleEl.textContent = 'Purchase could not be completed';
+        subtitleEl.textContent = 'Automatic retries were exhausted.';
+        messageEl.textContent = 'Please check My Accounts in a moment to confirm final delivery status.';
         actionsEl.classList.remove('hidden');
         actionsEl.innerHTML = `<a href="/my-accounts" class="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-500 px-6 text-sm font-semibold text-black transition hover:bg-emerald-400">Go to My Accounts</a>`;
       }
