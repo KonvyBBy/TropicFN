@@ -63,16 +63,7 @@ FAST_BUY_RATE_LIMIT_DELAY_SECONDS = 5.0
 # Delay when the marketplace returns a 5xx server error.
 FAST_BUY_SERVER_ERROR_DELAY_SECONDS = 2.0
 ACCOUNT_UNAVAILABLE_MESSAGE = "Account is no longer available. Please choose another account."
-PRICE_CHANGED_MESSAGE = "The account price changed while we were checking it. Please try again."
 ACCOUNT_UNAVAILABLE_KEYWORDS = ("sold", "not found", "unavailable", "deleted", "archived")
-PRICE_CHANGED_KEYWORDS = (
-    "price changed",
-    "changed price",
-    "different price",
-    "current price",
-    "actual price",
-    "price mismatch",
-)
 BALANCE_ERROR_KEYWORDS = (
     "balance_id",
     "insufficient balance",
@@ -107,15 +98,6 @@ class PurchaseFlowError(Exception):
         self.code = code
         self.message = message
         self.status_code = status_code
-
-
-def _is_price_changed_error(error_text: str) -> bool:
-    if not error_text:
-        return False
-
-    normalized_error_text = str(error_text).lower()
-
-    return any(keyword in normalized_error_text for keyword in PRICE_CHANGED_KEYWORDS)
 
 
 def _build_marketplace_error_message(
@@ -800,6 +782,21 @@ def _extract_account_price(account: dict) -> float:
     return price
 
 
+def _extract_fast_buy_price(account: dict) -> Optional[int]:
+    if not isinstance(account, dict):
+        return None
+
+    try:
+        rub_price = int(account.get("rub_price") or 0)
+    except (TypeError, ValueError):
+        rub_price = 0
+
+    if rub_price > 0:
+        return rub_price
+
+    return None
+
+
 def get_live_account_purchase_price(item_id: int) -> float:
     account = find_account_by_item_id(item_id)
     if not account:
@@ -1114,10 +1111,13 @@ def fetch_cheapest_accounts(
     return all_accounts, base_params
 
 
-def confirm_buy_account(item_id: int, price: float):
+def confirm_buy_account(item_id: int):
     """
-    Purchase an account using POST /{item_id}/fast-buy.
-    Requires price (integer, current market price) and optionally balance_id.
+    Initiate a marketplace fast-buy purchase for an account item.
+    Sends marketplace price and optional balance_id when available.
+    If no balance_id is configured, the request is sent without it.
+    Returns parsed marketplace JSON on success.
+    Raises PurchaseFlowError for known purchase failures, including unavailable accounts.
     """
     url = f"https://prod-api.lzt.market/{item_id}/fast-buy"
     headers_fb = {
@@ -1125,8 +1125,18 @@ def confirm_buy_account(item_id: int, price: float):
         "content-type": "application/json",
         "authorization": f"Bearer {MARKET_API_TOKEN}",
     }
-    # price must be an integer (current market price in the account's listed currency)
-    payload: dict = {"price": int(round(float(price)))}
+    payload: Dict[str, Any] = {}
+    account = find_account_by_item_id(item_id)
+    if not account:
+        raise PurchaseFlowError(
+            "account_unavailable",
+            ACCOUNT_UNAVAILABLE_MESSAGE,
+            409,
+        )
+    fast_buy_price = _extract_fast_buy_price(account)
+    if fast_buy_price is not None:
+        payload["price"] = fast_buy_price
+
     balance_id = os.environ.get("LZT_BALANCE_ID")
     if balance_id:
         try:
@@ -1255,12 +1265,6 @@ def confirm_buy_account(item_id: int, price: float):
                 raise PurchaseFlowError(
                     "account_unavailable",
                     ACCOUNT_UNAVAILABLE_MESSAGE,
-                    409,
-                )
-            if _is_price_changed_error(error_text):
-                raise PurchaseFlowError(
-                    "price_changed",
-                    PRICE_CHANGED_MESSAGE,
                     409,
                 )
             if has_balance_error:
@@ -4213,7 +4217,7 @@ def api_fortnite_buy():
 
     # STEP 1: fast-buy on market
     try:
-        purchase_result = confirm_buy_account(item_id, live_price)
+        purchase_result = confirm_buy_account(item_id)
     except PurchaseFlowError as e:
         app.logger.warning("Purchase blocked for item %s: %s", item_id, e.message)
         return jsonify({"error": e.code, "message": e.message}), e.status_code
