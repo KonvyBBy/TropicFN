@@ -1285,11 +1285,6 @@ def _build_purchase_webhook_payload(
             "inline": True,
         },
         {
-            "name": "⭐ Rating",
-            "value": "Not rated yet",
-            "inline": True,
-        },
-        {
             "name": "📦 Account",
             "value": product_summary,
             "inline": False,
@@ -2150,7 +2145,7 @@ def _normalize_locked_purchase(session_value: Any) -> Optional[Dict[str, Any]]:
         created_at = int(time.time())
     if created_at <= 0:
         created_at = int(time.time())
-    if created_at > 0 and (time.time() - float(created_at)) > PURCHASE_LOCK_MAX_SECONDS:
+    if (time.time() - float(created_at)) > PURCHASE_LOCK_MAX_SECONDS:
         return None
     item_title = (
         str(session_value.get("item_title") or DEFAULT_PURCHASE_ITEM_TITLE).strip()
@@ -2216,7 +2211,11 @@ def enforce_purchase_lock():
             requested_item_id = int(requested_item_id_text or 0)
         except (TypeError, ValueError):
             requested_item_id = 0
-        if path == "/purchase-processing" and requested_item_id > 0 and requested_item_id != locked_purchase["item_id"]:
+        if (
+            path == "/purchase-processing"
+            and requested_item_id > 0
+            and requested_item_id != locked_purchase["item_id"]
+        ):
             return redirect(
                 url_for(
                     "purchase_processing_page",

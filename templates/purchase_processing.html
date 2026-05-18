@@ -170,7 +170,9 @@
         iconEl.innerHTML = '<i class="ri-close-line text-4xl text-red-300"></i>';
         try {
           await postJSON('/api/fortnite/purchase-lock/release', { item_id: itemId });
-        } catch (releaseError) {}
+        } catch (releaseError) {
+          console.warn('Failed to release purchase lock:', releaseError);
+        }
         titleEl.textContent = 'Purchase could not be completed';
         subtitleEl.textContent = 'Automatic retries were exhausted.';
         messageEl.textContent = 'Automatic retries ended. Check My Accounts in a moment; if the account is still missing, contact support.';
