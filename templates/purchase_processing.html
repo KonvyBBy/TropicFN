@@ -82,7 +82,7 @@
     </div>
 
     <p id="purchase-state-message" class="mt-5 text-sm text-zinc-400">
-      Your purchase for <strong class="text-zinc-200">{{ item_title }}</strong> with account number <strong class="text-zinc-200">#{{ item_id }}</strong> is processing. This can take up to a minute, please be patient.
+      Your purchase for <strong class="text-zinc-200">{{ item_title }}</strong> with account number <strong class="text-zinc-200">#{{ item_id }}</strong> is processing. This can take up to a minute. Please be patient.
     </p>
 
     <div id="purchase-actions" class="mt-7 hidden">
@@ -141,7 +141,7 @@
       iconEl.innerHTML = '<i class="ri-close-line text-4xl text-red-300"></i>';
       titleEl.textContent = 'Purchase failed';
       subtitleEl.textContent = 'We could not complete this purchase.';
-      messageEl.textContent = error?.message || 'An unexpected error occurred while processing your purchase.';
+      messageEl.textContent = error?.message || 'An unexpected error occurred. Please check your balance and try again later.';
       actionsEl.classList.remove('hidden');
       actionsEl.innerHTML = `<a href="/account/${itemId}" class="inline-flex h-11 items-center justify-center rounded-xl bg-white/10 px-6 text-sm font-semibold text-white transition hover:bg-white/20">Try Again</a>`;
     }

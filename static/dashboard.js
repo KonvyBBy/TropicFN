@@ -1144,7 +1144,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return `Account ${fallbackIndex + 1}`;
   }
 
-  function getAccountNumber(acc) {
+  function getAccountItemId(acc) {
     const item = acc?.purchase_result?.item || {};
     // Canonical purchase payload field is item_id.
     // fortnite_item_id and id appear in older/alternate marketplace payload shapes.
@@ -1174,7 +1174,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const accountName = String(acc.name || "").trim() || `Account ${cardIndex + 1}`;
     const accountNameInputId = `my-account-name-input-${cardIndex}`;
     const accountNameStatusId = `my-account-name-status-${cardIndex}`;
-    const accountNumber = getAccountNumber(acc);
+    const accountNumber = getAccountItemId(acc);
     const accountTitle = getAccountTitle(item, skinsCount, cardIndex);
     const isOpen = false;
 
