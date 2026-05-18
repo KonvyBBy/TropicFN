@@ -1114,9 +1114,10 @@ def fetch_cheapest_accounts(
 def confirm_buy_account(item_id: int):
     """
     Initiate a marketplace fast-buy purchase for an account item.
-    Sends marketplace price and balance_id when available.
+    Sends marketplace price and optional balance_id when available.
+    If no balance_id is configured, the request is sent without it.
     Returns parsed marketplace JSON on success.
-    Raises PurchaseFlowError for known purchase failures.
+    Raises PurchaseFlowError for known purchase failures, including unavailable accounts.
     """
     url = f"https://prod-api.lzt.market/{item_id}/fast-buy"
     headers_fb = {
