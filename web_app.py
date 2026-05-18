@@ -2143,10 +2143,12 @@ def _normalize_locked_purchase(session_value: Any) -> Optional[Dict[str, Any]]:
         return None
     if item_id <= 0:
         return None
-    created_at = int(time.time())
+    created_at = 0
     try:
-        created_at = int(session_value.get("created_at") or created_at)
+        created_at = int(session_value.get("created_at") or 0)
     except (TypeError, ValueError):
+        created_at = int(time.time())
+    if created_at <= 0:
         created_at = int(time.time())
     if created_at > 0 and (time.time() - float(created_at)) > PURCHASE_LOCK_MAX_SECONDS:
         return None
@@ -2214,7 +2216,7 @@ def enforce_purchase_lock():
             requested_item_id = int(requested_item_id_text or 0)
         except (TypeError, ValueError):
             requested_item_id = 0
-        if path == "/purchase-processing" and requested_item_id and requested_item_id != locked_purchase["item_id"]:
+        if path == "/purchase-processing" and requested_item_id > 0 and requested_item_id != locked_purchase["item_id"]:
             return redirect(
                 url_for(
                     "purchase_processing_page",
@@ -2224,6 +2226,17 @@ def enforce_purchase_lock():
             )
         return None
 
+    if path == "/api/fortnite/purchase-lock/release":
+        payload = request.get_json(silent=True) or {}
+        release_item_id = 0
+        try:
+            release_item_id = int(payload.get("item_id") or 0)
+        except (TypeError, ValueError):
+            release_item_id = 0
+        if release_item_id > 0 and release_item_id == locked_purchase["item_id"]:
+            return None
+        return _purchase_in_progress_response(waiting_for_other_item=True)
+
     if path == "/api/fortnite/buy":
         payload = request.get_json(silent=True) or {}
         incoming_item_id = 0
@@ -2231,7 +2244,7 @@ def enforce_purchase_lock():
             incoming_item_id = int(payload.get("item_id") or 0)
         except (TypeError, ValueError):
             incoming_item_id = 0
-        if incoming_item_id and incoming_item_id != locked_purchase["item_id"]:
+        if incoming_item_id > 0 and incoming_item_id != locked_purchase["item_id"]:
             return _purchase_in_progress_response(waiting_for_other_item=True)
         return None
 
@@ -5338,6 +5351,22 @@ def api_fortnite_buy():
 
     clear_purchase_lock()
     return jsonify(response_payload)
+
+
+@app.route("/api/fortnite/purchase-lock/release", methods=["POST"])
+@login_required_api
+def api_release_purchase_lock():
+    data = request.json or {}
+    item_id = int(data.get("item_id") or 0)
+    if not item_id:
+        return jsonify({"error": "item_id required"}), 400
+
+    locked_purchase = get_purchase_lock()
+    if locked_purchase and int(locked_purchase["item_id"]) == item_id:
+        clear_purchase_lock()
+        return jsonify({"message": "Purchase lock cleared."})
+
+    return jsonify({"message": "No active purchase lock for this item."})
 
 
 @app.route("/api/fortnite/my-accounts", methods=["POST"])
