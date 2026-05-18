@@ -804,8 +804,116 @@ document.addEventListener("DOMContentLoaded", () => {
   let myAccounts = [];
   let accIndex = 0;
 
+  function formatPurchaseDate(timestamp) {
+    const tsNum = Number(timestamp || 0);
+    if (!Number.isFinite(tsNum) || tsNum <= 0) return "Unknown date";
+    const date = new Date(tsNum * 1000);
+    if (Number.isNaN(date.getTime())) return "Unknown date";
+    return date.toLocaleDateString(undefined, { month: "numeric", day: "numeric", year: "numeric" });
+  }
+
+  function formatPrice(rawPrice) {
+    const parsed = Number(rawPrice);
+    if (!Number.isFinite(parsed)) return "N/A";
+    return `€${parsed.toFixed(2)}`;
+  }
+
+  function splitRawCredentials(raw) {
+    if (!raw) return { login: "", password: "" };
+    const text = String(raw);
+    const sepIndex = text.indexOf(":");
+    if (sepIndex === -1) return { login: text, password: "" };
+    return {
+      login: text.slice(0, sepIndex),
+      password: text.slice(sepIndex + 1),
+    };
+  }
+
+  async function copyToClipboard(text) {
+    const value = String(text || "");
+    if (!value) return;
+    try {
+      await navigator.clipboard.writeText(value);
+      return;
+    } catch (_) {}
+
+    const fallback = document.createElement("textarea");
+    fallback.value = value;
+    fallback.setAttribute("readonly", "");
+    fallback.style.position = "absolute";
+    fallback.style.left = "-9999px";
+    document.body.appendChild(fallback);
+    fallback.select();
+    document.execCommand("copy");
+    fallback.remove();
+  }
+
+  function buildCredRow(label, value) {
+    const safeLabel = escapeHtml(label);
+    const safeValue = escapeHtml(value || "N/A");
+    return `
+      <div class="my-account-row">
+        <span class="my-account-row-label">${safeLabel}</span>
+        <span class="my-account-row-value">${safeValue}</span>
+        <button type="button" class="my-account-copy-btn" data-copy="${safeValue}" aria-label="Copy ${safeLabel}">
+          <i class="ri-file-copy-line"></i>
+        </button>
+      </div>
+    `;
+  }
+
+  function bindMyAccountActions() {
+    const root = qs("my-accounts-view");
+    if (!root) return;
+
+    root.querySelectorAll(".my-account-copy-btn").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        await copyToClipboard(btn.dataset.copy || "");
+        btn.classList.add("copied");
+        setTimeout(() => btn.classList.remove("copied"), 800);
+      });
+    });
+
+    const saveBtn = root.querySelector(".my-account-name-save");
+    const input = root.querySelector(".my-account-name-input");
+    const status = root.querySelector(".my-account-name-status");
+    if (!saveBtn || !input || !status) return;
+
+    const runSave = async () => {
+      const nextName = String(input.value || "").trim();
+      if (!nextName) {
+        status.textContent = "Enter a name first.";
+        status.classList.add("error");
+        return;
+      }
+      status.textContent = "Saving...";
+      status.classList.remove("error");
+      saveBtn.disabled = true;
+      try {
+        await postJSON("/api/fortnite/name-account", { purchase_index: accIndex, name: nextName });
+        if (myAccounts[accIndex]) myAccounts[accIndex].name = nextName;
+        status.textContent = "Saved.";
+      } catch (e) {
+        status.textContent = e?.message || "Failed to save.";
+        status.classList.add("error");
+      } finally {
+        saveBtn.disabled = false;
+      }
+    };
+
+    saveBtn.addEventListener("click", runSave);
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        runSave();
+      }
+    });
+  }
+
   async function loadMyAccounts() {
     if (!window.KONVY_LOGGED_IN) return;
+    const view = qs("my-accounts-view");
+    if (!view) return;
     
     try {
       const res = await postJSON("/api/fortnite/my-accounts");
@@ -813,38 +921,90 @@ document.addEventListener("DOMContentLoaded", () => {
       accIndex = 0;
       renderAccount();
     } catch {
-      qs("my-accounts-view").textContent = "Failed to load accounts.";
+      view.textContent = "Failed to load accounts.";
     }
   }
 
   function renderAccount() {
+    const view = qs("my-accounts-view");
+    const indicator = qs("account-indicator");
+    if (!view) return;
+
     if (!myAccounts.length) {
-      qs("my-accounts-view").textContent = "No purchased accounts.";
+      view.textContent = "No purchased accounts.";
+      if (indicator) indicator.textContent = "";
       return;
     }
 
     const acc = myAccounts[accIndex];
     const item = acc.purchase_result?.item || {};
-    const accountName = acc.name || "Unnamed Account";
+    const accountName = String(acc.name || "").trim() || `Account ${accIndex + 1}`;
+    const loginData = item.loginData || {};
+    const emailData = item.emailLoginData || {};
+    const parsedFortnite = splitRawCredentials(loginData.raw);
+    const parsedEmail = splitRawCredentials(emailData.raw);
+    const fortniteLogin = loginData.login || parsedFortnite.login || "N/A";
+    const fortnitePassword = loginData.password || parsedFortnite.password || "N/A";
+    const fortniteCombo = fortniteLogin !== "N/A" && fortnitePassword !== "N/A"
+      ? `${fortniteLogin}:${fortnitePassword}`
+      : "N/A";
+    const emailLogin = emailData.login || parsedEmail.login || "N/A";
+    const emailPassword = emailData.password || parsedEmail.password || "N/A";
+    const emailOldPassword = emailData.oldPassword || "N/A";
+    const emailSecretAnswer = emailData.newSecretAnswer || emailData.secretAnswer || "N/A";
+    const emailCombo = emailLogin !== "N/A" && emailPassword !== "N/A"
+      ? `${emailLogin}:${emailPassword}`
+      : "N/A";
+    const skinsCount = Number(item.fortnite_skin_count || item.fortniteSkinCount || (item.fortniteSkins || []).length || 0);
+    const delivered = String(acc.purchase_result?.status || "").toLowerCase() === "ok";
+    const purchaseDate = formatPurchaseDate(acc.timestamp);
+    const displayPrice = formatPrice(item.priceWithSellerFee ?? item.price);
 
-    const emailRaw = item.emailLoginData?.raw || "N/A";
-    const epicRaw = item.loginData?.raw || "N/A";
+    view.innerHTML = `
+      <article class="my-account-panel">
+        <div class="my-account-top">
+          <div>
+            <div class="my-account-title">${escapeHtml(`${skinsCount} Skins`)}</div>
+            <div class="my-account-date">${escapeHtml(purchaseDate)}</div>
+            <div class="my-account-state ${delivered ? "is-delivered" : ""}">
+              <i class="${delivered ? "ri-check-line" : "ri-time-line"}"></i>
+              <span>${delivered ? "Delivered" : "Pending"}</span>
+            </div>
+          </div>
+          <div class="my-account-price">${escapeHtml(displayPrice)}</div>
+        </div>
 
-    let emailSite = "Unknown";
-    if (emailRaw.includes("@")) {
-      emailSite = emailRaw.split(":")[0].split("@")[1] || "Unknown";
-    }
+        <div class="my-account-name-wrap">
+          <label class="my-account-name-label">Account Name</label>
+          <div class="my-account-name-controls">
+            <input type="text" class="my-account-name-input" maxlength="50" value="${escapeHtml(accountName)}" placeholder="Enter account name">
+            <button type="button" class="my-account-name-save">Save</button>
+          </div>
+          <div class="my-account-name-status"></div>
+        </div>
 
-    qs("my-accounts-view").innerHTML = `
-      <div class="account-name-header"></div>
-      <div class="cred-block"><label>Email Login</label><code>${emailRaw}</code></div>
-      <div class="cred-block"><label>Email Site</label><code>${emailSite}</code></div>
-      <div class="cred-block"><label>Epic Login</label><code>${epicRaw}</code></div>
+        <section class="my-account-section">
+          <h3>FORTNITE LOGIN</h3>
+          ${buildCredRow("Login", fortniteLogin)}
+          ${buildCredRow("Password", fortnitePassword)}
+          ${buildCredRow("Login & Password", fortniteCombo)}
+        </section>
+
+        <section class="my-account-section">
+          <h3>EMAIL ACCESS</h3>
+          ${buildCredRow("Login", emailLogin)}
+          ${buildCredRow("Password", emailPassword)}
+          ${buildCredRow("Old Password", emailOldPassword)}
+          ${buildCredRow("Secret Answer", emailSecretAnswer)}
+          ${buildCredRow("Login & Password", emailCombo)}
+        </section>
+      </article>
     `;
-    qs("my-accounts-view").querySelector(".account-name-header").textContent = accountName;
+    bindMyAccountActions();
 
-    qs("account-indicator").textContent =
-      `Account ${accIndex + 1} / ${myAccounts.length}`;
+    if (indicator) {
+      indicator.textContent = `Account ${accIndex + 1} / ${myAccounts.length}`;
+    }
   }
 
   qs("prev-account")?.addEventListener("click", () => {

@@ -32,7 +32,7 @@
     <span id="account-indicator" class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] text-zinc-400"></span>
   </div>
 
-  <div id="my-accounts-view" class="rounded-2xl border border-white/10 bg-black/25 p-5 space-y-4 min-h-[140px]">
+  <div id="my-accounts-view" class="rounded-2xl border border-white/10 bg-black/25 p-3 sm:p-4 min-h-[140px]">
     <div class="text-sm text-zinc-500 text-center py-4">Loading...</div>
   </div>
 
@@ -73,10 +73,197 @@
 
 {% block scripts %}
 <style>
-  #my-accounts-view .cred-block { display: flex; flex-direction: column; gap: 4px; }
-  #my-accounts-view .cred-block label { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #71717a; }
-  #my-accounts-view .cred-block code { font-size: 0.82rem; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 8px 12px; color: #e4e4e7; word-break: break-all; display: block; }
-  #my-accounts-view .account-name-header { font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 12px; font-family: 'Space Grotesk', sans-serif; }
+  #my-accounts-view .my-account-panel {
+    border: 1px solid rgba(255,255,255,0.08);
+    background: #0c1322;
+    border-radius: 16px;
+    padding: 16px;
+    color: #e8edf8;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  #my-accounts-view .my-account-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  #my-accounts-view .my-account-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.2;
+  }
+
+  #my-accounts-view .my-account-date {
+    margin-top: 2px;
+    color: #8ea0bc;
+    font-size: 0.82rem;
+  }
+
+  #my-accounts-view .my-account-state {
+    margin-top: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.86rem;
+    color: #8ea0bc;
+    font-weight: 600;
+  }
+
+  #my-accounts-view .my-account-state.is-delivered {
+    color: #00e289;
+  }
+
+  #my-accounts-view .my-account-price {
+    color: #00e289;
+    font-weight: 700;
+    font-size: 1.2rem;
+    line-height: 1.2;
+  }
+
+  #my-accounts-view .my-account-name-wrap {
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    background: rgba(11, 18, 32, 0.8);
+    padding: 10px;
+  }
+
+  #my-accounts-view .my-account-name-label {
+    display: block;
+    font-size: 0.74rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #8ea0bc;
+    margin-bottom: 8px;
+    font-weight: 700;
+  }
+
+  #my-accounts-view .my-account-name-controls {
+    display: flex;
+    gap: 8px;
+  }
+
+  #my-accounts-view .my-account-name-input {
+    flex: 1;
+    min-width: 0;
+    background: #0b1629;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 10px;
+    color: #f4f7ff;
+    padding: 9px 11px;
+    font-size: 0.86rem;
+    outline: none;
+  }
+
+  #my-accounts-view .my-account-name-input:focus {
+    border-color: rgba(16, 185, 129, 0.7);
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.12);
+  }
+
+  #my-accounts-view .my-account-name-save {
+    border: none;
+    background: #00d17f;
+    color: #062116;
+    border-radius: 10px;
+    padding: 0 14px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .15s ease;
+  }
+
+  #my-accounts-view .my-account-name-save:hover { background: #17e592; }
+  #my-accounts-view .my-account-name-save:disabled { opacity: .65; cursor: not-allowed; }
+
+  #my-accounts-view .my-account-name-status {
+    margin-top: 6px;
+    min-height: 16px;
+    font-size: 0.75rem;
+    color: #9cd9bc;
+  }
+
+  #my-accounts-view .my-account-name-status.error { color: #ff9f9f; }
+
+  #my-accounts-view .my-account-section {
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    background: rgba(5, 10, 20, 0.55);
+    overflow: hidden;
+  }
+
+  #my-accounts-view .my-account-section h3 {
+    margin: 0;
+    padding: 11px 12px;
+    font-size: 0.95rem;
+    font-weight: 800;
+    letter-spacing: .04em;
+    color: #fff;
+    background: rgba(255,255,255,0.02);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+
+  #my-accounts-view .my-account-row {
+    display: grid;
+    grid-template-columns: minmax(92px, 125px) 1fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  #my-accounts-view .my-account-row:last-child { border-bottom: none; }
+
+  #my-accounts-view .my-account-row-label {
+    color: #89a0c2;
+    font-size: 0.84rem;
+  }
+
+  #my-accounts-view .my-account-row-value {
+    color: #f3f7ff;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 0.84rem;
+    word-break: break-all;
+  }
+
+  #my-accounts-view .my-account-copy-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.14);
+    background: transparent;
+    color: #9caec9;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all .15s ease;
+  }
+
+  #my-accounts-view .my-account-copy-btn:hover {
+    border-color: rgba(0, 209, 127, 0.6);
+    color: #00d17f;
+  }
+
+  #my-accounts-view .my-account-copy-btn.copied {
+    border-color: rgba(0, 209, 127, 0.8);
+    color: #00e289;
+  }
+
+  @media (max-width: 640px) {
+    #my-accounts-view .my-account-row {
+      grid-template-columns: 1fr;
+      gap: 6px;
+      align-items: flex-start;
+    }
+    #my-accounts-view .my-account-copy-btn { margin-top: 2px; }
+    #my-accounts-view .my-account-name-controls { flex-direction: column; }
+    #my-accounts-view .my-account-name-save { height: 38px; }
+  }
 </style>
 <script>
   window.KONVY_LOGGED_IN = true;
