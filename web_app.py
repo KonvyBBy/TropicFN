@@ -1133,8 +1133,8 @@ def save_purchase_record(
     item_id = _extract_purchase_item_id(purchase_result)
 
     if item_id is not None:
-        for index, existing_value in reversed(list(enumerate(user_list))):
-            existing_entry = existing_value if isinstance(existing_value, dict) else {}
+        for index in range(len(user_list) - 1, -1, -1):
+            existing_entry = user_list[index] if isinstance(user_list[index], dict) else {}
             existing_result = existing_entry.get("purchase_result")
             if _extract_purchase_item_id(existing_result) != item_id:
                 continue

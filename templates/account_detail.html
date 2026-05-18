@@ -312,10 +312,13 @@
 
   /** Extract a positive numeric item ID from common purchase payload field names. */
   function extractPurchaseItemId(purchaseResult) {
-    const rawItemId =
-      findNestedValue(purchaseResult, 'item_id') ??
-      findNestedValue(purchaseResult, 'fortnite_item_id') ??
-      findNestedValue(purchaseResult, 'itemId');
+    let rawItemId = findNestedValue(purchaseResult, 'item_id');
+    if (rawItemId === null || rawItemId === '') {
+      rawItemId = findNestedValue(purchaseResult, 'fortnite_item_id');
+    }
+    if (rawItemId === null || rawItemId === '') {
+      rawItemId = findNestedValue(purchaseResult, 'itemId');
+    }
     const itemId = Number(rawItemId);
     return Number.isFinite(itemId) && itemId > 0 ? itemId : null;
   }
