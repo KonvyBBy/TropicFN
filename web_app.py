@@ -211,10 +211,18 @@ def _fetch_purchase_result_by_item_id(item_id: int) -> Optional[dict]:
     return _normalize_purchase_result_payload(resp.json())
 
 
-def _recover_purchase_result(item_id: int, reason: str, initial_result: Optional[dict] = None) -> Optional[dict]:
+def _recover_purchase_result(
+    item_id: int,
+    reason: str,
+    initial_result: Optional[dict] = None,
+    initial_delay_seconds: float = 0.0,
+) -> Optional[dict]:
     """Retry the item lookup after ambiguous purchase responses and return recovered credentials."""
     if isinstance(initial_result, dict) and _purchase_result_has_credentials(initial_result):
         return initial_result
+
+    if initial_delay_seconds > 0:
+        time.sleep(initial_delay_seconds)
 
     for attempt in range(PURCHASE_RECOVERY_MAX_ATTEMPTS):
         try:
@@ -1865,6 +1873,14 @@ def confirm_buy_account(item_id: int):
 
         # --- Terminal error classification ---
         if resp.status_code == 404:
+            recovered_result = _recover_purchase_result(
+                item_id,
+                "account_unavailable_404",
+                data if isinstance(data, dict) else None,
+                initial_delay_seconds=PURCHASE_DELAY_AFTER_CHECK_SECONDS,
+            )
+            if recovered_result:
+                return recovered_result
             raise PurchaseFlowError(
                 "account_unavailable",
                 ACCOUNT_UNAVAILABLE_MESSAGE,
@@ -1873,6 +1889,14 @@ def confirm_buy_account(item_id: int):
 
         if resp.status_code == 403:
             if any(keyword in error_text for keyword in ACCOUNT_UNAVAILABLE_KEYWORDS):
+                recovered_result = _recover_purchase_result(
+                    item_id,
+                    "account_unavailable_403",
+                    data if isinstance(data, dict) else None,
+                    initial_delay_seconds=PURCHASE_DELAY_AFTER_CHECK_SECONDS,
+                )
+                if recovered_result:
+                    return recovered_result
                 raise PurchaseFlowError(
                     "account_unavailable",
                     ACCOUNT_UNAVAILABLE_MESSAGE,
