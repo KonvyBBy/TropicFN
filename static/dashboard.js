@@ -843,13 +843,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function buildCredRow(label, value) {
     const safeLabel = escapeHtml(label);
-    const safeAriaLabel = escapeHtml(`Copy ${label}`);
-    const safeValue = escapeHtml(value || "N/A");
+    const rawValue = String(value || "N/A");
+    const safeValue = escapeHtml(rawValue);
+    const encodedCopyValue = encodeURIComponent(rawValue);
     return `
       <div class="my-account-row">
         <span class="my-account-row-label">${safeLabel}</span>
         <span class="my-account-row-value">${safeValue}</span>
-        <button type="button" class="my-account-copy-btn" data-copy="${safeValue}" aria-label="${safeAriaLabel}">
+        <button type="button" class="my-account-copy-btn" data-copy="${encodedCopyValue}" aria-label="Copy credential value">
           <i class="ri-file-copy-line"></i>
         </button>
       </div>
@@ -862,7 +863,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     root.querySelectorAll(".my-account-copy-btn").forEach((btn) => {
       btn.addEventListener("click", async () => {
-        const copied = await copyToClipboard(btn.dataset.copy || "");
+        const copyValue = decodeURIComponent(btn.dataset.copy || "");
+        const copied = await copyToClipboard(copyValue);
         if (copied) {
           btn.classList.add("copied");
           setTimeout(() => btn.classList.remove("copied"), 800);
