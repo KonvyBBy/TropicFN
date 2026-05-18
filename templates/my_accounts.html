@@ -137,7 +137,12 @@
   .ma-skeleton { animation: maPulse 1.5s ease-in-out infinite; border-radius: 10px; background: rgba(255,255,255,.06); }
   @keyframes maPulse { 0%,100%{opacity:.4} 50%{opacity:.8} }
 
-  @media (max-width: 560px) {
+  .ma-notice-hidden { display: none; }
+
+  /* pending badge */
+  .ma-badge.pending {
+    background: rgba(255,176,0,.12); color: #ffc454; border-color: rgba(255,176,0,.3);
+  }
     .ma-cred-row { grid-template-columns: 1fr; gap: 4px; }
     .ma-copy-btn { margin-top: 2px; }
   }
@@ -166,8 +171,8 @@
   </div>
 </div>
 
-<!-- security notice -->
-<section class="flex items-start gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/5 px-4 py-3.5 sm:px-5" id="ma-notice" style="display:none!important;">
+<!-- security notice (hidden until accounts load) -->
+<section class="flex items-start gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/5 px-4 py-3.5 sm:px-5 ma-notice-hidden" id="ma-notice">
   <i class="ri-shield-line text-amber-400 mt-0.5 shrink-0"></i>
   <div class="text-sm text-zinc-400 leading-relaxed space-y-1">
     <p>
@@ -211,10 +216,11 @@
 
   function buildCredRow(label, value) {
     const raw = String(value || 'N/A');
+    const plainLabel = String(label || '');
     return `<div class="ma-cred-row">
-      <span class="ma-cred-label">${escHtml(label)}</span>
+      <span class="ma-cred-label">${escHtml(plainLabel)}</span>
       <span class="ma-cred-value">${escHtml(raw)}</span>
-      <button type="button" class="ma-copy-btn" data-copy="${encVal(raw)}" aria-label="Copy ${escHtml(label)}"><i class="ri-file-copy-line"></i></button>
+      <button type="button" class="ma-copy-btn" data-copy="${encVal(raw)}" aria-label="Copy ${plainLabel.replace(/[<>"'&]/g, '')}"><i class="ri-file-copy-line"></i></button>
     </div>`;
   }
 
@@ -256,7 +262,7 @@
           <div class="ma-name">${escHtml(name)}</div>
           <div class="ma-date">Purchased ${escHtml(date)} · ${skinsCount} skins</div>
         </div>
-        <span class="ma-badge ${delivered ? '' : 'pending'}" style="${delivered ? '' : 'background:rgba(255,176,0,.12);color:#ffc454;border-color:rgba(255,176,0,.3);'}">
+        <span class="ma-badge ${delivered ? '' : 'pending'}">
           <i class="${delivered ? 'ri-check-line' : 'ri-time-line'}"></i>
           ${delivered ? 'Delivered' : 'Pending'}
         </span>
@@ -321,13 +327,18 @@
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
         let val = '';
-        try { val = decodeURIComponent(btn.dataset.copy || ''); } catch(_) { val = btn.dataset.copy || ''; }
+        try { val = decodeURIComponent(btn.dataset.copy || ''); } catch(decodeErr) {
+          console.error('Failed to decode copy value:', decodeErr);
+          val = btn.dataset.copy || '';
+        }
         if (!val) return;
         try {
           await navigator.clipboard.writeText(val);
           btn.classList.add('copied');
           setTimeout(() => btn.classList.remove('copied'), 800);
-        } catch(_) {}
+        } catch(clipErr) {
+          console.warn('Clipboard write failed:', clipErr);
+        }
       });
     });
 
@@ -397,7 +408,7 @@
     wrap.querySelectorAll('.ma-card').forEach(card => bindCard(card, accounts));
 
     // show security notice
-    if (notice) notice.style.removeProperty('display');
+    if (notice) notice.classList.remove('ma-notice-hidden');
   }
 
   document.addEventListener('DOMContentLoaded', init);

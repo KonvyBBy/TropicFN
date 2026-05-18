@@ -69,6 +69,7 @@
       <button
         id="instant-buy-btn"
         type="button"
+        aria-live="polite"
         class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
       >
         Purchase Account
@@ -320,8 +321,10 @@
       namingSave.disabled = true;
       namingError.textContent = '';
       try {
-        if (currentPurchaseIndex !== null) {
+        if (currentPurchaseIndex !== null && currentPurchaseIndex !== undefined) {
           await postJSON('/api/fortnite/name-account', { purchase_index: currentPurchaseIndex, name });
+        } else {
+          throw new Error('Purchase index unavailable. Your account was purchased — please rename it from My Accounts.');
         }
       } catch (e) {
         namingError.textContent = e.message || 'Failed to save name.';
