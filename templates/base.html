@@ -207,6 +207,11 @@
 
         <div class="flex shrink-0 items-center gap-1.5 sm:gap-2">
           {% if logged_in %}
+          <a href="/my-accounts" class="inline-flex items-center justify-center gap-1 rounded-xl border border-white/15 bg-white/5 px-2.5 py-1.5 text-[11px] font-medium text-zinc-300 transition hover:text-white sm:hidden whitespace-nowrap">
+            <i class="ri-user-3-line text-xs"></i>
+            <span>Profile</span>
+          </a>
+          <span class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-[11px] font-medium text-emerald-400 sm:hidden whitespace-nowrap">${{ balance }}</span>
           <div class="hidden items-center gap-2 sm:flex">
             <span class="text-xs text-zinc-400">{{ username }}</span>
             <span class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-xs font-medium text-emerald-400">${{ balance }}</span>
