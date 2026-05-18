@@ -96,6 +96,8 @@ FAST_BUY_RETRYABLE_KEYWORDS = (
     "try later",
 )
 PURCHASE_LOCK_SESSION_KEY = "purchase_lock"
+DEFAULT_PURCHASE_ITEM_TITLE = "Fortnite Account"
+MAX_PURCHASE_ITEM_TITLE_LENGTH = 160
 
 
 class PurchaseFlowError(Exception):
@@ -1282,7 +1284,7 @@ def _build_purchase_webhook_payload(
         },
         {
             "name": "⭐ Rating",
-            "value": "★★★★★ (5/5)",
+            "value": "Not rated yet",
             "inline": True,
         },
         {
@@ -2139,10 +2141,13 @@ def _normalize_locked_purchase(session_value: Any) -> Optional[Dict[str, Any]]:
         return None
     if item_id <= 0:
         return None
-    item_title = str(session_value.get("item_title") or "Fortnite Account").strip() or "Fortnite Account"
+    item_title = (
+        str(session_value.get("item_title") or DEFAULT_PURCHASE_ITEM_TITLE).strip()
+        or DEFAULT_PURCHASE_ITEM_TITLE
+    )
     return {
         "item_id": item_id,
-        "item_title": item_title[:160],
+        "item_title": item_title[:MAX_PURCHASE_ITEM_TITLE_LENGTH],
     }
 
 
@@ -2156,12 +2161,22 @@ def get_purchase_lock() -> Optional[Dict[str, Any]]:
 def set_purchase_lock(item_id: int, item_title: str) -> None:
     session[PURCHASE_LOCK_SESSION_KEY] = {
         "item_id": int(item_id),
-        "item_title": (str(item_title or "Fortnite Account").strip() or "Fortnite Account")[:160],
+        "item_title": (
+            str(item_title or DEFAULT_PURCHASE_ITEM_TITLE).strip()
+            or DEFAULT_PURCHASE_ITEM_TITLE
+        )[:MAX_PURCHASE_ITEM_TITLE_LENGTH],
     }
 
 
 def clear_purchase_lock() -> None:
     session.pop(PURCHASE_LOCK_SESSION_KEY, None)
+
+
+def _purchase_in_progress_response(waiting_for_other_item: bool = False):
+    message = "Purchase is processing. Please wait until it completes."
+    if waiting_for_other_item:
+        message = "Another purchase is processing. Please wait until it completes."
+    return jsonify({"error": "purchase_in_progress", "message": message}), 423
 
 
 @app.before_request
@@ -2200,21 +2215,11 @@ def enforce_purchase_lock():
         except (TypeError, ValueError):
             incoming_item_id = 0
         if incoming_item_id and incoming_item_id != locked_purchase["item_id"]:
-            return jsonify(
-                {
-                    "error": "purchase_in_progress",
-                    "message": "Another purchase is processing. Please wait until it completes.",
-                }
-            ), 423
+            return _purchase_in_progress_response(waiting_for_other_item=True)
         return None
 
     if path.startswith("/api/"):
-        return jsonify(
-            {
-                "error": "purchase_in_progress",
-                "message": "Purchase is processing. Please wait until it completes.",
-            }
-        ), 423
+        return _purchase_in_progress_response()
 
     return redirect(
         url_for(
@@ -4367,7 +4372,7 @@ def purchase_processing_page():
             item_title = str(locked_purchase.get("item_title") or "").strip()
 
     if not item_title:
-        item_title = "Fortnite Account"
+        item_title = DEFAULT_PURCHASE_ITEM_TITLE
 
     if item_id <= 0:
         return redirect(url_for("dashboard_page"))
@@ -4391,7 +4396,7 @@ def purchase_processing_page():
         has_topup=has_topup,
         active_page="home",
         item_id=item_id,
-        item_title=item_title[:160],
+        item_title=item_title[:MAX_PURCHASE_ITEM_TITLE_LENGTH],
     )
 
 
@@ -5210,12 +5215,7 @@ def api_fortnite_buy():
 
     locked_purchase = get_purchase_lock()
     if locked_purchase and int(locked_purchase["item_id"]) != item_id:
-        return jsonify(
-            {
-                "error": "purchase_in_progress",
-                "message": "Another purchase is processing. Please wait until it completes.",
-            }
-        ), 423
+        return _purchase_in_progress_response(waiting_for_other_item=True)
 
     if not locked_purchase:
         set_purchase_lock(item_id, f"Fortnite Account #{item_id}")
