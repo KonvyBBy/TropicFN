@@ -5021,140 +5021,29 @@ def api_fortnite_search():
 @app.route("/api/fortnite/check-buy", methods=["POST"])
 @login_required_api
 def api_fortnite_check_buy():
-    data = request.json or {}
-    username = session["username"]
-    item_id = int(data.get("item_id") or 0)
-
-    if not item_id:
-        return jsonify({"error": "item_id required"}), 400
-
-    try:
-        _, user_price, cost_cents = get_live_purchase_costs(item_id)
-    except PurchaseFlowError as e:
-        return jsonify({"error": e.code, "message": e.message}), e.status_code
-
-    balance_cents = get_balance(username)
-
-    if balance_cents < cost_cents:
-        return _not_enough_balance_response(balance_cents, cost_cents)
-
-    return jsonify(
-        {
-            "message": f"Account checked. Waiting {PURCHASE_DELAY_AFTER_CHECK_SECONDS} seconds before buying.",
-            "price": round(user_price, 2),
-        }
+    return (
+        jsonify(
+            {
+                "error": "purchase_disabled",
+                "message": "Purchases are temporarily disabled while this feature is being rebuilt.",
+            }
+        ),
+        410,
     )
 
 
 @app.route("/api/fortnite/buy", methods=["POST"])
 @login_required_api
 def api_fortnite_buy():
-    data = request.json or {}
-    username = session["username"]
-    item_id = int(data.get("item_id") or 0)
-
-    if not item_id:
-        return jsonify({"error": "item_id required"}), 400
-
-    starting_balance = get_balance(username)
-
-    try:
-        live_price, user_price, cost_cents = get_live_purchase_costs(item_id)
-    except PurchaseFlowError as e:
-        return jsonify({"error": e.code, "message": e.message}), e.status_code
-
-    if starting_balance < cost_cents:
-        return _not_enough_balance_response(starting_balance, cost_cents)
-
-    # STEP 1: fast-buy on market
-    try:
-        purchase_result = confirm_buy_account(item_id)
-    except PurchaseFlowError as e:
-        app.logger.warning("Purchase blocked for item %s: %s", item_id, e.message)
-        return jsonify({"error": e.code, "message": e.message}), e.status_code
-    except Exception as e:
-        app.logger.error("confirm_buy_account failed for item %s: %s", item_id, e)
-        return jsonify(
+    return (
+        jsonify(
             {
-                "error": "confirm_buy_failed",
-                "message": "Purchase failed due to an unexpected server error. Please try again.",
+                "error": "purchase_disabled",
+                "message": "Purchases are temporarily disabled while this feature is being rebuilt.",
             }
-        ), 500
-
-    recovered_purchase_result = _recover_purchase_result(item_id, "post_fast_buy", purchase_result)
-    if recovered_purchase_result:
-        purchase_result = recovered_purchase_result
-
-    # STEP 2: optional, try to fetch latest order
-    try:
-        latest_order = get_latest_order()
-    except Exception:
-        latest_order = None
-
-    balance_charged = False
-    new_balance = starting_balance / 100
-    try:
-        # STEP 3: deduct balance
-        add_balance(username, -cost_cents)
-        balance_charged = True
-        new_balance = get_balance(username) / 100
-
-        # STEP 4: store purchased account for this user
-        purchase_entry, owned_accounts, purchase_index = save_purchase_record(
-            username,
-            purchase_result,
-            latest_order,
-        )
-
-        try:
-            send_purchase_discord_webhook(
-                purchase_result=purchase_result,
-                latest_order=latest_order,
-                user_price=user_price,
-            )
-        except Exception as e:
-            app.logger.warning("Purchase webhook helper failed for item %s: %s", item_id, e)
-
-        response_payload = {
-            "message": f"Purchase successful! Charged ${user_price:.2f}. New balance: ${new_balance:.2f}",
-            "purchase_result": purchase_result,
-            "latest_order": latest_order,
-            "owned_accounts": owned_accounts,
-            "purchase_index": purchase_index,
-            "saved_entry": purchase_entry,
-        }
-    except Exception as e:
-        app.logger.exception("Failed to finalize purchase for item %s: %s", item_id, e)
-        recovered_purchase_result = _recover_purchase_result(
-            item_id,
-            "post_purchase_finalize_failure",
-            purchase_result,
-        )
-        if recovered_purchase_result:
-            purchase_result = recovered_purchase_result
-        if not balance_charged:
-            add_balance(username, -cost_cents)
-            balance_charged = True
-        new_balance = get_balance(username) / 100
-        purchase_entry, owned_accounts, purchase_index = save_purchase_record(
-            username,
-            purchase_result,
-            latest_order,
-        )
-        response_payload = {
-            "message": (
-                f"Purchase completed! Charged ${user_price:.2f}. "
-                "Account details were recovered after an unexpected response."
-            ),
-            "purchase_result": purchase_result,
-            "latest_order": latest_order,
-            "owned_accounts": owned_accounts,
-            "purchase_index": purchase_index,
-            "saved_entry": purchase_entry,
-            "recovered": True,
-        }
-
-    return jsonify(response_payload)
+        ),
+        410,
+    )
 
 
 @app.route("/api/fortnite/my-accounts", methods=["POST"])
