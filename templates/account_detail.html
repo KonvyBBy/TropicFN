@@ -279,6 +279,61 @@
     return fallbackMessage || 'Purchase failed. Please try again.';
   }
 
+  function findNestedValue(obj, keyName) {
+    if (!obj || typeof obj !== 'object') return null;
+    if (Object.prototype.hasOwnProperty.call(obj, keyName)) {
+      const value = obj[keyName];
+      if (value && typeof value === 'object' && 'raw' in value) {
+        return value.raw;
+      }
+      return value;
+    }
+    for (const key of Object.keys(obj)) {
+      const child = obj[key];
+      if (child && typeof child === 'object') {
+        const found = findNestedValue(child, keyName);
+        if (found !== null && found !== '') {
+          return found;
+        }
+      }
+    }
+    return null;
+  }
+
+  function extractPurchaseItemId(purchaseResult) {
+    const rawItemId =
+      findNestedValue(purchaseResult, 'item_id') ??
+      findNestedValue(purchaseResult, 'fortnite_item_id') ??
+      findNestedValue(purchaseResult, 'itemId');
+    const itemId = Number(rawItemId);
+    return Number.isFinite(itemId) && itemId > 0 ? itemId : null;
+  }
+
+  async function recoverSuccessfulPurchase(itemId) {
+    try {
+      const res = await fetch('/api/fortnite/my-accounts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      const accounts = Array.isArray(data.accounts) ? data.accounts : [];
+      for (let index = accounts.length - 1; index >= 0; index -= 1) {
+        const account = accounts[index] || {};
+        const purchaseResult = account.purchase_result || {};
+        const purchaseItemId = extractPurchaseItemId(purchaseResult);
+        if (purchaseItemId === Number(itemId)) {
+          return {
+            purchaseIndex: index,
+            message: 'Purchase completed. Your account details were recovered from My Accounts.'
+          };
+        }
+      }
+    } catch (e) {}
+    return null;
+  }
+
   async function loadCategory(sectionId, apiType) {
     const detail = window.ACCOUNT_DETAIL || {};
     const names = Array.isArray(detail[sectionId]) ? detail[sectionId] : [];
@@ -431,14 +486,27 @@
       });
       let data;
       try { data = await res.json(); } catch (e) {
+        const recovered = await recoverSuccessfulPurchase(Number(detail.item_id));
+        if (recovered) {
+          showPaySuccess(recovered.message, recovered.purchaseIndex);
+          return;
+        }
         throw new Error('Server returned an unexpected response. Please try again.');
       }
       if (!res.ok) {
+        const recovered = await recoverSuccessfulPurchase(Number(detail.item_id));
+        if (recovered) {
+          showPaySuccess(recovered.message, recovered.purchaseIndex);
+          return;
+        }
         const code = String(data.error || '').toLowerCase();
         const message = getPurchaseErrorMessage(code, data.message || data.error);
         throw new Error(message);
       }
-      showPaySuccess(data.message || 'Your account is ready!', Array.isArray(data.owned_accounts) ? data.owned_accounts.length - 1 : 0);
+      const purchaseIndex = Number.isInteger(data.purchase_index)
+        ? data.purchase_index
+        : (Array.isArray(data.owned_accounts) ? data.owned_accounts.length - 1 : 0);
+      showPaySuccess(data.message || 'Your account is ready!', purchaseIndex);
     } catch (e) {
       showPayError(e.message || 'Purchase failed. Please try again.');
     } finally {

@@ -65,6 +65,8 @@ FAST_BUY_RETRY_DELAY_SECONDS = 0.1
 FAST_BUY_RATE_LIMIT_DELAY_SECONDS = 5.0
 # Delay when the marketplace returns a 5xx server error.
 FAST_BUY_SERVER_ERROR_DELAY_SECONDS = 2.0
+PURCHASE_RECOVERY_MAX_ATTEMPTS = 5
+PURCHASE_RECOVERY_DELAY_SECONDS = 1.0
 ACCOUNT_UNAVAILABLE_MESSAGE = "Account is no longer available. Please choose another account."
 ACCOUNT_UNAVAILABLE_KEYWORDS = ("sold", "not found", "unavailable", "deleted", "archived")
 BALANCE_ERROR_KEYWORDS = (
@@ -118,6 +120,82 @@ def _build_marketplace_error_message(
         first_error = f"{first_error[:MAX_MARKETPLACE_ERROR_LENGTH - 3]}..."
 
     return f"{fallback_message} ({first_error})"
+
+
+def _find_nested_value(obj: Any, key_name: str):
+    if not isinstance(obj, dict):
+        return None
+
+    if key_name in obj:
+        value = obj.get(key_name)
+        if isinstance(value, dict) and "raw" in value:
+            return value.get("raw")
+        return value
+
+    for child in obj.values():
+        if isinstance(child, dict):
+            found = _find_nested_value(child, key_name)
+            if found not in (None, ""):
+                return found
+        elif isinstance(child, list):
+            for item in child:
+                found = _find_nested_value(item, key_name)
+                if found not in (None, ""):
+                    return found
+    return None
+
+
+def _purchase_result_has_credentials(purchase_result: Any) -> bool:
+    return bool(
+        _find_nested_value(purchase_result, "loginData")
+        or _find_nested_value(purchase_result, "emailLoginData")
+    )
+
+
+def _extract_purchase_item_id(purchase_result: Any) -> Optional[int]:
+    raw_item_id = (
+        _find_nested_value(purchase_result, "item_id")
+        or _find_nested_value(purchase_result, "fortnite_item_id")
+        or _find_nested_value(purchase_result, "itemId")
+    )
+    try:
+        return int(raw_item_id)
+    except (TypeError, ValueError):
+        return None
+
+
+def _recover_purchase_result(item_id: int, reason: str, initial_result: Optional[dict] = None) -> Optional[dict]:
+    if isinstance(initial_result, dict) and _purchase_result_has_credentials(initial_result):
+        return initial_result
+
+    for attempt in range(PURCHASE_RECOVERY_MAX_ATTEMPTS):
+        try:
+            recovered_result = find_account_by_item_id(item_id)
+        except Exception as exc:
+            app.logger.warning(
+                "Purchase recovery lookup failed for item %s after %s (attempt %s/%s): %s",
+                item_id,
+                reason,
+                attempt + 1,
+                PURCHASE_RECOVERY_MAX_ATTEMPTS,
+                exc,
+            )
+            recovered_result = None
+
+        if isinstance(recovered_result, dict) and _purchase_result_has_credentials(recovered_result):
+            app.logger.warning(
+                "Recovered purchase credentials for item %s after %s on attempt %s/%s",
+                item_id,
+                reason,
+                attempt + 1,
+                PURCHASE_RECOVERY_MAX_ATTEMPTS,
+            )
+            return recovered_result
+
+        if attempt < PURCHASE_RECOVERY_MAX_ATTEMPTS - 1:
+            time.sleep(PURCHASE_RECOVERY_DELAY_SECONDS)
+
+    return initial_result if isinstance(initial_result, dict) else None
 
 def fortnite_api_get_outfit_icon_url_by_name(name: str):
     """
@@ -1040,6 +1118,42 @@ def get_purchases(username: str):
     return purchases.get(username, [])
 
 
+def save_purchase_record(username: str, purchase_result, latest_order):
+    purchases = _load_purchases()
+    user_list = purchases.get(username, [])
+    item_id = _extract_purchase_item_id(purchase_result)
+
+    if item_id is not None:
+        for index in range(len(user_list) - 1, -1, -1):
+            existing_entry = user_list[index] if isinstance(user_list[index], dict) else {}
+            existing_result = existing_entry.get("purchase_result")
+            if _extract_purchase_item_id(existing_result) != item_id:
+                continue
+
+            updated = False
+            if latest_order and not existing_entry.get("latest_order"):
+                existing_entry["latest_order"] = latest_order
+                updated = True
+            if (
+                isinstance(purchase_result, dict)
+                and _purchase_result_has_credentials(purchase_result)
+                and not _purchase_result_has_credentials(existing_result)
+            ):
+                existing_entry["purchase_result"] = purchase_result
+                updated = True
+
+            if updated:
+                user_list[index] = existing_entry
+                purchases[username] = user_list
+                _save_purchases(purchases)
+
+            return existing_entry, user_list, index
+
+    entry = add_purchase(username, purchase_result, latest_order)
+    user_list = get_purchases(username)
+    return entry, user_list, len(user_list) - 1
+
+
 def _format_purchase_webhook_currency(amount: Any) -> str:
     try:
         numeric_amount = float(amount or 0)
@@ -1582,6 +1696,12 @@ def confirm_buy_account(item_id: int):
                 )
                 time.sleep(FAST_BUY_SERVER_ERROR_DELAY_SECONDS)
                 continue
+            recovered_result = _recover_purchase_result(
+                item_id,
+                f"non_json_status_{resp.status_code}",
+            )
+            if recovered_result:
+                return recovered_result
             raise RuntimeError(f"Fast-buy returned non-JSON: {resp.status_code} - {resp.text[:300]}")
 
         error_parts: List[str] = []
@@ -1608,6 +1728,9 @@ def confirm_buy_account(item_id: int):
             if attempt < FAST_BUY_MAX_ATTEMPTS - 1:
                 time.sleep(FAST_BUY_RETRY_DELAY_SECONDS)
                 continue
+            recovered_result = _recover_purchase_result(item_id, "retry_request")
+            if recovered_result:
+                return recovered_result
             raise RuntimeError(
                 f"Fast-buy exhausted all {FAST_BUY_MAX_ATTEMPTS} attempts due to retry_request responses"
             )
@@ -1620,6 +1743,9 @@ def confirm_buy_account(item_id: int):
                 )
                 time.sleep(FAST_BUY_RETRY_DELAY_SECONDS)
                 continue
+            recovered_result = _recover_purchase_result(item_id, "retryable_api_error", data)
+            if recovered_result:
+                return recovered_result
             raise PurchaseFlowError(
                 "confirm_buy_failed",
                 "Marketplace rejected the purchase request. Please try again.",
@@ -1642,6 +1768,9 @@ def confirm_buy_account(item_id: int):
                 )
                 time.sleep(min(retry_after, 30))
                 continue
+            recovered_result = _recover_purchase_result(item_id, "rate_limited", data)
+            if recovered_result:
+                return recovered_result
             raise PurchaseFlowError(
                 "rate_limited",
                 "Marketplace is rate limiting purchases. Please wait a moment and try again.",
@@ -1657,6 +1786,9 @@ def confirm_buy_account(item_id: int):
                 )
                 time.sleep(FAST_BUY_SERVER_ERROR_DELAY_SECONDS)
                 continue
+            recovered_result = _recover_purchase_result(item_id, f"http_{resp.status_code}", data)
+            if recovered_result:
+                return recovered_result
             raise PurchaseFlowError(
                 "confirm_buy_failed",
                 "Marketplace is experiencing issues. Please try again in a moment.",
@@ -1732,6 +1864,9 @@ def confirm_buy_account(item_id: int):
                 resp.status_code,
                 error_text or resp.text[:300],
             )
+            recovered_result = _recover_purchase_result(item_id, f"http_{resp.status_code}", data)
+            if recovered_result:
+                return recovered_result
             raise PurchaseFlowError(
                 "confirm_buy_failed",
                 "Marketplace rejected the purchase request. Please try again.",
@@ -4860,39 +4995,81 @@ def api_fortnite_buy():
             }
         ), 500
 
+    recovered_purchase_result = _recover_purchase_result(item_id, "post_fast_buy", purchase_result)
+    if recovered_purchase_result:
+        purchase_result = recovered_purchase_result
+
     # STEP 2: optional, try to fetch latest order
     try:
         latest_order = get_latest_order()
     except Exception:
         latest_order = None
 
-    # STEP 3: deduct balance
-    add_balance(username, -cost_cents)
-    new_balance = get_balance(username) / 100
-
-    # STEP 4: store purchased account for this user
-    purchase_entry = add_purchase(username, purchase_result, latest_order)
-    owned_accounts = get_purchases(username)
-
+    balance_charged = False
+    new_balance = starting_balance / 100
     try:
-        send_purchase_discord_webhook(
-            purchase_result=purchase_result,
-            latest_order=latest_order,
-            user_price=user_price,
-        )
-    except Exception as e:
-        app.logger.warning("Purchase webhook helper failed for item %s: %s", item_id, e)
+        # STEP 3: deduct balance
+        add_balance(username, -cost_cents)
+        balance_charged = True
+        new_balance = get_balance(username) / 100
 
-    return jsonify(
-        {
+        # STEP 4: store purchased account for this user
+        purchase_entry, owned_accounts, purchase_index = save_purchase_record(
+            username,
+            purchase_result,
+            latest_order,
+        )
+
+        try:
+            send_purchase_discord_webhook(
+                purchase_result=purchase_result,
+                latest_order=latest_order,
+                user_price=user_price,
+            )
+        except Exception as e:
+            app.logger.warning("Purchase webhook helper failed for item %s: %s", item_id, e)
+
+        response_payload = {
             "message": f"Purchase successful! Charged ${user_price:.2f}. New balance: ${new_balance:.2f}",
             "purchase_result": purchase_result,
             "latest_order": latest_order,
             "owned_accounts": owned_accounts,
-            "purchase_index": len(owned_accounts) - 1,
+            "purchase_index": purchase_index,
             "saved_entry": purchase_entry,
         }
-    )
+    except Exception as e:
+        app.logger.exception("Failed to finalize purchase for item %s: %s", item_id, e)
+        recovered_purchase_result = _recover_purchase_result(
+            item_id,
+            "post_purchase_finalize_failure",
+            purchase_result,
+        )
+        if recovered_purchase_result:
+            purchase_result = recovered_purchase_result
+        latest_order = latest_order if isinstance(latest_order, dict) else None
+        if not balance_charged:
+            add_balance(username, -cost_cents)
+            balance_charged = True
+        new_balance = get_balance(username) / 100
+        purchase_entry, owned_accounts, purchase_index = save_purchase_record(
+            username,
+            purchase_result,
+            latest_order,
+        )
+        response_payload = {
+            "message": (
+                f"Purchase completed! Charged ${user_price:.2f}. "
+                "Account details were recovered after an unexpected response."
+            ),
+            "purchase_result": purchase_result,
+            "latest_order": latest_order,
+            "owned_accounts": owned_accounts,
+            "purchase_index": purchase_index,
+            "saved_entry": purchase_entry,
+            "recovered": True,
+        }
+
+    return jsonify(response_payload)
 
 
 @app.route("/api/fortnite/my-accounts", methods=["POST"])
