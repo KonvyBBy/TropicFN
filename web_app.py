@@ -1100,6 +1100,8 @@ def confirm_buy_account(item_id: int):
     """
     Initiate a marketplace fast-buy purchase for an account item.
     Sends balance_id when configured; otherwise sends an empty JSON body.
+    Returns parsed marketplace JSON on success.
+    Raises PurchaseFlowError for known purchase failures.
     """
     url = f"https://prod-api.lzt.market/{item_id}/fast-buy"
     headers_fb = {
@@ -1107,7 +1109,7 @@ def confirm_buy_account(item_id: int):
         "content-type": "application/json",
         "authorization": f"Bearer {MARKET_API_TOKEN}",
     }
-    payload: dict = {}
+    payload: Dict[str, Any] = {}
     balance_id = os.environ.get("LZT_BALANCE_ID")
     if balance_id:
         try:
