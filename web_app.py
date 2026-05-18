@@ -95,6 +95,11 @@ FAST_BUY_RETRYABLE_KEYWORDS = (
     "try again later",
     "try later",
 )
+PURCHASE_LOCK_SESSION_KEY = "purchase_lock"
+DEFAULT_PURCHASE_ITEM_TITLE = "Fortnite Account"
+MAX_PURCHASE_ITEM_TITLE_LENGTH = 160
+DEFAULT_PURCHASE_PRODUCT_NAME = "Fortnite"
+PURCHASE_LOCK_MAX_SECONDS = 600
 
 
 class PurchaseFlowError(Exception):
@@ -1265,14 +1270,14 @@ def _build_purchase_webhook_payload(
             "inline": True,
         },
         {
-            "name": "Status",
-            "value": "Purchased",
+            "name": "Product",
+            "value": DEFAULT_PURCHASE_PRODUCT_NAME,
             "inline": True,
         },
         {
-            "name": "Product",
-            "value": product_summary,
-            "inline": False,
+            "name": "Status",
+            "value": "Purchased",
+            "inline": True,
         },
         {
             "name": "💰 EUR Spent",
@@ -1280,9 +1285,9 @@ def _build_purchase_webhook_payload(
             "inline": True,
         },
         {
-            "name": "⭐ Experience",
-            "value": "Premium checkout",
-            "inline": True,
+            "name": "📦 Account",
+            "value": product_summary,
+            "inline": False,
         },
         {
             "name": "🆔 Item ID",
@@ -1301,15 +1306,15 @@ def _build_purchase_webhook_payload(
         )
 
     return {
-        "username": "Itemz",
+        "username": "TropicFN",
         "avatar_url": DISCORD_PURCHASE_THUMBNAIL_URL,
         "embeds": [
             {
                 "title": "✅ Order Confirmed - Thank You!",
-                "description": "Your Fortnite account purchase was completed successfully.",
+                "description": "Your TropicFN Fortnite purchase was completed successfully.",
                 "color": 0x0EF475,
                 "author": {
-                    "name": "Itemz Purchase Notification",
+                    "name": "TropicFN Purchase Notification",
                     "icon_url": DISCORD_PURCHASE_THUMBNAIL_URL,
                 },
                 "thumbnail": {
@@ -1320,7 +1325,7 @@ def _build_purchase_webhook_payload(
                 },
                 "fields": fields,
                 "footer": {
-                    "text": "Itemz • Purchase completed",
+                    "text": "Powered by TropicFN • discord.gg/tropicfn",
                     "icon_url": DISCORD_PURCHASE_THUMBNAIL_URL,
                 },
                 "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
@@ -2122,6 +2127,136 @@ def login_required_api(f):
         return f(*args, **kwargs)
 
     return wrapper
+
+
+def _normalize_locked_purchase(session_value: Any) -> Optional[Dict[str, Any]]:
+    if not isinstance(session_value, dict):
+        return None
+    try:
+        item_id = int(session_value.get("item_id") or 0)
+    except (TypeError, ValueError):
+        return None
+    if item_id <= 0:
+        return None
+    created_at = 0
+    try:
+        created_at = int(session_value.get("created_at") or 0)
+    except (TypeError, ValueError):
+        created_at = int(time.time())
+    if created_at <= 0:
+        created_at = int(time.time())
+    if (time.time() - float(created_at)) > PURCHASE_LOCK_MAX_SECONDS:
+        return None
+    item_title = (
+        str(session_value.get("item_title") or DEFAULT_PURCHASE_ITEM_TITLE).strip()
+        or DEFAULT_PURCHASE_ITEM_TITLE
+    )
+    return {
+        "item_id": item_id,
+        "item_title": item_title[:MAX_PURCHASE_ITEM_TITLE_LENGTH],
+        "created_at": created_at,
+    }
+
+
+def get_purchase_lock() -> Optional[Dict[str, Any]]:
+    normalized = _normalize_locked_purchase(session.get(PURCHASE_LOCK_SESSION_KEY))
+    if normalized is None and PURCHASE_LOCK_SESSION_KEY in session:
+        session.pop(PURCHASE_LOCK_SESSION_KEY, None)
+    return normalized
+
+
+def set_purchase_lock(item_id: int, item_title: str) -> None:
+    session[PURCHASE_LOCK_SESSION_KEY] = {
+        "item_id": int(item_id),
+        "item_title": (
+            str(item_title or DEFAULT_PURCHASE_ITEM_TITLE).strip()
+            or DEFAULT_PURCHASE_ITEM_TITLE
+        )[:MAX_PURCHASE_ITEM_TITLE_LENGTH],
+        "created_at": int(time.time()),
+    }
+
+
+def clear_purchase_lock() -> None:
+    session.pop(PURCHASE_LOCK_SESSION_KEY, None)
+
+
+def _purchase_in_progress_response(waiting_for_other_item: bool = False):
+    message = "Purchase is processing. Please wait until it completes."
+    if waiting_for_other_item:
+        message = "Another purchase is processing. Please wait until it completes."
+    return jsonify({"error": "purchase_in_progress", "message": message}), 423
+
+
+def _build_fallback_purchase_title(item_id: int) -> str:
+    return f"{DEFAULT_PURCHASE_ITEM_TITLE} #{item_id}"
+
+
+@app.before_request
+def enforce_purchase_lock():
+    if "username" not in session:
+        return None
+
+    locked_purchase = get_purchase_lock()
+    if not locked_purchase:
+        return None
+
+    path = (request.path or "").strip()
+    if path.startswith("/static/"):
+        return None
+    if path in {"/purchase-processing", "/logout"}:
+        requested_item_id = 0
+        try:
+            requested_item_id_raw = request.args.get("item_id") or ""
+            requested_item_id_text = str(requested_item_id_raw).strip()
+            requested_item_id = int(requested_item_id_text or 0)
+        except (TypeError, ValueError):
+            requested_item_id = 0
+        if (
+            path == "/purchase-processing"
+            and requested_item_id > 0
+            and requested_item_id != locked_purchase["item_id"]
+        ):
+            return redirect(
+                url_for(
+                    "purchase_processing_page",
+                    item_id=locked_purchase["item_id"],
+                    title=locked_purchase["item_title"],
+                )
+            )
+        return None
+
+    if path == "/api/fortnite/purchase-lock/release":
+        payload = request.get_json(silent=True) or {}
+        release_item_id = 0
+        try:
+            release_item_id = int(payload.get("item_id") or 0)
+        except (TypeError, ValueError):
+            release_item_id = 0
+        if release_item_id > 0 and release_item_id == locked_purchase["item_id"]:
+            return None
+        return _purchase_in_progress_response(waiting_for_other_item=True)
+
+    if path == "/api/fortnite/buy":
+        payload = request.get_json(silent=True) or {}
+        incoming_item_id = 0
+        try:
+            incoming_item_id = int(payload.get("item_id") or 0)
+        except (TypeError, ValueError):
+            incoming_item_id = 0
+        if incoming_item_id > 0 and incoming_item_id != locked_purchase["item_id"]:
+            return _purchase_in_progress_response(waiting_for_other_item=True)
+        return None
+
+    if path.startswith("/api/"):
+        return _purchase_in_progress_response()
+
+    return redirect(
+        url_for(
+            "purchase_processing_page",
+            item_id=locked_purchase["item_id"],
+            title=locked_purchase["item_title"],
+        )
+    )
 
 
 def admin_required_page(f):
@@ -4251,16 +4386,37 @@ def purchase_processing_page():
     balance = f"{balance_cents / 100:.2f}"
     has_topup = user_has_any_topup(username)
 
+    locked_purchase = get_purchase_lock()
     raw_item_id = request.args.get("item_id", "").strip()
-    item_title = request.args.get("title", "").strip() or "Fortnite Account"
+    item_title = request.args.get("title", "").strip() or ""
     item_id = 0
     try:
         item_id = int(raw_item_id)
     except (TypeError, ValueError):
         item_id = 0
 
+    if item_id <= 0 and locked_purchase:
+        item_id = int(locked_purchase["item_id"])
+        if not item_title:
+            item_title = str(locked_purchase.get("item_title") or "").strip()
+
+    if not item_title:
+        item_title = DEFAULT_PURCHASE_ITEM_TITLE
+
     if item_id <= 0:
         return redirect(url_for("dashboard_page"))
+
+    if locked_purchase and int(locked_purchase["item_id"]) != item_id:
+        return redirect(
+            url_for(
+                "purchase_processing_page",
+                item_id=locked_purchase["item_id"],
+                title=locked_purchase["item_title"],
+            )
+        )
+
+    if not locked_purchase:
+        set_purchase_lock(item_id, item_title)
 
     return render_template(
         "purchase_processing.html",
@@ -4270,7 +4426,7 @@ def purchase_processing_page():
         has_topup=has_topup,
         active_page="home",
         item_id=item_id,
-        item_title=item_title[:160],
+        item_title=item_title[:MAX_PURCHASE_ITEM_TITLE_LENGTH],
     )
 
 
@@ -5087,6 +5243,13 @@ def api_fortnite_buy():
     if not item_id:
         return jsonify({"error": "item_id required"}), 400
 
+    locked_purchase = get_purchase_lock()
+    if locked_purchase and int(locked_purchase["item_id"]) != item_id:
+        return _purchase_in_progress_response(waiting_for_other_item=True)
+
+    if not locked_purchase:
+        set_purchase_lock(item_id, _build_fallback_purchase_title(item_id))
+
     starting_balance = get_balance(username)
 
     try:
@@ -5185,7 +5348,24 @@ def api_fortnite_buy():
             "recovered": True,
         }
 
+    clear_purchase_lock()
     return jsonify(response_payload)
+
+
+@app.route("/api/fortnite/purchase-lock/release", methods=["POST"])
+@login_required_api
+def api_release_purchase_lock():
+    data = request.json or {}
+    item_id = int(data.get("item_id") or 0)
+    if not item_id:
+        return jsonify({"error": "item_id required"}), 400
+
+    locked_purchase = get_purchase_lock()
+    if locked_purchase and int(locked_purchase["item_id"]) == item_id:
+        clear_purchase_lock()
+        return jsonify({"message": "Purchase lock cleared."})
+
+    return jsonify({"message": "No active purchase lock for this item."})
 
 
 @app.route("/api/fortnite/my-accounts", methods=["POST"])

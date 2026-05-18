@@ -96,6 +96,12 @@
 
 {% block scripts %}
 <script>
+  const AUTO_RETRY_MAX_ATTEMPTS = 12;
+  const AUTO_RETRY_BASE_DELAY_MS = 1200;
+  const AUTO_RETRY_MAX_DELAY_MS = 8000;
+  const AUTO_RETRY_BACKOFF_MULTIPLIER = 1.35;
+  const MS_PER_SECOND = 1000;
+
   async function postJSON(url, payload) {
     const response = await fetch(url, {
       method: 'POST',
@@ -119,6 +125,15 @@
     return data;
   }
 
+  function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  function getRetryDelayMs(attempt) {
+    const exponentialDelay = AUTO_RETRY_BASE_DELAY_MS * Math.pow(AUTO_RETRY_BACKOFF_MULTIPLIER, Math.max(0, attempt - 1));
+    return Math.min(Math.round(exponentialDelay), AUTO_RETRY_MAX_DELAY_MS);
+  }
+
   document.addEventListener('DOMContentLoaded', async () => {
     const iconEl = document.getElementById('purchase-state-icon');
     const titleEl = document.getElementById('purchase-state-title');
@@ -128,22 +143,42 @@
     const itemId = Number({{ item_id|tojson }});
     const itemTitle = {{ item_title|tojson }};
 
-    try {
-      await postJSON('/api/fortnite/buy', { item_id: itemId });
-      iconEl.className = 'purchase-success-ring mx-auto';
-      iconEl.innerHTML = '<i class="ri-check-line text-4xl text-emerald-300"></i>';
-      titleEl.textContent = 'Purchase complete';
-      subtitleEl.textContent = 'All done. Your account has been delivered.';
-      messageEl.innerHTML = `Awesome! <strong class="text-zinc-200">${itemTitle}</strong> (#${itemId}) is ready. Go to your My Accounts page to view login details.`;
-      actionsEl.classList.remove('hidden');
-    } catch (error) {
-      iconEl.className = 'purchase-error-ring mx-auto';
-      iconEl.innerHTML = '<i class="ri-close-line text-4xl text-red-300"></i>';
-      titleEl.textContent = 'Purchase failed';
-      subtitleEl.textContent = 'We could not complete this purchase.';
-      messageEl.textContent = error?.message || 'An unexpected error occurred. Please check your balance and try again later.';
-      actionsEl.classList.remove('hidden');
-      actionsEl.innerHTML = `<a href="/account/${itemId}" class="inline-flex h-11 items-center justify-center rounded-xl bg-white/10 px-6 text-sm font-semibold text-white transition hover:bg-white/20">Try Again</a>`;
+    for (let attempt = 1; attempt <= AUTO_RETRY_MAX_ATTEMPTS; attempt += 1) {
+      try {
+        await postJSON('/api/fortnite/buy', { item_id: itemId });
+        iconEl.className = 'purchase-success-ring mx-auto';
+        iconEl.innerHTML = '<i class="ri-check-line text-4xl text-emerald-300"></i>';
+        titleEl.textContent = 'Purchase complete';
+        subtitleEl.textContent = 'All done. Your account has been delivered.';
+        messageEl.innerHTML = `Awesome! <strong class="text-zinc-200">${itemTitle}</strong> (#${itemId}) is ready. Go to your My Accounts page to view login details.`;
+        actionsEl.classList.remove('hidden');
+        return;
+      } catch (error) {
+        const errorMessage = error?.message || 'An unexpected error occurred while placing your order.';
+        if (attempt < AUTO_RETRY_MAX_ATTEMPTS) {
+          iconEl.className = 'purchase-spinner';
+          iconEl.innerHTML = '';
+          titleEl.textContent = 'Still processing your purchase';
+          subtitleEl.textContent = `Retry attempt ${attempt}/${AUTO_RETRY_MAX_ATTEMPTS}...`;
+          const retryDelayMs = getRetryDelayMs(attempt);
+          messageEl.textContent = `${errorMessage} Retrying automatically in ${Math.max(1, Math.ceil(retryDelayMs / MS_PER_SECOND))}s. Please keep this page open.`;
+          await sleep(retryDelayMs);
+          continue;
+        }
+
+        iconEl.className = 'purchase-error-ring mx-auto';
+        iconEl.innerHTML = '<i class="ri-close-line text-4xl text-red-300"></i>';
+        try {
+          await postJSON('/api/fortnite/purchase-lock/release', { item_id: itemId });
+        } catch (releaseError) {
+          console.warn('Failed to release purchase lock:', releaseError);
+        }
+        titleEl.textContent = 'Purchase could not be completed';
+        subtitleEl.textContent = 'Automatic retries were exhausted.';
+        messageEl.textContent = 'Automatic retries ended. Check My Accounts in a moment; if the account is still missing, contact support.';
+        actionsEl.classList.remove('hidden');
+        actionsEl.innerHTML = `<a href="/my-accounts" class="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-500 px-6 text-sm font-semibold text-black transition hover:bg-emerald-400">Go to My Accounts</a>`;
+      }
     }
   });
 </script>
