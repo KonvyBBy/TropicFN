@@ -1144,6 +1144,14 @@ document.addEventListener("DOMContentLoaded", () => {
     return `Account ${fallbackIndex + 1}`;
   }
 
+  function getAccountNumber(acc) {
+    const item = acc?.purchase_result?.item || {};
+    // Canonical marketplace field is item_id; fallbacks keep backward compatibility.
+    const rawId = item.item_id ?? item.fortnite_item_id ?? item.id;
+    const parsedId = Number(rawId);
+    return Number.isInteger(parsedId) && parsedId > 0 ? parsedId : 0;
+  }
+
   function buildAccountCard(acc, cardIndex) {
     const item = acc.purchase_result?.item || {};
     const loginData = item.loginData || {};
@@ -1165,7 +1173,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const accountName = String(acc.name || "").trim() || `Account ${cardIndex + 1}`;
     const accountNameInputId = `my-account-name-input-${cardIndex}`;
     const accountNameStatusId = `my-account-name-status-${cardIndex}`;
-    const accountNumber = Number(item.item_id || item.fortnite_item_id || item.id || 0);
+    const accountNumber = getAccountNumber(acc);
     const accountTitle = getAccountTitle(item, skinsCount, cardIndex);
     const isOpen = cardIndex === 0;
 
