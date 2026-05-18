@@ -1285,6 +1285,11 @@ def _build_purchase_webhook_payload(
             "inline": True,
         },
         {
+            "name": "⭐ Review",
+            "value": "5/5",
+            "inline": True,
+        },
+        {
             "name": "📦 Account",
             "value": product_summary,
             "inline": False,
