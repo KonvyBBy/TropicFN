@@ -395,11 +395,12 @@ if not SHOPIFY_ADMIN_TOKEN:
 # --- Email / SMTP ---
 SMTP_HOST = (os.environ.get("SMTP_HOST") or "").strip()
 SMTP_USER = (os.environ.get("SMTP_USER") or "").strip()
-SMTP_PASS = "".join((os.environ.get("SMTP_PASS") or "").split())
+_raw_smtp_pass = (os.environ.get("SMTP_PASS") or "").strip()
+SMTP_PASS = _raw_smtp_pass.replace(" ", "") if " " in _raw_smtp_pass and len(_raw_smtp_pass.replace(" ", "")) == 16 else _raw_smtp_pass
 EMAIL_FROM = (os.environ.get("EMAIL_FROM") or SMTP_USER).strip()
 EMAIL_CODE_TTL_SECONDS = int(os.environ.get("EMAIL_CODE_TTL_SECONDS", "900"))
 try:
-    SMTP_PORT = int((os.environ.get("SMTP_PORT") or "0").strip() or "0")
+    SMTP_PORT = int(os.environ.get("SMTP_PORT", "0").strip() or "0")
 except ValueError:
     SMTP_PORT = 0
 
@@ -511,7 +512,7 @@ def _normalize_email(email: str) -> str:
 
 
 def _generate_one_time_code() -> str:
-    return f"{secrets.randbelow(1000000):06d}"
+    return str(secrets.randbelow(900000) + 100000)
 
 
 def _is_valid_email_address(email: str) -> bool:
@@ -692,7 +693,7 @@ def send_password_reset_code(username: str) -> Tuple[bool, str]:
     return True, "We sent a 6-digit reset code to your email."
 
 
-def create_user(username: str, password: str, email: Optional[str] = None) -> bool:
+def create_user(username: str, password: str, email: str) -> bool:
     """
     Create a new user. Returns False if username already exists.
     """
@@ -700,7 +701,7 @@ def create_user(username: str, password: str, email: Optional[str] = None) -> bo
     if username in users:
         return False
 
-    normalized_email = _normalize_email(email or "")
+    normalized_email = _normalize_email(email)
     users[username] = {
         "password_hash": generate_password_hash(password),
         "email": normalized_email,
@@ -2163,7 +2164,7 @@ def register():
         url_for(
             "verify_email",
             u=username,
-            message=msg if ok else "Account created. Send the code once SMTP is configured.",
+            message=msg if ok else "Account created. Email verification will work once email is configured by the administrator.",
             error="" if ok else msg,
         )
     )
