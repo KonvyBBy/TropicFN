@@ -10,7 +10,6 @@ import hashlib
 import base64
 import datetime
 import logging
-import re
 import secrets
 import smtplib
 import threading
@@ -516,7 +515,29 @@ def _generate_one_time_code() -> str:
 
 
 def _is_valid_email_address(email: str) -> bool:
-    return bool(re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", _normalize_email(email)))
+    normalized = _normalize_email(email)
+    if not normalized or normalized.count("@") != 1:
+        return False
+
+    local_part, domain_part = normalized.split("@", 1)
+    if not local_part or not domain_part or domain_part.startswith(".") or domain_part.endswith("."):
+        return False
+
+    allowed_local_chars = set("abcdefghijklmnopqrstuvwxyz0123456789._+-")
+    if any(ch not in allowed_local_chars for ch in local_part):
+        return False
+
+    domain_labels = domain_part.split(".")
+    if len(domain_labels) < 2 or len(domain_labels[-1]) < 2:
+        return False
+
+    for label in domain_labels:
+        if not label or label.startswith("-") or label.endswith("-"):
+            return False
+        if any(not (ch.isalnum() or ch == "-") for ch in label):
+            return False
+
+    return True
 
 
 def _hash_one_time_code(code: str) -> str:
@@ -2060,6 +2081,13 @@ def login():
                 )
             )
         app.logger.warning("Email verification send failed for %s: %s", username, msg)
+        return redirect(
+            url_for(
+                "login",
+                u=username,
+                error=f"Your account needs email verification, but the code could not be sent yet. {msg}",
+            )
+        )
 
     session["username"] = username
     session.pop("pending_verify_username", None)
