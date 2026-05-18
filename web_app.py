@@ -393,10 +393,21 @@ if not SHOPIFY_ADMIN_TOKEN:
     print("WARNING: SHOPIFY_ADMIN_TOKEN not set â€“ /redeem will not work.")
 
 # --- Email / SMTP ---
+GMAIL_APP_PASSWORD_LENGTH = 16
+
+
+def _normalize_smtp_password(raw_password: str) -> str:
+    cleaned = (raw_password or "").strip()
+    compact = cleaned.replace(" ", "")
+    # Gmail app passwords are often copied as four 4-character groups with spaces.
+    if " " in cleaned and len(compact) == GMAIL_APP_PASSWORD_LENGTH:
+        return compact
+    return cleaned
+
+
 SMTP_HOST = (os.environ.get("SMTP_HOST") or "").strip()
 SMTP_USER = (os.environ.get("SMTP_USER") or "").strip()
-_raw_smtp_pass = (os.environ.get("SMTP_PASS") or "").strip()
-SMTP_PASS = _raw_smtp_pass.replace(" ", "") if " " in _raw_smtp_pass and len(_raw_smtp_pass.replace(" ", "")) == 16 else _raw_smtp_pass
+SMTP_PASS = _normalize_smtp_password(os.environ.get("SMTP_PASS") or "")
 EMAIL_FROM = (os.environ.get("EMAIL_FROM") or SMTP_USER).strip()
 EMAIL_CODE_TTL_SECONDS = int(os.environ.get("EMAIL_CODE_TTL_SECONDS", "900"))
 try:
@@ -542,7 +553,7 @@ def _is_valid_email_address(email: str) -> bool:
 
 
 def _hash_one_time_code(code: str) -> str:
-    return hashlib.sha256((code or "").encode("utf-8")).hexdigest()
+    return generate_password_hash(code or "")
 
 
 def _is_email_configured() -> bool:
@@ -645,8 +656,7 @@ def _verify_one_time_code(username: str, code_field: str, expiry_field: str, sub
     if not stored_hash or expires_at < int(time.time()):
         return False
 
-    submitted_hash = _hash_one_time_code((submitted_code or "").strip())
-    return hmac.compare_digest(stored_hash, submitted_hash)
+    return check_password_hash(stored_hash, (submitted_code or "").strip())
 
 
 def send_email_verification_code(username: str) -> Tuple[bool, str]:
@@ -695,7 +705,8 @@ def send_password_reset_code(username: str) -> Tuple[bool, str]:
 
 def create_user(username: str, password: str, email: str) -> bool:
     """
-    Create a new user. Returns False if username already exists.
+    Create a new user with an email address.
+    Returns False if username already exists.
     """
     users = _load_users()
     if username in users:
@@ -2164,7 +2175,12 @@ def register():
         url_for(
             "verify_email",
             u=username,
-            message=msg if ok else "Account created. Email verification will work once email is configured by the administrator.",
+            message=(
+                msg
+                if ok
+                else "Account created. Email verification will work once email "
+                "is configured by the administrator."
+            ),
             error="" if ok else msg,
         )
     )
