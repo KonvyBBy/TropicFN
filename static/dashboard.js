@@ -250,6 +250,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (item) {
         input.value = item.dataset.name;
         input.setAttribute('data-cosmetic-id', item.dataset.id || '');
+        input.dispatchEvent(new Event('change', { bubbles: true }));
         dropdown.classList.remove('show');
       }
     });
@@ -275,8 +276,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const searchForm = document.getElementById('search-form');
   const searchResults = document.getElementById('search-results');
   const sortButtons = Array.from(document.querySelectorAll('.toolbar-tab[data-sort]'));
+  const mobileSortSelect = document.getElementById('mobile-sort-select');
   let currentSort = 'default';
   let lastSearchAccounts = [];
+  let autoSearchDebounceTimer = null;
+  let searchRequestId = 0;
   const MAX_PREVIEW_COSMETICS = 8;
   const BOOLEAN_FILTER_KEYS = new Set(['email_login_data']);
   const ENUM_FILTER_KEYS = new Set(['change_email', 'bp']);
@@ -435,12 +439,27 @@ document.addEventListener("DOMContentLoaded", () => {
     sortButtons.forEach(btn => {
       btn.classList.toggle('active', btn.dataset.sort === sort);
     });
+    if (mobileSortSelect && mobileSortSelect.value !== sort) {
+      mobileSortSelect.value = sort;
+    }
     if (lastSearchAccounts.length) renderAccounts(getSortedAccounts(lastSearchAccounts));
   }
 
   sortButtons.forEach(btn => {
     btn.addEventListener('click', () => setSort(btn.dataset.sort || 'default'));
   });
+  mobileSortSelect?.addEventListener('change', () => setSort(mobileSortSelect.value || 'default'));
+
+  function renderInitialState() {
+    if (!searchResults) return;
+    searchResults.innerHTML = `
+      <div class="col-span-full py-16 text-center">
+        <div class="mb-2 text-2xl">🎮</div>
+        <p class="text-sm font-semibold text-white">Use filters to find accounts</p>
+        <p class="mt-1 text-xs" style="color:#555;">Your results will appear here</p>
+      </div>
+    `;
+  }
 
   function renderEmptyState() {
     searchResults.innerHTML = `
@@ -520,31 +539,38 @@ document.addEventListener("DOMContentLoaded", () => {
     hydratePreviewIcons();
   }
 
-  searchForm?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
+  async function executeSearch({ showEmptyAlert = false } = {}) {
+    if (!searchForm || !searchResults) return;
+
     const fd = new FormData(searchForm);
     const payload = buildSearchPayload(fd, [], searchForm);
     const hasFilters = Object.keys(payload).length > 0;
 
     if (!hasFilters) {
-      alert('Please set at least one filter to search');
+      lastSearchAccounts = [];
+      if (showEmptyAlert) {
+        alert('Please set at least one filter to search');
+      } else {
+        renderInitialState();
+      }
       return;
     }
 
+    const requestId = ++searchRequestId;
     searchResults.innerHTML = `
       <div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;gap:14px;">
         <div style="width:36px;height:36px;border:3px solid rgba(255,255,255,0.08);border-top-color:#0EF475;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
         <div style="font-size:0.9rem;font-weight:500;color:#a1a1aa;">Searching for accounts...</div>
       </div>
     `;
-    
+
     try {
       const data = await postJSON('/api/fortnite/search', payload);
+      if (requestId !== searchRequestId) return;
       lastSearchAccounts = Array.isArray(data.accounts) ? data.accounts : [];
       renderAccounts(getSortedAccounts(lastSearchAccounts));
-      
     } catch (err) {
+      if (requestId !== searchRequestId) return;
       searchResults.innerHTML = `
         <div style="grid-column:1/-1;text-align:center;padding:48px 24px;">
           <div style="font-size:2.5rem;margin-bottom:12px;opacity:0.5;">❌</div>
@@ -553,10 +579,40 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
       `;
     }
+  }
+
+  function scheduleAutoSearch() {
+    clearTimeout(autoSearchDebounceTimer);
+    autoSearchDebounceTimer = setTimeout(() => {
+      executeSearch({ showEmptyAlert: false });
+    }, 350);
+  }
+
+  searchForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    executeSearch({ showEmptyAlert: true });
+  });
+
+  searchForm?.addEventListener('input', (e) => {
+    const target = e.target;
+    if (!(target instanceof HTMLElement)) return;
+    if (!target.matches('input, select, textarea')) return;
+    scheduleAutoSearch();
+  });
+
+  searchForm?.addEventListener('change', (e) => {
+    const target = e.target;
+    if (!(target instanceof HTMLElement)) return;
+    if (!target.matches('input, select, textarea')) return;
+    scheduleAutoSearch();
   });
 
   searchForm?.addEventListener('reset', () => {
     window.setTimeout(() => {
+      searchRequestId += 1;
+      clearTimeout(autoSearchDebounceTimer);
+      lastSearchAccounts = [];
+      renderInitialState();
       document.querySelectorAll('.autocomplete-dropdown').forEach(d => d.classList.remove('show'));
       document.querySelectorAll('.cosmetic-search-input').forEach(i => i.removeAttribute('data-cosmetic-id'));
     }, 0);

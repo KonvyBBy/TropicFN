@@ -94,10 +94,13 @@
   .sx-plat-ps { background: rgba(220,38,38,.15); color: #f87171; }
 
   .mobile-filters-wrap {
-    position: fixed; top: 0; left: 0; z-index: 60; width: 17rem; height: 100%;
+    position: fixed; top: 0; left: 0; z-index: 60; width: min(20rem, 100%); height: 100%;
     transform: translateX(-100%); transition: transform .25s ease; background: #141414;
   }
   .mobile-filters-wrap.open { transform: translateX(0); }
+  .mobile-toolbar-select {
+    background: #1e1e1e; border: 1px solid rgba(255,255,255,0.1); color: #eaeef8;
+  }
   #mobile-filter-overlay { position: fixed; inset: 0; z-index: 55; display: none; background: rgba(0,0,0,.75); }
   #mobile-filter-overlay.open { display: block; }
   @media (max-width: 1023px) { .desktop-filters { display: none; } }
@@ -282,8 +285,18 @@
     </aside>
 
     <main class="min-w-0 flex-1">
-      <div class="mb-3 flex items-center justify-between gap-3 flex-wrap">
-        <div class="flex items-center gap-1.5">
+      <div class="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex items-center gap-2 lg:hidden">
+          <button id="mobile-filter-toggle" class="mobile-filter-toggle project-btn rounded-lg px-3 py-2 text-[10px] font-semibold uppercase tracking-[.12em]" type="button">Filters</button>
+          <select id="mobile-sort-select" class="mobile-toolbar-select h-9 flex-1 rounded-lg px-2 text-xs">
+            <option value="default">Sort: Default</option>
+            <option value="cheap">Sort: Cheap first</option>
+            <option value="expensive">Sort: Expensive first</option>
+            <option value="newest">Sort: Newest</option>
+            <option value="oldest">Sort: Oldest</option>
+          </select>
+        </div>
+        <div class="hidden items-center gap-1.5 lg:flex">
           <button class="toolbar-tab active" data-sort="default">Default</button>
           <button class="toolbar-tab" data-sort="cheap">Cheap first</button>
           <button class="toolbar-tab" data-sort="expensive">Expensive first</button>
@@ -296,7 +309,7 @@
         </div>
       </div>
 
-      <div id="search-results" class="grid gap-2 grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+      <div id="search-results" class="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
         <div class="col-span-full py-16 text-center">
           <div class="mb-2 text-2xl">🎮</div>
           <p class="text-sm font-semibold text-white">Use filters to find accounts</p>
@@ -352,7 +365,10 @@
           btns.forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
           const field = btn.dataset.field;
-          if (field && hiddenInputs[field]) hiddenInputs[field].value = btn.dataset.value || '';
+          if (field && hiddenInputs[field]) {
+            hiddenInputs[field].value = btn.dataset.value || '';
+            hiddenInputs[field].dispatchEvent(new Event('change', { bubbles: true }));
+          }
         });
       });
     });
