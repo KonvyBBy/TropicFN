@@ -1105,8 +1105,8 @@ def _build_purchase_webhook_payload(
             "inline": True,
         },
         {
-            "name": "⭐ Rating",
-            "value": "★★★★★ (5/5)",
+            "name": "⭐ Experience",
+            "value": "Premium checkout",
             "inline": True,
         },
         {
