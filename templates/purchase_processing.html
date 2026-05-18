@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% block title %}Processing Purchase — ItemZ{% endblock %}
+
+{% block extra_styles %}
+<style>
+  .purchase-wrap { max-width: 740px; margin: 0 auto; }
+  .purchase-card {
+    border: 1px solid rgba(255,255,255,.12);
+    background: radial-gradient(circle at top, rgba(16,185,129,.14), rgba(15,23,42,.88) 52%);
+  }
+  .purchase-spinner {
+    width: 84px;
+    height: 84px;
+    border-radius: 9999px;
+    border: 4px solid rgba(255,255,255,.13);
+    border-top-color: #34d399;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+  }
+  .purchase-success-ring {
+    width: 84px;
+    height: 84px;
+    border-radius: 9999px;
+    border: 3px solid rgba(52,211,153,.28);
+    background: rgba(16,185,129,.16);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 0 0 rgba(16,185,129,.5);
+    animation: pulseSuccess 1.2s ease-out infinite;
+  }
+  .purchase-error-ring {
+    width: 84px;
+    height: 84px;
+    border-radius: 9999px;
+    border: 3px solid rgba(248,113,113,.34);
+    background: rgba(127,29,29,.28);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 0 0 rgba(248,113,113,.45);
+    animation: pulseError 1.2s ease-out infinite;
+  }
+  .purchase-meta {
+    border: 1px solid rgba(255,255,255,.1);
+    background: rgba(0,0,0,.22);
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  @keyframes pulseSuccess {
+    0% { box-shadow: 0 0 0 0 rgba(16,185,129,.55); }
+    100% { box-shadow: 0 0 0 18px rgba(16,185,129,0); }
+  }
+  @keyframes pulseError {
+    0% { box-shadow: 0 0 0 0 rgba(248,113,113,.5); }
+    100% { box-shadow: 0 0 0 18px rgba(248,113,113,0); }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="purchase-wrap">
+  <article class="purchase-card rounded-3xl px-6 py-10 text-center sm:px-9">
+    <div id="purchase-state-icon" class="purchase-spinner"></div>
+    <h1 id="purchase-state-title" class="mt-6 font-space text-2xl font-bold text-white sm:text-3xl">
+      Processing your purchase
+    </h1>
+    <p id="purchase-state-subtitle" class="mt-3 text-sm text-zinc-300 sm:text-base">
+      Please wait while we complete your order.
+    </p>
+
+    <div class="purchase-meta mx-auto mt-6 max-w-md rounded-2xl px-4 py-4 text-left">
+      <div class="flex items-center justify-between py-2 text-sm">
+        <span class="text-zinc-400">Title</span>
+        <strong class="text-white">{{ item_title }}</strong>
+      </div>
+      <div class="flex items-center justify-between py-2 text-sm">
+        <span class="text-zinc-400">Account Number</span>
+        <strong class="text-emerald-300">#{{ item_id }}</strong>
+      </div>
+    </div>
+
+    <p id="purchase-state-message" class="mt-5 text-sm text-zinc-400">
+      Your purchase for <strong class="text-zinc-200">{{ item_title }}</strong> with account number <strong class="text-zinc-200">#{{ item_id }}</strong> is processing. This can take up to a minute. Please be patient.
+    </p>
+
+    <div id="purchase-actions" class="mt-7 hidden">
+      <a href="/my-accounts" class="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-500 px-6 text-sm font-semibold text-black transition hover:bg-emerald-400">
+        Go to My Accounts
+      </a>
+    </div>
+  </article>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  async function postJSON(url, payload) {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload || {})
+    });
+    let data = {};
+    let parseError = null;
+    try {
+      data = await response.json();
+    } catch (e) {
+      parseError = e;
+    }
+    if (!response.ok) {
+      throw new Error(
+        data.message ||
+        data.error ||
+        (parseError ? `Request failed (${response.status}): invalid server response.` : `Request failed (${response.status})`)
+      );
+    }
+    return data;
+  }
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    const iconEl = document.getElementById('purchase-state-icon');
+    const titleEl = document.getElementById('purchase-state-title');
+    const subtitleEl = document.getElementById('purchase-state-subtitle');
+    const messageEl = document.getElementById('purchase-state-message');
+    const actionsEl = document.getElementById('purchase-actions');
+    const itemId = Number({{ item_id|tojson }});
+    const itemTitle = {{ item_title|tojson }};
+
+    try {
+      await postJSON('/api/fortnite/buy', { item_id: itemId });
+      iconEl.className = 'purchase-success-ring mx-auto';
+      iconEl.innerHTML = '<i class="ri-check-line text-4xl text-emerald-300"></i>';
+      titleEl.textContent = 'Purchase complete';
+      subtitleEl.textContent = 'All done. Your account has been delivered.';
+      messageEl.innerHTML = `Awesome! <strong class="text-zinc-200">${itemTitle}</strong> (#${itemId}) is ready. Go to your My Accounts page to view login details.`;
+      actionsEl.classList.remove('hidden');
+    } catch (error) {
+      iconEl.className = 'purchase-error-ring mx-auto';
+      iconEl.innerHTML = '<i class="ri-close-line text-4xl text-red-300"></i>';
+      titleEl.textContent = 'Purchase failed';
+      subtitleEl.textContent = 'We could not complete this purchase.';
+      messageEl.textContent = error?.message || 'An unexpected error occurred. Please check your balance and try again later.';
+      actionsEl.classList.remove('hidden');
+      actionsEl.innerHTML = `<a href="/account/${itemId}" class="inline-flex h-11 items-center justify-center rounded-xl bg-white/10 px-6 text-sm font-semibold text-white transition hover:bg-white/20">Try Again</a>`;
+    }
+  });
+</script>
+{% endblock %}

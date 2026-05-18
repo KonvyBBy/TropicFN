@@ -28,23 +28,12 @@
 <!-- Account viewer -->
 <section class="glass-panel rounded-3xl p-5 sm:p-6 space-y-4">
   <div class="flex items-center justify-between">
-    <h2 class="font-space text-base font-semibold text-white">Account Details</h2>
-    <span id="account-indicator" class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] text-zinc-400"></span>
+    <h2 class="font-space text-base font-semibold text-white">Purchased Accounts</h2>
+    <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] text-zinc-400">Tap the arrow to view details</span>
   </div>
 
   <div id="my-accounts-view" class="rounded-2xl border border-white/10 bg-black/25 p-3 sm:p-4 min-h-[140px]">
     <div class="text-sm text-zinc-500 text-center py-4">Loading...</div>
-  </div>
-
-  <div class="flex items-center justify-between gap-3">
-    <button id="prev-account"
-      class="inline-flex h-10 items-center justify-center rounded-xl border border-white/15 bg-white/5 px-4 text-sm font-medium text-zinc-300 hover:text-white hover:border-white/30 transition cursor-pointer gap-2">
-      <i class="ri-arrow-left-line"></i>Previous
-    </button>
-    <button id="next-account"
-      class="inline-flex h-10 items-center justify-center rounded-xl border border-white/15 bg-white/5 px-4 text-sm font-medium text-zinc-300 hover:text-white hover:border-white/30 transition cursor-pointer gap-2">
-      Next<i class="ri-arrow-right-line"></i>
-    </button>
   </div>
 </section>
 
@@ -86,7 +75,7 @@
 
   #my-accounts-view .my-account-top {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     gap: 10px;
   }
@@ -117,6 +106,45 @@
 
   #my-accounts-view .my-account-state.is-delivered {
     color: #00e289;
+  }
+
+  #my-accounts-view .my-account-summary {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  #my-accounts-view .my-account-summary:hover .my-account-title {
+    color: #d9f8ee;
+  }
+
+  #my-accounts-view .my-account-summary-chevron {
+    font-size: 1.6rem;
+    color: #8ea0bc;
+    transition: transform .2s ease, color .2s ease;
+  }
+
+  #my-accounts-view .my-account-summary[aria-expanded="true"] .my-account-summary-chevron {
+    transform: rotate(180deg);
+    color: #00e289;
+  }
+
+  #my-accounts-view .my-account-collapse {
+    display: none;
+  }
+
+  #my-accounts-view .my-account-collapse.is-open {
+    display: block;
+    margin-top: 14px;
+    animation: myAccDrop .2s ease-out;
+  }
+
+  @keyframes myAccDrop {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
   #my-accounts-view .my-account-price {
@@ -188,6 +216,18 @@
   }
 
   #my-accounts-view .my-account-name-status.error { color: #ff9f9f; }
+
+  #my-accounts-view .my-account-id-chip {
+    margin-top: 6px;
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 999px;
+    padding: 3px 9px;
+    font-size: .72rem;
+    color: #9bb2d2;
+    background: rgba(255,255,255,0.04);
+  }
 
   #my-accounts-view .my-account-section {
     border: 1px solid rgba(255,255,255,0.08);

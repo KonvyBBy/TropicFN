@@ -215,33 +215,24 @@
     if (!buyBtn || !statusEl) return;
     let instantBuyInFlight = false;
 
-    buyBtn.addEventListener('click', async () => {
+    buyBtn.addEventListener('click', () => {
       if (instantBuyInFlight) return;
+      const detail = window.ACCOUNT_DETAIL || {};
+      const itemId = Number(detail.item_id || 0);
+      if (!(Number.isInteger(itemId) && itemId > 0)) {
+        statusEl.textContent = 'Invalid item ID. Please refresh and try again.';
+        return;
+      }
+
       instantBuyInFlight = true;
       buyBtn.disabled = true;
-      const originalLabel = buyBtn.textContent;
-      let purchaseSucceeded = false;
-      buyBtn.textContent = 'Buying...';
-      statusEl.textContent = 'Processing instant buy...';
+      buyBtn.textContent = 'Starting...';
+      statusEl.textContent = 'Opening purchase processing page...';
 
-      try {
-        const itemId = Number((window.ACCOUNT_DETAIL || {}).item_id || 0);
-        if (!(Number.isInteger(itemId) && itemId > 0)) {
-          throw new Error('Invalid item ID. Please refresh and try again.');
-        }
-        const response = await postJSON('/api/fortnite/buy', { item_id: itemId });
-        purchaseSucceeded = true;
-        buyBtn.textContent = 'Purchased';
-        statusEl.textContent = response.message || 'Purchase successful.';
-      } catch (error) {
-        statusEl.textContent = error?.message || 'An unexpected error occurred. Please try again.';
-      } finally {
-        if (!purchaseSucceeded) {
-          buyBtn.disabled = false;
-          buyBtn.textContent = originalLabel;
-        }
-        instantBuyInFlight = false;
-      }
+      const title = String(detail.title || '').trim();
+      const params = new URLSearchParams({ item_id: String(itemId) });
+      if (title) params.set('title', title);
+      window.location.href = `/purchase-processing?${params.toString()}`;
     });
   });
 </script>
