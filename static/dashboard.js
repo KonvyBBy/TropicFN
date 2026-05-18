@@ -804,6 +804,11 @@ document.addEventListener("DOMContentLoaded", () => {
   let myAccounts = [];
   let accIndex = 0;
 
+  /**
+   * Formats a Unix timestamp (seconds) into a short local date string.
+   * @param {number|string} timestamp
+   * @returns {string}
+   */
   function formatPurchaseDate(timestamp) {
     const tsNum = Number(timestamp || 0);
     if (!Number.isFinite(tsNum) || tsNum <= 0) return "Unknown date";
@@ -845,6 +850,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const safeLabel = escapeHtml(label);
     const rawValue = String(value || "N/A");
     const safeValue = escapeHtml(rawValue);
+    // URL-encoding keeps the raw credential intact in a data-* attribute without breaking HTML parsing.
     const encodedCopyValue = encodeURIComponent(rawValue);
     return `
       <div class="my-account-row">
@@ -909,6 +915,12 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  function buildCredCombo(login, password) {
+    if (!login || !password) return "N/A";
+    if (login === "N/A" || password === "N/A") return "N/A";
+    return `${login}:${password}`;
+  }
+
   async function loadMyAccounts() {
     if (!window.KONVY_LOGGED_IN) return;
     const view = qs("my-accounts-view");
@@ -944,16 +956,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const parsedEmail = splitRawCredentials(emailData.raw);
     const fortniteLogin = loginData.login || parsedFortnite.login || "N/A";
     const fortnitePassword = loginData.password || parsedFortnite.password || "N/A";
-    const fortniteCombo = fortniteLogin !== "N/A" && fortnitePassword !== "N/A"
-      ? `${fortniteLogin}:${fortnitePassword}`
-      : "N/A";
+    const fortniteCombo = buildCredCombo(fortniteLogin, fortnitePassword);
     const emailLogin = emailData.login || parsedEmail.login || "N/A";
     const emailPassword = emailData.password || parsedEmail.password || "N/A";
     const emailOldPassword = emailData.oldPassword || "N/A";
     const emailSecretAnswer = emailData.newSecretAnswer || emailData.secretAnswer || "N/A";
-    const emailCombo = emailLogin !== "N/A" && emailPassword !== "N/A"
-      ? `${emailLogin}:${emailPassword}`
-      : "N/A";
+    const emailCombo = buildCredCombo(emailLogin, emailPassword);
     const skinsCount = Number(item.fortnite_skin_count || item.fortniteSkinCount || (item.fortniteSkins || []).length || 0);
     const delivered = String(acc.purchase_result?.status || "").toLowerCase() === "ok";
     const purchaseDate = formatPurchaseDate(acc.timestamp);
