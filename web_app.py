@@ -98,6 +98,8 @@ FAST_BUY_RETRYABLE_KEYWORDS = (
 PURCHASE_LOCK_SESSION_KEY = "purchase_lock"
 DEFAULT_PURCHASE_ITEM_TITLE = "Fortnite Account"
 MAX_PURCHASE_ITEM_TITLE_LENGTH = 160
+DEFAULT_PURCHASE_PRODUCT_NAME = "Fortnite"
+PURCHASE_LOCK_MAX_SECONDS = 600
 
 
 class PurchaseFlowError(Exception):
@@ -1269,7 +1271,7 @@ def _build_purchase_webhook_payload(
         },
         {
             "name": "Product",
-            "value": "Fortnite",
+            "value": DEFAULT_PURCHASE_PRODUCT_NAME,
             "inline": True,
         },
         {
@@ -2141,6 +2143,13 @@ def _normalize_locked_purchase(session_value: Any) -> Optional[Dict[str, Any]]:
         return None
     if item_id <= 0:
         return None
+    created_at = int(time.time())
+    try:
+        created_at = int(session_value.get("created_at") or created_at)
+    except (TypeError, ValueError):
+        created_at = int(time.time())
+    if created_at > 0 and (time.time() - float(created_at)) > PURCHASE_LOCK_MAX_SECONDS:
+        return None
     item_title = (
         str(session_value.get("item_title") or DEFAULT_PURCHASE_ITEM_TITLE).strip()
         or DEFAULT_PURCHASE_ITEM_TITLE
@@ -2148,6 +2157,7 @@ def _normalize_locked_purchase(session_value: Any) -> Optional[Dict[str, Any]]:
     return {
         "item_id": item_id,
         "item_title": item_title[:MAX_PURCHASE_ITEM_TITLE_LENGTH],
+        "created_at": created_at,
     }
 
 
@@ -2165,6 +2175,7 @@ def set_purchase_lock(item_id: int, item_title: str) -> None:
             str(item_title or DEFAULT_PURCHASE_ITEM_TITLE).strip()
             or DEFAULT_PURCHASE_ITEM_TITLE
         )[:MAX_PURCHASE_ITEM_TITLE_LENGTH],
+        "created_at": int(time.time()),
     }
 
 
@@ -2177,6 +2188,10 @@ def _purchase_in_progress_response(waiting_for_other_item: bool = False):
     if waiting_for_other_item:
         message = "Another purchase is processing. Please wait until it completes."
     return jsonify({"error": "purchase_in_progress", "message": message}), 423
+
+
+def _build_fallback_purchase_title(item_id: int) -> str:
+    return f"{DEFAULT_PURCHASE_ITEM_TITLE} #{item_id}"
 
 
 @app.before_request
@@ -2194,7 +2209,9 @@ def enforce_purchase_lock():
     if path in {"/purchase-processing", "/logout"}:
         requested_item_id = 0
         try:
-            requested_item_id = int((request.args.get("item_id") or "").strip() or 0)
+            requested_item_id_raw = request.args.get("item_id") or ""
+            requested_item_id_text = str(requested_item_id_raw).strip()
+            requested_item_id = int(requested_item_id_text or 0)
         except (TypeError, ValueError):
             requested_item_id = 0
         if path == "/purchase-processing" and requested_item_id and requested_item_id != locked_purchase["item_id"]:
@@ -4386,7 +4403,8 @@ def purchase_processing_page():
             )
         )
 
-    set_purchase_lock(item_id, item_title)
+    if not locked_purchase:
+        set_purchase_lock(item_id, item_title)
 
     return render_template(
         "purchase_processing.html",
@@ -5218,7 +5236,7 @@ def api_fortnite_buy():
         return _purchase_in_progress_response(waiting_for_other_item=True)
 
     if not locked_purchase:
-        set_purchase_lock(item_id, f"Fortnite Account #{item_id}")
+        set_purchase_lock(item_id, _build_fallback_purchase_title(item_id))
 
     starting_balance = get_balance(username)
 
