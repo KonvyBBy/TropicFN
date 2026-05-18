@@ -10,7 +10,8 @@ import hashlib
 import base64
 import datetime
 import logging
-import random
+import re
+import secrets
 import smtplib
 import threading
 from email.message import EmailMessage
@@ -511,7 +512,11 @@ def _normalize_email(email: str) -> str:
 
 
 def _generate_one_time_code() -> str:
-    return f"{random.randint(0, 999999):06d}"
+    return f"{secrets.randbelow(1000000):06d}"
+
+
+def _is_valid_email_address(email: str) -> bool:
+    return bool(re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", _normalize_email(email)))
 
 
 def _hash_one_time_code(code: str) -> str:
@@ -550,13 +555,13 @@ def _send_email_message(recipient: str, subject: str, body: str) -> Tuple[bool, 
     return True, "Email sent."
 
 
-def find_username_by_email(email: str) -> Optional[str]:
+def find_username_by_email(email: str, users: Optional[dict] = None) -> Optional[str]:
     normalized = _normalize_email(email)
     if not normalized:
         return None
 
-    users = _load_users()
-    for username, info in users.items():
+    loaded_users = users if users is not None else _load_users()
+    for username, info in loaded_users.items():
         if _normalize_email(info.get("email", "")) == normalized:
             return username
     return None
@@ -2045,15 +2050,16 @@ def login():
 
     if not is_email_verified(username):
         ok, msg = send_email_verification_code(username)
-        session["pending_verify_username"] = username
-        return redirect(
-            url_for(
-                "verify_email",
-                u=username,
-                message=msg if ok else "",
-                error="" if ok else f"Your account needs email verification. {msg}",
+        if ok:
+            session["pending_verify_username"] = username
+            return redirect(
+                url_for(
+                    "verify_email",
+                    u=username,
+                    message=msg,
+                )
             )
-        )
+        app.logger.warning("Email verification send failed for %s: %s", username, msg)
 
     session["username"] = username
     session.pop("pending_verify_username", None)
@@ -2092,7 +2098,7 @@ def register():
             )
         )
 
-    if "@" not in email or email.startswith("@") or email.endswith("@"):
+    if not _is_valid_email_address(email):
         return redirect(
             url_for(
                 "register",
@@ -2199,7 +2205,8 @@ def forgot_password():
         )
 
     identifier = (request.form.get("identifier") or "").strip()
-    username = identifier if _load_users().get(identifier) else find_username_by_email(identifier)
+    users = _load_users()
+    username = identifier if identifier in users else find_username_by_email(identifier, users=users)
     if not username:
         return redirect(
             url_for(
