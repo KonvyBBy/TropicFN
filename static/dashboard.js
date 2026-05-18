@@ -1146,7 +1146,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function getAccountNumber(acc) {
     const item = acc?.purchase_result?.item || {};
-    // Canonical marketplace field is item_id; fallbacks keep backward compatibility.
+    // Canonical purchase payload field is item_id.
+    // fortnite_item_id and id appear in older/alternate marketplace payload shapes.
     const rawId = item.item_id ?? item.fortnite_item_id ?? item.id;
     const parsedId = Number(rawId);
     return Number.isInteger(parsedId) && parsedId > 0 ? parsedId : 0;
@@ -1175,7 +1176,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const accountNameStatusId = `my-account-name-status-${cardIndex}`;
     const accountNumber = getAccountNumber(acc);
     const accountTitle = getAccountTitle(item, skinsCount, cardIndex);
-    const isOpen = cardIndex === 0;
+    const isOpen = false;
 
     return `
       <article class="my-account-panel">

@@ -29,6 +29,18 @@
     box-shadow: 0 0 0 0 rgba(16,185,129,.5);
     animation: pulseSuccess 1.2s ease-out infinite;
   }
+  .purchase-error-ring {
+    width: 84px;
+    height: 84px;
+    border-radius: 9999px;
+    border: 3px solid rgba(248,113,113,.34);
+    background: rgba(127,29,29,.28);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 0 0 rgba(248,113,113,.45);
+    animation: pulseError 1.2s ease-out infinite;
+  }
   .purchase-meta {
     border: 1px solid rgba(255,255,255,.1);
     background: rgba(0,0,0,.22);
@@ -39,6 +51,10 @@
   @keyframes pulseSuccess {
     0% { box-shadow: 0 0 0 0 rgba(16,185,129,.55); }
     100% { box-shadow: 0 0 0 18px rgba(16,185,129,0); }
+  }
+  @keyframes pulseError {
+    0% { box-shadow: 0 0 0 0 rgba(248,113,113,.5); }
+    100% { box-shadow: 0 0 0 18px rgba(248,113,113,0); }
   }
 </style>
 {% endblock %}
@@ -121,7 +137,7 @@
       messageEl.innerHTML = `Awesome! <strong class="text-zinc-200">${itemTitle}</strong> (#${itemId}) is ready. Go to your My Accounts page to view login details.`;
       actionsEl.classList.remove('hidden');
     } catch (error) {
-      iconEl.className = 'purchase-success-ring mx-auto';
+      iconEl.className = 'purchase-error-ring mx-auto';
       iconEl.innerHTML = '<i class="ri-close-line text-4xl text-red-300"></i>';
       titleEl.textContent = 'Purchase failed';
       subtitleEl.textContent = 'We could not complete this purchase.';
