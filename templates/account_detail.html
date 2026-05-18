@@ -69,16 +69,16 @@
       <button
         id="instant-buy-btn"
         type="button"
-        class="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
+        class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        Instant Buy
+        Purchase Account
       </button>
-      <p id="instant-buy-status" class="mt-3 text-sm text-zinc-400">Buy now and we will handle delivery after purchase.</p>
+      <p id="instant-buy-status" class="mt-3 text-sm text-zinc-400">Automated delivery</p>
       {% else %}
       <a href="{{ url_for('register') }}" class="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-indigo-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-400">
-        Sign up to Instant Buy
+        Sign up to Purchase
       </a>
-      <p class="mt-3 text-sm text-zinc-400">Instant buy is available after you sign in.</p>
+      <p class="mt-3 text-sm text-zinc-400">Purchase is available after you sign in.</p>
       {% endif %}
     </section>
 
@@ -124,6 +124,76 @@
 {% endblock %}
 
 {% block scripts %}
+<style>
+  /* ── 3-dot loading ── */
+  .buy-dots { display: inline-flex; align-items: center; gap: 4px; }
+  .buy-dots span {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: currentColor; animation: buyDotBounce 1.2s ease-in-out infinite;
+  }
+  .buy-dots span:nth-child(2) { animation-delay: .2s; }
+  .buy-dots span:nth-child(3) { animation-delay: .4s; }
+  @keyframes buyDotBounce {
+    0%, 80%, 100% { transform: scale(0.6); opacity: .5; }
+    40% { transform: scale(1); opacity: 1; }
+  }
+
+  /* ── Naming modal ── */
+  #buy-naming-overlay {
+    position: fixed; inset: 0; z-index: 9998;
+    background: rgba(0,0,0,.82); backdrop-filter: blur(12px);
+    display: flex; align-items: center; justify-content: center; padding: 1rem;
+    opacity: 0; pointer-events: none; transition: opacity .25s;
+  }
+  #buy-naming-overlay.open { opacity: 1; pointer-events: all; }
+  #buy-naming-modal {
+    background: #121828; border: 1px solid rgba(255,255,255,.11);
+    border-radius: 22px; padding: 2rem; width: 100%; max-width: 420px;
+    box-shadow: 0 25px 60px rgba(0,0,0,.7);
+    transform: scale(.93) translateY(16px); transition: transform .3s cubic-bezier(.34,1.56,.64,1), opacity .25s;
+    opacity: 0;
+  }
+  #buy-naming-overlay.open #buy-naming-modal { transform: scale(1) translateY(0); opacity: 1; }
+  #buy-naming-modal .nm-icon { font-size: 2.5rem; margin-bottom: .75rem; text-align: center; }
+  #buy-naming-modal h3 { font-family: 'Space Grotesk',sans-serif; font-size: 1.2rem; font-weight: 700; color: #fff; text-align: center; margin-bottom: .4rem; }
+  #buy-naming-modal p { font-size: .88rem; color: #8ea0bc; text-align: center; margin-bottom: 1.4rem; }
+  #buy-naming-input {
+    width: 100%; background: #0b1629; border: 1px solid rgba(255,255,255,.12);
+    border-radius: 12px; color: #f4f7ff; padding: 11px 14px; font-size: .9rem;
+    outline: none; transition: border-color .2s, box-shadow .2s;
+  }
+  #buy-naming-input:focus { border-color: rgba(16,185,129,.7); box-shadow: 0 0 0 3px rgba(16,185,129,.13); }
+  #buy-naming-error { min-height: 18px; font-size: .78rem; color: #ff8a8a; margin-top: 6px; }
+  .nm-actions { display: flex; gap: .7rem; margin-top: 1.2rem; }
+  .nm-btn-save {
+    flex: 1; padding: .75rem; background: #0EF475; border: none; border-radius: 11px;
+    font-size: .95rem; font-weight: 700; color: #0a1f0f; cursor: pointer; transition: opacity .15s;
+  }
+  .nm-btn-save:hover { opacity: .88; }
+  .nm-btn-save:disabled { opacity: .55; cursor: not-allowed; }
+  .nm-btn-skip {
+    padding: .75rem 1.1rem; background: rgba(255,255,255,.05);
+    border: 1px solid rgba(255,255,255,.1); border-radius: 11px;
+    font-size: .9rem; color: #8ea0bc; cursor: pointer; transition: all .15s;
+  }
+  .nm-btn-skip:hover { background: rgba(255,255,255,.09); color: #fff; }
+</style>
+
+<!-- Naming overlay (hidden until purchase succeeds) -->
+<div id="buy-naming-overlay" role="dialog" aria-modal="true" aria-labelledby="buy-naming-title">
+  <div id="buy-naming-modal">
+    <div class="nm-icon">🎉</div>
+    <h3 id="buy-naming-title">Purchase Successful!</h3>
+    <p>Please name your account so you can find it easily.</p>
+    <input id="buy-naming-input" type="text" maxlength="50" placeholder="e.g. My Main Account" autocomplete="off" />
+    <div id="buy-naming-error"></div>
+    <div class="nm-actions">
+      <button class="nm-btn-save" id="buy-naming-save">Save Name</button>
+      <button class="nm-btn-skip" id="buy-naming-skip">Skip</button>
+    </div>
+  </div>
+</div>
+
 <script>
   window.ACCOUNT_DETAIL = {{ account_detail|tojson }};
 
@@ -212,17 +282,64 @@
 
     const buyBtn = document.getElementById('instant-buy-btn');
     const statusEl = document.getElementById('instant-buy-status');
+    const namingOverlay = document.getElementById('buy-naming-overlay');
+    const namingInput = document.getElementById('buy-naming-input');
+    const namingError = document.getElementById('buy-naming-error');
+    const namingSave = document.getElementById('buy-naming-save');
+    const namingSkip = document.getElementById('buy-naming-skip');
+
     if (!buyBtn || !statusEl) return;
     let instantBuyInFlight = false;
+    let currentPurchaseIndex = null;
+
+    function setBuyLoading() {
+      buyBtn.disabled = true;
+      buyBtn.innerHTML = `Purchasing <span class="buy-dots"><span></span><span></span><span></span></span>`;
+      statusEl.textContent = 'Processing... please wait while our system retrieves your account details';
+    }
+
+    function resetBuyBtn() {
+      buyBtn.disabled = false;
+      buyBtn.textContent = 'Purchase Account';
+    }
+
+    function openNamingModal() {
+      if (!namingOverlay) return;
+      namingInput.value = '';
+      namingError.textContent = '';
+      namingOverlay.classList.add('open');
+      setTimeout(() => namingInput.focus(), 320);
+    }
+
+    async function saveNameAndRedirect() {
+      const name = namingInput.value.trim();
+      if (!name) {
+        namingError.textContent = 'Please enter a name.';
+        return;
+      }
+      namingSave.disabled = true;
+      namingError.textContent = '';
+      try {
+        if (currentPurchaseIndex !== null) {
+          await postJSON('/api/fortnite/name-account', { purchase_index: currentPurchaseIndex, name });
+        }
+      } catch (e) {
+        namingError.textContent = e.message || 'Failed to save name.';
+        namingSave.disabled = false;
+        return;
+      }
+      window.location.href = '/my-accounts';
+    }
+
+    namingSave?.addEventListener('click', saveNameAndRedirect);
+    namingSkip?.addEventListener('click', () => { window.location.href = '/my-accounts'; });
+    namingInput?.addEventListener('keydown', (e) => { if (e.key === 'Enter') saveNameAndRedirect(); });
 
     buyBtn.addEventListener('click', async () => {
       if (instantBuyInFlight) return;
       instantBuyInFlight = true;
-      buyBtn.disabled = true;
-      const originalLabel = buyBtn.textContent;
+      setBuyLoading();
       let purchaseSucceeded = false;
-      buyBtn.textContent = 'Buying...';
-      statusEl.textContent = 'Processing instant buy...';
 
       try {
         const itemId = Number((window.ACCOUNT_DETAIL || {}).item_id || 0);
@@ -231,14 +348,15 @@
         }
         const response = await postJSON('/api/fortnite/buy', { item_id: itemId });
         purchaseSucceeded = true;
-        buyBtn.textContent = 'Purchased';
+        currentPurchaseIndex = response.purchase_index ?? null;
+        buyBtn.textContent = 'Purchased ✓';
         statusEl.textContent = response.message || 'Purchase successful.';
+        openNamingModal();
       } catch (error) {
         statusEl.textContent = error?.message || 'An unexpected error occurred. Please try again.';
       } finally {
         if (!purchaseSucceeded) {
-          buyBtn.disabled = false;
-          buyBtn.textContent = originalLabel;
+          resetBuyBtn();
         }
         instantBuyInFlight = false;
       }

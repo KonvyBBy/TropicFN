@@ -1,55 +1,173 @@
 {% extends "base.html" %}
 {% block title %}My Accounts — ItemZ{% endblock %}
 
+{% block extra_styles %}
+<style>
+  /* ── Page header ── */
+  .ma-header-icon {
+    width: 48px; height: 48px; border-radius: 14px;
+    background: linear-gradient(135deg,#0ef475 0%,#0ab857 100%);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 24px rgba(14,244,117,.35);
+  }
+
+  /* ── Account card ── */
+  .ma-card {
+    border: 1px solid rgba(255,255,255,.08);
+    background: rgba(12,19,34,.85);
+    border-radius: 18px;
+    overflow: hidden;
+    transition: border-color .2s, box-shadow .2s;
+    animation: maCardIn .4s cubic-bezier(.22,1,.36,1) both;
+  }
+  .ma-card:hover { border-color: rgba(255,255,255,.15); box-shadow: 0 8px 32px rgba(0,0,0,.4); }
+
+  @keyframes maCardIn {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* stagger children */
+  .ma-card:nth-child(1) { animation-delay: .04s; }
+  .ma-card:nth-child(2) { animation-delay: .1s; }
+  .ma-card:nth-child(3) { animation-delay: .16s; }
+  .ma-card:nth-child(4) { animation-delay: .22s; }
+  .ma-card:nth-child(n+5) { animation-delay: .28s; }
+
+  /* ── Card summary row ── */
+  .ma-summary {
+    display: flex; align-items: center; gap: 14px;
+    padding: 16px 18px; cursor: pointer;
+    user-select: none;
+  }
+  .ma-avatar {
+    width: 44px; height: 44px; border-radius: 12px;
+    background: linear-gradient(135deg,#1e2d50,#0d1628);
+    border: 1px solid rgba(255,255,255,.1);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem; flex-shrink: 0;
+  }
+  .ma-info { flex: 1; min-width: 0; }
+  .ma-name {
+    font-family: 'Space Grotesk',sans-serif;
+    font-size: 1rem; font-weight: 700; color: #fff;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .ma-date { font-size: .78rem; color: #8ea0bc; margin-top: 2px; }
+  .ma-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: .7rem; font-weight: 700; padding: 3px 9px;
+    border-radius: 999px; background: rgba(14,244,117,.12);
+    color: #0ef475; border: 1px solid rgba(14,244,117,.25);
+  }
+  .ma-toggle {
+    width: 32px; height: 32px; border-radius: 10px;
+    border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.04);
+    display: flex; align-items: center; justify-content: center;
+    color: #8ea0bc; flex-shrink: 0;
+    transition: background .15s, border-color .15s, transform .3s cubic-bezier(.34,1.56,.64,1);
+  }
+  .ma-card.open .ma-toggle { transform: rotate(180deg); background: rgba(14,244,117,.12); border-color: rgba(14,244,117,.3); color: #0ef475; }
+
+  /* ── Credentials panel ── */
+  .ma-creds {
+    max-height: 0; overflow: hidden;
+    transition: max-height .4s cubic-bezier(.4,0,.2,1), opacity .3s ease;
+    opacity: 0;
+  }
+  .ma-card.open .ma-creds { max-height: 900px; opacity: 1; }
+
+  .ma-creds-inner {
+    border-top: 1px solid rgba(255,255,255,.07);
+    padding: 14px 18px 18px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+
+  .ma-section-title {
+    font-size: .7rem; font-weight: 800; letter-spacing: .1em;
+    text-transform: uppercase; color: #6b7fa0; margin-bottom: 8px;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .ma-cred-row {
+    display: grid; grid-template-columns: 120px 1fr auto;
+    gap: 8px; align-items: center;
+    padding: 9px 12px; border-radius: 10px;
+    background: rgba(5,10,20,.55);
+    border: 1px solid rgba(255,255,255,.06);
+    transition: background .15s;
+  }
+  .ma-cred-row:hover { background: rgba(255,255,255,.03); }
+  .ma-cred-label { font-size: .8rem; color: #7e94b5; }
+  .ma-cred-value {
+    font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+    font-size: .82rem; color: #f3f7ff; word-break: break-all;
+  }
+  .ma-copy-btn {
+    width: 28px; height: 28px; border-radius: 8px;
+    border: 1px solid rgba(255,255,255,.12); background: transparent;
+    color: #8ea0bc; cursor: pointer; display: inline-flex;
+    align-items: center; justify-content: center;
+    transition: all .15s;
+    flex-shrink: 0;
+  }
+  .ma-copy-btn:hover { border-color: rgba(14,244,117,.5); color: #0ef475; }
+  .ma-copy-btn.copied { border-color: rgba(14,244,117,.8); color: #0ef475; }
+
+  /* name edit inline */
+  .ma-rename-row {
+    display: flex; gap: 8px; align-items: center; margin-top: 6px;
+  }
+  .ma-rename-input {
+    flex: 1; background: #0b1629; border: 1px solid rgba(255,255,255,.1);
+    border-radius: 9px; color: #f4f7ff; padding: 7px 11px; font-size: .83rem;
+    outline: none; transition: border-color .2s, box-shadow .2s;
+  }
+  .ma-rename-input:focus { border-color: rgba(14,244,117,.6); box-shadow: 0 0 0 2px rgba(14,244,117,.1); }
+  .ma-rename-save {
+    padding: 7px 14px; background: #0EF475; border: none; border-radius: 9px;
+    font-size: .8rem; font-weight: 700; color: #062116; cursor: pointer;
+    transition: opacity .15s;
+  }
+  .ma-rename-save:hover { opacity: .85; }
+  .ma-rename-save:disabled { opacity: .55; cursor: not-allowed; }
+  .ma-rename-status { font-size: .74rem; color: #7dcfab; min-height: 14px; }
+
+  /* loading skeleton */
+  .ma-skeleton { animation: maPulse 1.5s ease-in-out infinite; border-radius: 10px; background: rgba(255,255,255,.06); }
+  @keyframes maPulse { 0%,100%{opacity:.4} 50%{opacity:.8} }
+
+  @media (max-width: 560px) {
+    .ma-cred-row { grid-template-columns: 1fr; gap: 4px; }
+    .ma-copy-btn { margin-top: 2px; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 
 <header class="glass-panel relative overflow-hidden rounded-3xl px-5 py-8 sm:px-8 sm:py-10">
-  <h1 class="text-glow font-space text-2xl font-bold text-white sm:text-3xl md:text-4xl">My Accounts</h1>
-  <p class="mt-2 max-w-xl text-sm text-zinc-400 md:text-base">
-    View and manage your purchased Fortnite accounts.
-  </p>
+  <div class="flex items-center gap-4">
+    <div class="ma-header-icon">
+      <i class="ri-gamepad-line text-xl text-black"></i>
+    </div>
+    <div>
+      <h1 class="text-glow font-space text-2xl font-bold text-white sm:text-3xl">My Accounts</h1>
+      <p class="mt-1 text-sm text-zinc-400">View and manage your purchased Fortnite accounts.</p>
+    </div>
+  </div>
 </header>
 
-{% if purchases|length == 0 %}
-<section class="glass-panel rounded-3xl p-8 text-center">
-  <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
-    <i class="ri-gamepad-line text-2xl text-zinc-500"></i>
+<div id="ma-list">
+  <!-- JS renders cards here -->
+  <div style="display:flex;flex-direction:column;gap:12px;" id="ma-skeletons">
+    <div class="ma-skeleton" style="height:76px;"></div>
+    <div class="ma-skeleton" style="height:76px;"></div>
   </div>
-  <h3 class="font-space text-base font-semibold text-white">No accounts yet</h3>
-  <p class="mt-2 text-sm text-zinc-500">Browse the marketplace and purchase your first account.</p>
-  <a href="/dashboard">
-    <button class="mt-5 inline-flex h-10 items-center justify-center rounded-xl bg-emerald-500 text-black px-5 text-sm font-medium hover:bg-emerald-400 transition cursor-pointer">
-      <i class="ri-shopping-cart-line mr-2"></i>Browse Marketplace
-    </button>
-  </a>
-</section>
-{% else %}
+</div>
 
-<!-- Account viewer -->
-<section class="glass-panel rounded-3xl p-5 sm:p-6 space-y-4">
-  <div class="flex items-center justify-between">
-    <h2 class="font-space text-base font-semibold text-white">Account Details</h2>
-    <span id="account-indicator" class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] text-zinc-400"></span>
-  </div>
-
-  <div id="my-accounts-view" class="rounded-2xl border border-white/10 bg-black/25 p-3 sm:p-4 min-h-[140px]">
-    <div class="text-sm text-zinc-500 text-center py-4">Loading...</div>
-  </div>
-
-  <div class="flex items-center justify-between gap-3">
-    <button id="prev-account"
-      class="inline-flex h-10 items-center justify-center rounded-xl border border-white/15 bg-white/5 px-4 text-sm font-medium text-zinc-300 hover:text-white hover:border-white/30 transition cursor-pointer gap-2">
-      <i class="ri-arrow-left-line"></i>Previous
-    </button>
-    <button id="next-account"
-      class="inline-flex h-10 items-center justify-center rounded-xl border border-white/15 bg-white/5 px-4 text-sm font-medium text-zinc-300 hover:text-white hover:border-white/30 transition cursor-pointer gap-2">
-      Next<i class="ri-arrow-right-line"></i>
-    </button>
-  </div>
-</section>
-
-<!-- Security notice -->
-<section class="flex items-start gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/5 px-4 py-3.5 sm:px-5">
+<!-- security notice -->
+<section class="flex items-start gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/5 px-4 py-3.5 sm:px-5" id="ma-notice" style="display:none!important;">
   <i class="ri-shield-line text-amber-400 mt-0.5 shrink-0"></i>
   <div class="text-sm text-zinc-400 leading-relaxed space-y-1">
     <p>
@@ -67,206 +185,222 @@
   </div>
 </section>
 
-{% endif %}
-
 {% endblock %}
 
 {% block scripts %}
-<style>
-  #my-accounts-view .my-account-panel {
-    border: 1px solid rgba(255,255,255,0.08);
-    background: #0c1322;
-    border-radius: 16px;
-    padding: 16px;
-    color: #e8edf8;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
-
-  #my-accounts-view .my-account-top {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 10px;
-  }
-
-  #my-accounts-view .my-account-title {
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: #fff;
-    line-height: 1.2;
-  }
-
-  #my-accounts-view .my-account-date {
-    margin-top: 2px;
-    color: #8ea0bc;
-    font-size: 0.82rem;
-  }
-
-  #my-accounts-view .my-account-state {
-    margin-top: 6px;
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 0.86rem;
-    color: #8ea0bc;
-    font-weight: 600;
-  }
-
-  #my-accounts-view .my-account-state.is-delivered {
-    color: #00e289;
-  }
-
-  #my-accounts-view .my-account-price {
-    color: #00e289;
-    font-weight: 700;
-    font-size: 1.2rem;
-    line-height: 1.2;
-  }
-
-  #my-accounts-view .my-account-name-wrap {
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 12px;
-    background: rgba(11, 18, 32, 0.8);
-    padding: 10px;
-  }
-
-  #my-accounts-view .my-account-name-label {
-    display: block;
-    font-size: 0.74rem;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: #8ea0bc;
-    margin-bottom: 8px;
-    font-weight: 700;
-  }
-
-  #my-accounts-view .my-account-name-controls {
-    display: flex;
-    gap: 8px;
-  }
-
-  #my-accounts-view .my-account-name-input {
-    flex: 1;
-    min-width: 0;
-    background: #0b1629;
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 10px;
-    color: #f4f7ff;
-    padding: 9px 11px;
-    font-size: 0.86rem;
-    outline: none;
-  }
-
-  #my-accounts-view .my-account-name-input:focus {
-    border-color: rgba(16, 185, 129, 0.7);
-    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.12);
-  }
-
-  #my-accounts-view .my-account-name-save {
-    border: none;
-    background: #00d17f;
-    color: #062116;
-    border-radius: 10px;
-    padding: 0 14px;
-    font-size: 0.82rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: background .15s ease;
-  }
-
-  #my-accounts-view .my-account-name-save:hover { background: #17e592; }
-  #my-accounts-view .my-account-name-save:disabled { opacity: .65; cursor: not-allowed; }
-
-  #my-accounts-view .my-account-name-status {
-    margin-top: 6px;
-    min-height: 16px;
-    font-size: 0.75rem;
-    color: #9cd9bc;
-  }
-
-  #my-accounts-view .my-account-name-status.error { color: #ff9f9f; }
-
-  #my-accounts-view .my-account-section {
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 12px;
-    background: rgba(5, 10, 20, 0.55);
-    overflow: hidden;
-  }
-
-  #my-accounts-view .my-account-section h3 {
-    margin: 0;
-    padding: 11px 12px;
-    font-size: 0.95rem;
-    font-weight: 800;
-    letter-spacing: .04em;
-    color: #fff;
-    background: rgba(255,255,255,0.02);
-    border-bottom: 1px solid rgba(255,255,255,0.08);
-  }
-
-  #my-accounts-view .my-account-row {
-    display: grid;
-    grid-template-columns: minmax(92px, 125px) 1fr auto;
-    gap: 10px;
-    align-items: center;
-    padding: 10px 12px;
-    border-bottom: 1px solid rgba(255,255,255,0.06);
-  }
-
-  #my-accounts-view .my-account-row:last-child { border-bottom: none; }
-
-  #my-accounts-view .my-account-row-label {
-    color: #89a0c2;
-    font-size: 0.84rem;
-  }
-
-  #my-accounts-view .my-account-row-value {
-    color: #f3f7ff;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    font-size: 0.84rem;
-    word-break: break-all;
-  }
-
-  #my-accounts-view .my-account-copy-btn {
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
-    border: 1px solid rgba(255,255,255,0.14);
-    background: transparent;
-    color: #9caec9;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: all .15s ease;
-  }
-
-  #my-accounts-view .my-account-copy-btn:hover {
-    border-color: rgba(0, 209, 127, 0.6);
-    color: #00d17f;
-  }
-
-  #my-accounts-view .my-account-copy-btn.copied {
-    border-color: rgba(0, 209, 127, 0.8);
-    color: #00e289;
-  }
-
-  @media (max-width: 640px) {
-    #my-accounts-view .my-account-row {
-      grid-template-columns: 1fr;
-      gap: 6px;
-      align-items: flex-start;
-    }
-    #my-accounts-view .my-account-copy-btn { margin-top: 2px; }
-    #my-accounts-view .my-account-name-controls { flex-direction: column; }
-    #my-accounts-view .my-account-name-save { height: 38px; }
-  }
-</style>
 <script>
-  window.KONVY_LOGGED_IN = true;
+(function () {
+  function escHtml(v) {
+    return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+  function encVal(v) { return encodeURIComponent(String(v ?? '')); }
+
+  async function postJSON(url, data) {
+    const res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data||{}) });
+    let json; try { json = await res.json(); } catch(e) { throw new Error(`Server error (${res.status})`); }
+    if (!res.ok) throw new Error(json.message || json.error || 'Request failed');
+    return json;
+  }
+
+  function formatDate(ts) {
+    if (!ts) return '—';
+    const d = new Date(typeof ts === 'number' ? ts * 1000 : ts);
+    if (isNaN(d)) return '—';
+    return d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+  }
+
+  function buildCredRow(label, value) {
+    const raw = String(value || 'N/A');
+    return `<div class="ma-cred-row">
+      <span class="ma-cred-label">${escHtml(label)}</span>
+      <span class="ma-cred-value">${escHtml(raw)}</span>
+      <button type="button" class="ma-copy-btn" data-copy="${encVal(raw)}" aria-label="Copy ${escHtml(label)}"><i class="ri-file-copy-line"></i></button>
+    </div>`;
+  }
+
+  function splitRaw(raw) {
+    const s = String(raw || '');
+    const i = s.indexOf(':');
+    if (i < 0) return { login: s || 'N/A', password: 'N/A' };
+    return { login: s.slice(0, i) || 'N/A', password: s.slice(i + 1) || 'N/A' };
+  }
+
+  function buildCard(acc, idx) {
+    const item = acc.purchase_result?.item || {};
+    const name = String(acc.name || '').trim() || `Account ${idx + 1}`;
+    const date = formatDate(acc.timestamp);
+    const skinsCount = Number(item.fortnite_skin_count || item.fortniteSkinCount || (item.fortniteSkins||[]).length || 0);
+    const delivered = String(acc.purchase_result?.status || '').toLowerCase() === 'ok';
+
+    const loginData = item.loginData || {};
+    const emailData = item.emailLoginData || {};
+    const pFn = splitRaw(loginData.raw);
+    const pEmail = splitRaw(emailData.raw);
+    const fnLogin = loginData.login || pFn.login || 'N/A';
+    const fnPass = loginData.password || pFn.password || 'N/A';
+    const emLogin = emailData.login || pEmail.login || 'N/A';
+    const emPass = emailData.password || pEmail.password || 'N/A';
+    const emOld = emailData.oldPassword || 'N/A';
+    const emSecret = emailData.newSecretAnswer || emailData.secretAnswer || 'N/A';
+    const combo = (fnLogin !== 'N/A' && fnPass !== 'N/A') ? `${fnLogin}:${fnPass}` : 'N/A';
+    const emailCombo = (emLogin !== 'N/A' && emPass !== 'N/A') ? `${emLogin}:${emPass}` : 'N/A';
+
+    const cardId = `ma-card-${idx}`;
+    const inputId = `ma-rename-${idx}`;
+
+    return `
+    <div class="ma-card" id="${cardId}" data-index="${idx}">
+      <div class="ma-summary" role="button" aria-expanded="false" aria-controls="ma-creds-${idx}" tabindex="0">
+        <div class="ma-avatar">🎮</div>
+        <div class="ma-info">
+          <div class="ma-name">${escHtml(name)}</div>
+          <div class="ma-date">Purchased ${escHtml(date)} · ${skinsCount} skins</div>
+        </div>
+        <span class="ma-badge ${delivered ? '' : 'pending'}" style="${delivered ? '' : 'background:rgba(255,176,0,.12);color:#ffc454;border-color:rgba(255,176,0,.3);'}">
+          <i class="${delivered ? 'ri-check-line' : 'ri-time-line'}"></i>
+          ${delivered ? 'Delivered' : 'Pending'}
+        </span>
+        <div class="ma-toggle" aria-hidden="true"><i class="ri-arrow-down-s-line"></i></div>
+      </div>
+
+      <div class="ma-creds" id="ma-creds-${idx}" aria-hidden="true">
+        <div class="ma-creds-inner">
+
+          <!-- rename -->
+          <div>
+            <div class="ma-section-title"><i class="ri-edit-line"></i> Account Name</div>
+            <div class="ma-rename-row">
+              <input id="${inputId}" class="ma-rename-input" type="text" maxlength="50" value="${escHtml(name)}" placeholder="Enter account name" />
+              <button type="button" class="ma-rename-save" data-save-idx="${idx}">Save</button>
+            </div>
+            <div class="ma-rename-status" id="ma-rename-status-${idx}"></div>
+          </div>
+
+          <!-- fortnite login -->
+          <div>
+            <div class="ma-section-title"><i class="ri-gamepad-line"></i> Fortnite Login</div>
+            ${buildCredRow('Login', fnLogin)}
+            ${buildCredRow('Password', fnPass)}
+            ${buildCredRow('Login & Password', combo)}
+          </div>
+
+          <!-- email access -->
+          <div>
+            <div class="ma-section-title"><i class="ri-mail-line"></i> Email Access</div>
+            ${buildCredRow('Login', emLogin)}
+            ${buildCredRow('Password', emPass)}
+            ${buildCredRow('Old Password', emOld)}
+            ${buildCredRow('Secret Answer', emSecret)}
+            ${buildCredRow('Login & Password', emailCombo)}
+          </div>
+
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function bindCard(card, accList) {
+    const idx = Number(card.dataset.index);
+    const summary = card.querySelector('.ma-summary');
+    const creds = card.querySelector('.ma-creds');
+    const saveBtn = card.querySelector('.ma-rename-save');
+    const input = card.querySelector('.ma-rename-input');
+    const statusEl = card.querySelector('.ma-rename-status');
+
+    // toggle open/close
+    function toggle() {
+      const open = card.classList.toggle('open');
+      summary.setAttribute('aria-expanded', String(open));
+      creds.setAttribute('aria-hidden', String(!open));
+    }
+    summary.addEventListener('click', toggle);
+    summary.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
+
+    // copy buttons
+    card.querySelectorAll('.ma-copy-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        let val = '';
+        try { val = decodeURIComponent(btn.dataset.copy || ''); } catch(_) { val = btn.dataset.copy || ''; }
+        if (!val) return;
+        try {
+          await navigator.clipboard.writeText(val);
+          btn.classList.add('copied');
+          setTimeout(() => btn.classList.remove('copied'), 800);
+        } catch(_) {}
+      });
+    });
+
+    // rename
+    saveBtn?.addEventListener('click', async () => {
+      const name = input.value.trim();
+      if (!name) { if (statusEl) { statusEl.style.color='#ff8a8a'; statusEl.textContent='Please enter a name.'; } return; }
+      saveBtn.disabled = true;
+      if (statusEl) { statusEl.style.color='#7dcfab'; statusEl.textContent='Saving...'; }
+      try {
+        await postJSON('/api/fortnite/name-account', { purchase_index: idx, name });
+        // update displayed name
+        const nameEl = card.querySelector('.ma-name');
+        if (nameEl) nameEl.textContent = name;
+        if (accList[idx]) accList[idx].name = name;
+        if (statusEl) statusEl.textContent = 'Saved ✓';
+        setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 2000);
+      } catch(e) {
+        if (statusEl) { statusEl.style.color='#ff8a8a'; statusEl.textContent = e.message || 'Failed to save.'; }
+      } finally {
+        saveBtn.disabled = false;
+      }
+    });
+    input?.addEventListener('keydown', (e) => { if (e.key === 'Enter') saveBtn?.click(); });
+  }
+
+  async function init() {
+    const listEl = document.getElementById('ma-list');
+    const skeletons = document.getElementById('ma-skeletons');
+    const notice = document.getElementById('ma-notice');
+
+    let accounts = [];
+    try {
+      const res = await postJSON('/api/fortnite/my-accounts');
+      accounts = res.accounts || [];
+    } catch(e) {
+      if (listEl) listEl.innerHTML = `<div class="glass-panel rounded-3xl p-8 text-center text-zinc-400">Failed to load accounts. Please refresh.</div>`;
+      return;
+    } finally {
+      skeletons?.remove();
+    }
+
+    if (!accounts.length) {
+      listEl.innerHTML = `
+        <section class="glass-panel rounded-3xl p-8 text-center">
+          <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
+            <i class="ri-gamepad-line text-2xl text-zinc-500"></i>
+          </div>
+          <h3 class="font-space text-base font-semibold text-white">No accounts yet</h3>
+          <p class="mt-2 text-sm text-zinc-500">Browse the marketplace and purchase your first account.</p>
+          <a href="/dashboard">
+            <button class="mt-5 inline-flex h-10 items-center justify-center rounded-xl bg-emerald-500 text-black px-5 text-sm font-medium hover:bg-emerald-400 transition cursor-pointer">
+              <i class="ri-shopping-cart-line mr-2"></i>Browse Marketplace
+            </button>
+          </a>
+        </section>`;
+      return;
+    }
+
+    // render all cards
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;flex-direction:column;gap:12px;';
+    wrap.innerHTML = accounts.map((acc, i) => buildCard(acc, i)).join('');
+    listEl.innerHTML = '';
+    listEl.appendChild(wrap);
+
+    wrap.querySelectorAll('.ma-card').forEach(card => bindCard(card, accounts));
+
+    // show security notice
+    if (notice) notice.style.removeProperty('display');
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+})();
 </script>
-<script src="{{ url_for('static', filename='dashboard.js') }}"></script>
 {% endblock %}
