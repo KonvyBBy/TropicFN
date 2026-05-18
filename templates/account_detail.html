@@ -65,7 +65,21 @@
     <section class="detail-panel rounded-2xl p-5 text-center">
       <div class="font-space text-4xl font-bold">${{ '%.2f'|format(account_detail.price) }}</div>
       <div class="mt-1 text-sm text-zinc-400">💎 {{ account_detail.vbucks }} V-Bucks included</div>
-      <p class="mt-3 text-sm text-zinc-400">Instant buy is not available on this page right now.</p>
+      {% if logged_in %}
+      <button
+        id="instant-buy-btn"
+        type="button"
+        class="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        Instant Buy
+      </button>
+      <p id="instant-buy-status" class="mt-3 text-sm text-zinc-400">Buy now and we will handle delivery after purchase.</p>
+      {% else %}
+      <a href="{{ url_for('register') }}" class="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-indigo-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-400">
+        Sign up to Instant Buy
+      </a>
+      <p class="mt-3 text-sm text-zinc-400">Instant buy is available after you sign in.</p>
+      {% endif %}
     </section>
 
     <section class="detail-panel rounded-2xl p-5">
@@ -122,6 +136,29 @@
       .replace(/'/g, '&#39;');
   }
 
+  async function postJSON(url, payload) {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload || {})
+    });
+    let data = {};
+    let parseError = null;
+    try {
+      data = await response.json();
+    } catch (e) {
+      parseError = e;
+    }
+    if (!response.ok) {
+      throw new Error(
+        data.message ||
+        data.error ||
+        (parseError ? `Request failed (${response.status}): invalid server response.` : `Request failed (${response.status})`)
+      );
+    }
+    return data;
+  }
+
   async function loadCategory(sectionId, apiType) {
     const detail = window.ACCOUNT_DETAIL || {};
     const names = Array.isArray(detail[sectionId]) ? detail[sectionId] : [];
@@ -172,6 +209,40 @@
       loadCategory('emotes', 'emote'),
       loadCategory('gliders', 'glider')
     ]);
+
+    const buyBtn = document.getElementById('instant-buy-btn');
+    const statusEl = document.getElementById('instant-buy-status');
+    if (!buyBtn || !statusEl) return;
+    let instantBuyInFlight = false;
+
+    buyBtn.addEventListener('click', async () => {
+      if (instantBuyInFlight) return;
+      instantBuyInFlight = true;
+      buyBtn.disabled = true;
+      const originalLabel = buyBtn.textContent;
+      let purchaseSucceeded = false;
+      buyBtn.textContent = 'Buying...';
+      statusEl.textContent = 'Processing instant buy...';
+
+      try {
+        const itemId = Number((window.ACCOUNT_DETAIL || {}).item_id || 0);
+        if (!(Number.isInteger(itemId) && itemId > 0)) {
+          throw new Error('Invalid item ID. Please refresh and try again.');
+        }
+        const response = await postJSON('/api/fortnite/buy', { item_id: itemId });
+        purchaseSucceeded = true;
+        buyBtn.textContent = 'Purchased';
+        statusEl.textContent = response.message || 'Purchase successful.';
+      } catch (error) {
+        statusEl.textContent = error?.message || 'An unexpected error occurred. Please try again.';
+      } finally {
+        if (!purchaseSucceeded) {
+          buyBtn.disabled = false;
+          buyBtn.textContent = originalLabel;
+        }
+        instantBuyInFlight = false;
+      }
+    });
   });
 </script>
 {% endblock %}
