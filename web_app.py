@@ -601,6 +601,9 @@ PENDING_TOPUPS_FILE = os.path.join(DATA_DIR, "pending_topups.json")
 # --- Topup notifications (approved topups shown to user) ---
 TOPUP_NOTIFICATIONS_FILE = os.path.join(DATA_DIR, "topup_notifications.json")
 
+# --- Support tickets ---
+SUPPORT_TICKETS_FILE = os.path.join(DATA_DIR, "support_tickets.json")
+
 # --- Blacklist ---
 BLACKLIST_FILE = os.path.join(DATA_DIR, "blacklist.json")
 
@@ -1102,6 +1105,143 @@ def dismiss_notification(username: str, notif_id: str) -> bool:
     return found
 
 
+# ===================== SUPPORT TICKETS HELPERS =====================
+
+SUPPORT_TICKET_SUBJECT_MAX_LENGTH = 120
+SUPPORT_TICKET_MESSAGE_MAX_LENGTH = 2000
+
+
+def _load_support_tickets() -> list:
+    if not os.path.exists(SUPPORT_TICKETS_FILE):
+        return []
+    try:
+        with open(SUPPORT_TICKETS_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f) or []
+            return data if isinstance(data, list) else []
+    except Exception:
+        return []
+
+
+def _save_support_tickets(tickets: list) -> None:
+    with open(SUPPORT_TICKETS_FILE, "w", encoding="utf-8") as f:
+        json.dump(tickets, f, indent=2)
+
+
+def _format_ticket_text(value: Any, max_length: int) -> str:
+    text = str(value or "").strip()
+    if len(text) > max_length:
+        text = text[:max_length].strip()
+    return text
+
+
+def _sort_support_tickets(tickets: list) -> list:
+    return sorted(
+        tickets,
+        key=lambda t: (int(t.get("updated_at") or 0), int(t.get("created_at") or 0)),
+        reverse=True,
+    )
+
+
+def _serialize_ticket_for_user(ticket: dict) -> dict:
+    messages = ticket.get("messages") if isinstance(ticket.get("messages"), list) else []
+    last_message = messages[-1] if messages else {}
+    return {
+        "id": str(ticket.get("id") or ""),
+        "subject": str(ticket.get("subject") or "Support Request"),
+        "status": str(ticket.get("status") or "open"),
+        "created_at": int(ticket.get("created_at") or 0),
+        "updated_at": int(ticket.get("updated_at") or 0),
+        "closed_at": int(ticket.get("closed_at") or 0),
+        "closed_by": str(ticket.get("closed_by") or ""),
+        "messages": messages,
+        "needs_user_response": str(last_message.get("author_type") or "") == "admin",
+        "last_message_preview": str(last_message.get("message") or "")[:140],
+    }
+
+
+def _serialize_ticket_for_admin(ticket: dict) -> dict:
+    messages = ticket.get("messages") if isinstance(ticket.get("messages"), list) else []
+    last_message = messages[-1] if messages else {}
+    ticket_copy = _serialize_ticket_for_user(ticket)
+    ticket_copy.update(
+        {
+            "username": str(ticket.get("username") or ""),
+            "needs_admin_response": (
+                ticket_copy["status"] == "open"
+                and str(last_message.get("author_type") or "") == "user"
+            ),
+        }
+    )
+    return ticket_copy
+
+
+def _find_ticket(tickets: list, ticket_id: str) -> Optional[dict]:
+    for ticket in tickets:
+        if str(ticket.get("id")) == str(ticket_id):
+            return ticket
+    return None
+
+
+def _new_ticket_message(author_type: str, author: str, message: str) -> dict:
+    return {
+        "id": secrets.token_hex(8),
+        "author_type": author_type,
+        "author": author,
+        "message": message,
+        "timestamp": int(time.time()),
+    }
+
+
+def create_support_ticket(username: str, subject: str, message: str) -> Tuple[bool, str, Optional[dict]]:
+    clean_subject = _format_ticket_text(subject, SUPPORT_TICKET_SUBJECT_MAX_LENGTH)
+    clean_message = _format_ticket_text(message, SUPPORT_TICKET_MESSAGE_MAX_LENGTH)
+    if not clean_subject:
+        return False, "Subject is required.", None
+    if not clean_message:
+        return False, "Message is required.", None
+
+    now = int(time.time())
+    ticket = {
+        "id": f"tkt_{secrets.token_hex(6)}",
+        "username": username,
+        "subject": clean_subject,
+        "status": "open",
+        "created_at": now,
+        "updated_at": now,
+        "closed_at": 0,
+        "closed_by": "",
+        "messages": [_new_ticket_message("user", username, clean_message)],
+    }
+    tickets = _load_support_tickets()
+    tickets.append(ticket)
+    _save_support_tickets(_sort_support_tickets(tickets))
+    return True, "Ticket created.", ticket
+
+
+def _append_ticket_message(ticket: dict, author_type: str, author: str, message: str) -> Tuple[bool, str]:
+    if str(ticket.get("status") or "") != "open":
+        return False, "Ticket is already closed."
+    clean_message = _format_ticket_text(message, SUPPORT_TICKET_MESSAGE_MAX_LENGTH)
+    if not clean_message:
+        return False, "Message is required."
+    messages = ticket.get("messages") if isinstance(ticket.get("messages"), list) else []
+    messages.append(_new_ticket_message(author_type, author, clean_message))
+    ticket["messages"] = messages
+    ticket["updated_at"] = int(time.time())
+    return True, "Reply sent."
+
+
+def _close_ticket(ticket: dict, closed_by: str) -> Tuple[bool, str]:
+    if str(ticket.get("status") or "") == "closed":
+        return False, "Ticket is already closed."
+    now = int(time.time())
+    ticket["status"] = "closed"
+    ticket["closed_at"] = now
+    ticket["closed_by"] = closed_by
+    ticket["updated_at"] = now
+    return True, "Ticket closed."
+
+
 # ===================== BLACKLIST HELPERS =====================
 
 def _load_blacklist() -> set:
@@ -1228,7 +1368,7 @@ def _format_purchase_webhook_currency(amount: Any) -> str:
         numeric_amount = float(amount or 0)
     except (TypeError, ValueError):
         numeric_amount = 0.0
-    return f"€{numeric_amount:.2f}"
+    return f"${numeric_amount:.2f}"
 
 
 def _get_purchase_item_summary(item: dict) -> str:
@@ -1253,6 +1393,7 @@ def _build_purchase_webhook_payload(
     purchase_result: dict,
     latest_order: Optional[dict],
     user_price: float,
+    username: str,
 ) -> dict:
     item = (purchase_result or {}).get("item") or {}
     item_id = item.get("item_id") or item.get("fortnite_item_id") or "N/A"
@@ -1264,7 +1405,7 @@ def _build_purchase_webhook_payload(
     fields = [
         {
             "name": "👤 User",
-            "value": "Hidden",
+            "value": str(username or "Unknown"),
             "inline": True,
         },
         {
@@ -1273,17 +1414,12 @@ def _build_purchase_webhook_payload(
             "inline": True,
         },
         {
-            "name": "Product",
-            "value": DEFAULT_PURCHASE_PRODUCT_NAME,
-            "inline": True,
-        },
-        {
             "name": "Status",
             "value": "Purchased",
             "inline": True,
         },
         {
-            "name": "💰 EUR Spent",
+            "name": "💰 USD Spent",
             "value": _format_purchase_webhook_currency(user_price),
             "inline": True,
         },
@@ -1314,15 +1450,15 @@ def _build_purchase_webhook_payload(
         )
 
     return {
-        "username": "TropicFN",
+        "username": "Itemz",
         "avatar_url": DISCORD_PURCHASE_THUMBNAIL_URL,
         "embeds": [
             {
                 "title": "✅ Order Confirmed - Thank You!",
-                "description": "Your TropicFN Fortnite purchase was completed successfully.",
+                "description": "Your Itemz Fortnite purchase was completed successfully.",
                 "color": 0x0EF475,
                 "author": {
-                    "name": "TropicFN Purchase Notification",
+                    "name": "Itemz Purchase Notification",
                     "icon_url": DISCORD_PURCHASE_THUMBNAIL_URL,
                 },
                 "thumbnail": {
@@ -1333,7 +1469,7 @@ def _build_purchase_webhook_payload(
                 },
                 "fields": fields,
                 "footer": {
-                    "text": "Powered by TropicFN • discord.gg/tropicfn",
+                    "text": "Powered by Itemz • discord.gg/itemz",
                     "icon_url": DISCORD_PURCHASE_THUMBNAIL_URL,
                 },
                 "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
@@ -1346,11 +1482,12 @@ def send_purchase_discord_webhook(
     purchase_result: dict,
     latest_order: Optional[dict],
     user_price: float,
+    username: str,
 ) -> None:
     if not DISCORD_PURCHASE_WEBHOOK_URL:
         return
 
-    payload = _build_purchase_webhook_payload(purchase_result, latest_order, user_price)
+    payload = _build_purchase_webhook_payload(purchase_result, latest_order, user_price, username)
     webhook_logger = logging.getLogger("purchase_webhook")
 
     try:
@@ -4677,6 +4814,46 @@ def api_admin_pending_topups():
     return jsonify({"error": "Unknown action"}), 400
 
 
+@app.route("/api/admin/support-tickets", methods=["GET"])
+def api_admin_support_tickets():
+    if not session.get("is_konvy_admin"):
+        return jsonify({"error": "Unauthorized"}), 403
+    tickets = _sort_support_tickets(_load_support_tickets())
+    return jsonify({"tickets": [_serialize_ticket_for_admin(t) for t in tickets]})
+
+
+@app.route("/api/admin/support-tickets/<ticket_id>/reply", methods=["POST"])
+def api_admin_support_ticket_reply(ticket_id: str):
+    if not session.get("is_konvy_admin"):
+        return jsonify({"error": "Unauthorized"}), 403
+    data = request.json or {}
+    message = data.get("message")
+    tickets = _load_support_tickets()
+    ticket = _find_ticket(tickets, ticket_id)
+    if not ticket:
+        return jsonify({"error": "Ticket not found"}), 404
+    ok, msg = _append_ticket_message(ticket, "admin", "Admin", message)
+    if not ok:
+        return jsonify({"error": msg}), 400
+    _save_support_tickets(_sort_support_tickets(tickets))
+    return jsonify({"ok": True, "message": msg, "ticket": _serialize_ticket_for_admin(ticket)})
+
+
+@app.route("/api/admin/support-tickets/<ticket_id>/close", methods=["POST"])
+def api_admin_support_ticket_close(ticket_id: str):
+    if not session.get("is_konvy_admin"):
+        return jsonify({"error": "Unauthorized"}), 403
+    tickets = _load_support_tickets()
+    ticket = _find_ticket(tickets, ticket_id)
+    if not ticket:
+        return jsonify({"error": "Ticket not found"}), 404
+    ok, msg = _close_ticket(ticket, "admin")
+    if not ok:
+        return jsonify({"error": msg}), 400
+    _save_support_tickets(_sort_support_tickets(tickets))
+    return jsonify({"ok": True, "message": msg, "ticket": _serialize_ticket_for_admin(ticket)})
+
+
 @app.route("/api/admin/users", methods=["GET"])
 def api_admin_users():
     if not session.get("is_konvy_admin"):
@@ -4883,6 +5060,58 @@ def api_user_notifications_dismiss_all():
         n["seen"] = True
     _save_topup_notifications(notif_data)
     return jsonify({"ok": True, "dismissed": len(notifs)})
+
+
+@app.route("/api/support/tickets", methods=["GET", "POST"])
+@login_required_api
+def api_support_tickets():
+    username = session["username"]
+    if request.method == "GET":
+        tickets = _sort_support_tickets(_load_support_tickets())
+        mine = [t for t in tickets if str(t.get("username") or "") == username]
+        return jsonify({"tickets": [_serialize_ticket_for_user(t) for t in mine]})
+
+    data = request.json or {}
+    ok, msg, ticket = create_support_ticket(
+        username=username,
+        subject=data.get("subject"),
+        message=data.get("message"),
+    )
+    if not ok:
+        return jsonify({"error": msg}), 400
+    return jsonify({"ok": True, "message": msg, "ticket": _serialize_ticket_for_user(ticket)})
+
+
+@app.route("/api/support/tickets/<ticket_id>/reply", methods=["POST"])
+@login_required_api
+def api_support_ticket_reply(ticket_id: str):
+    username = session["username"]
+    data = request.json or {}
+    message = data.get("message")
+    tickets = _load_support_tickets()
+    ticket = _find_ticket(tickets, ticket_id)
+    if not ticket or str(ticket.get("username") or "") != username:
+        return jsonify({"error": "Ticket not found"}), 404
+    ok, msg = _append_ticket_message(ticket, "user", username, message)
+    if not ok:
+        return jsonify({"error": msg}), 400
+    _save_support_tickets(_sort_support_tickets(tickets))
+    return jsonify({"ok": True, "message": msg, "ticket": _serialize_ticket_for_user(ticket)})
+
+
+@app.route("/api/support/tickets/<ticket_id>/close", methods=["POST"])
+@login_required_api
+def api_support_ticket_close(ticket_id: str):
+    username = session["username"]
+    tickets = _load_support_tickets()
+    ticket = _find_ticket(tickets, ticket_id)
+    if not ticket or str(ticket.get("username") or "") != username:
+        return jsonify({"error": "Ticket not found"}), 404
+    ok, msg = _close_ticket(ticket, "user")
+    if not ok:
+        return jsonify({"error": msg}), 400
+    _save_support_tickets(_sort_support_tickets(tickets))
+    return jsonify({"ok": True, "message": msg, "ticket": _serialize_ticket_for_user(ticket)})
 
 
 @app.route("/api/redeem", methods=["POST"])
@@ -5313,6 +5542,7 @@ def api_fortnite_buy():
                 purchase_result=purchase_result,
                 latest_order=latest_order,
                 user_price=user_price,
+                username=username,
             )
         except Exception as e:
             app.logger.warning("Purchase webhook helper failed for item %s: %s", item_id, e)
