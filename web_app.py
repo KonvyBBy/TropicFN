@@ -1130,7 +1130,11 @@ def _save_support_tickets(tickets: list) -> None:
 def _format_ticket_text(value: Any, max_length: int) -> str:
     text = str(value or "").strip()
     if len(text) > max_length:
-        text = text[:max_length].strip()
+        truncated = text[:max_length].rstrip()
+        boundary = truncated.rfind(" ")
+        if boundary >= max_length // 2:
+            truncated = truncated[:boundary].rstrip()
+        text = truncated
     return text
 
 
@@ -1220,7 +1224,7 @@ def create_support_ticket(username: str, subject: str, message: str) -> Tuple[bo
 
 def _append_ticket_message(ticket: dict, author_type: str, author: str, message: str) -> Tuple[bool, str]:
     if str(ticket.get("status") or "") != "open":
-        return False, "Ticket is already closed."
+        return False, "Cannot add message to a closed ticket."
     clean_message = _format_ticket_text(message, SUPPORT_TICKET_MESSAGE_MAX_LENGTH)
     if not clean_message:
         return False, "Message is required."
