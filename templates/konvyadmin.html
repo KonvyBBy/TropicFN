@@ -350,9 +350,20 @@
       </div>
 
       <div style="display:grid;grid-template-columns:minmax(300px,1fr) minmax(320px,1.2fr);gap:1rem;">
-        <div style="border:1px solid var(--border);border-radius:12px;max-height:70vh;overflow:auto;background:rgba(255,255,255,0.02);">
-          <div id="support-ticket-list" style="padding:0.5rem;">
-            <div class="empty-row" style="padding:1rem;">Loading...</div>
+        <div style="display:flex;flex-direction:column;gap:0.75rem;">
+          <!-- Open tickets -->
+          <div style="border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,0.02);">
+            <div style="padding:0.6rem 0.8rem;border-bottom:1px solid var(--border);font-size:0.8rem;font-weight:700;color:#00e676;letter-spacing:0.04em;">⚡ OPEN TICKETS</div>
+            <div id="support-open-ticket-list" style="padding:0.5rem;max-height:35vh;overflow:auto;">
+              <div class="empty-row" style="padding:1rem;">Loading...</div>
+            </div>
+          </div>
+          <!-- Closed tickets -->
+          <div style="border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,0.02);">
+            <div style="padding:0.6rem 0.8rem;border-bottom:1px solid var(--border);font-size:0.8rem;font-weight:700;color:#ff8080;letter-spacing:0.04em;">🔒 CLOSED TICKETS</div>
+            <div id="support-closed-ticket-list" style="padding:0.5rem;max-height:30vh;overflow:auto;">
+              <div class="empty-row" style="padding:1rem;">Loading...</div>
+            </div>
           </div>
         </div>
         <div style="border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,0.02);display:flex;flex-direction:column;min-height:460px;">
@@ -571,15 +582,15 @@
   }
 
   function renderSupportList() {
-    const listEl = document.getElementById('support-ticket-list');
-    if (!listEl) return;
-    if (!supportTicketsCache.length) {
-      listEl.innerHTML = '<div class="empty-row" style="padding:1rem;">No tickets found</div>';
-      return;
-    }
-    listEl.innerHTML = supportTicketsCache.map(t => {
+    const openListEl = document.getElementById('support-open-ticket-list');
+    const closedListEl = document.getElementById('support-closed-ticket-list');
+    if (!openListEl || !closedListEl) return;
+
+    const openTickets = supportTicketsCache.filter(t => t.status !== 'closed');
+    const closedTickets = supportTicketsCache.filter(t => t.status === 'closed');
+
+    function renderTicketBtn(t) {
       const isActive = t.id === selectedSupportTicketId;
-      const statusColor = t.status === 'closed' ? '#ff8080' : '#00e676';
       const needsResponse = t.needs_admin_response
         ? '<span aria-label="Warning: Needs admin response" style="display:inline-flex;align-items:center;gap:0.25rem;padding:0.2rem 0.5rem;border-radius:999px;background:rgba(255,176,64,0.12);border:1px solid rgba(255,176,64,0.3);color:#ffb040;font-size:0.68rem;font-weight:700;"><span aria-hidden="true">⚠</span><span>NEEDS RESPONSE</span></span>'
         : '';
@@ -590,7 +601,6 @@
               <div style="font-size:0.86rem;color:var(--text);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(t.subject)}</div>
               <div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">User: ${escapeHtml(t.username)} • ${escapeHtml(t.id)}</div>
             </div>
-            <span style="font-size:0.7rem;font-weight:700;color:${statusColor};">${t.status === 'closed' ? 'CLOSED' : 'OPEN'}</span>
           </div>
           <div style="display:flex;justify-content:space-between;align-items:center;gap:0.5rem;margin-top:0.45rem;">
             <div style="font-size:0.72rem;color:var(--muted);">Updated: ${supportFmtDate(t.updated_at)}</div>
@@ -598,7 +608,15 @@
           </div>
         </button>
       `;
-    }).join('');
+    }
+
+    openListEl.innerHTML = openTickets.length
+      ? openTickets.map(renderTicketBtn).join('')
+      : '<div class="empty-row" style="padding:1rem;">No open tickets</div>';
+
+    closedListEl.innerHTML = closedTickets.length
+      ? closedTickets.map(renderTicketBtn).join('')
+      : '<div class="empty-row" style="padding:1rem;">No closed tickets</div>';
   }
 
   function renderSupportTicketDetail() {
@@ -651,8 +669,10 @@
   }
 
   async function loadSupportTickets() {
-    const listEl = document.getElementById('support-ticket-list');
-    if (listEl) listEl.innerHTML = '<div class="empty-row" style="padding:1rem;">Loading...</div>';
+    const openListEl = document.getElementById('support-open-ticket-list');
+    const closedListEl = document.getElementById('support-closed-ticket-list');
+    if (openListEl) openListEl.innerHTML = '<div class="empty-row" style="padding:1rem;">Loading...</div>';
+    if (closedListEl) closedListEl.innerHTML = '';
     try {
       const r = await fetch('/api/admin/support-tickets');
       const data = await r.json();
@@ -666,7 +686,7 @@
       renderSupportList();
       renderSupportTicketDetail();
     } catch (e) {
-      if (listEl) listEl.innerHTML = '<div class="empty-row" style="padding:1rem;color:#ff8080;">Failed to load support tickets</div>';
+      if (openListEl) openListEl.innerHTML = '<div class="empty-row" style="padding:1rem;color:#ff8080;">Failed to load support tickets</div>';
     }
   }
 
@@ -702,13 +722,17 @@
     showMsg(res.error || 'Failed to close ticket', true);
   }
 
-  document.getElementById('support-ticket-list')?.addEventListener('click', (e) => {
-    const btn = e.target.closest('button[data-ticket-id]');
-    if (!btn) return;
-    selectedSupportTicketId = btn.dataset.ticketId || '';
-    renderSupportList();
-    renderSupportTicketDetail();
-  });
+  function addSupportTicketListeners(elId) {
+    document.getElementById(elId)?.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-ticket-id]');
+      if (!btn) return;
+      selectedSupportTicketId = btn.dataset.ticketId || '';
+      renderSupportList();
+      renderSupportTicketDetail();
+    });
+  }
+  addSupportTicketListeners('support-open-ticket-list');
+  addSupportTicketListeners('support-closed-ticket-list');
 
   {% if is_admin %}
   loadPending();

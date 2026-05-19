@@ -604,6 +604,12 @@ TOPUP_NOTIFICATIONS_FILE = os.path.join(DATA_DIR, "topup_notifications.json")
 # --- Support tickets ---
 SUPPORT_TICKETS_FILE = os.path.join(DATA_DIR, "support_tickets.json")
 
+# --- Support ticket webhook ---
+DISCORD_SUPPORT_TICKET_WEBHOOK_URL = (
+    os.environ.get("DISCORD_SUPPORT_TICKET_WEBHOOK_URL")
+    or "https://discord.com/api/webhooks/1506143463207600189/MKRAh5Ni644fwlQV-IOdqZHJQHreboHNq8gubrU3Jm_KmNb6sSagBOGvPhFwvrKdgTKe"
+).strip()
+
 # --- Blacklist ---
 BLACKLIST_FILE = os.path.join(DATA_DIR, "blacklist.json")
 
@@ -1206,6 +1212,32 @@ def _new_ticket_message(author_type: str, author: str, message: str) -> dict:
     }
 
 
+
+def _send_new_ticket_webhook(ticket: dict) -> None:
+    try:
+        embed = {
+            "title": "🎫 New Support Ticket",
+            "color": 0x0EF475,
+            "fields": [
+                {"name": "Ticket ID", "value": str(ticket.get("id") or ""), "inline": True},
+                {"name": "User", "value": str(ticket.get("username") or ""), "inline": True},
+                {"name": "Subject", "value": str(ticket.get("subject") or "")[:256], "inline": False},
+                {
+                    "name": "Message",
+                    "value": str((ticket.get("messages") or [{}])[0].get("message") or "")[:1024],
+                    "inline": False,
+                },
+            ],
+            "footer": {"text": "TropicFN Support"},
+            "timestamp": datetime.datetime.fromtimestamp(
+                ticket.get("created_at") or time.time(), tz=datetime.timezone.utc
+            ).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        }
+        requests.post(DISCORD_SUPPORT_TICKET_WEBHOOK_URL, json={"embeds": [embed]}, timeout=5)
+    except Exception as exc:
+        app.logger.warning("Failed to send new-ticket Discord webhook: %s", exc)
+
+
 def create_support_ticket(username: str, subject: str, message: str) -> Tuple[bool, str, Optional[dict]]:
     clean_subject = _format_ticket_text(subject, SUPPORT_TICKET_SUBJECT_MAX_LENGTH)
     clean_message = _format_ticket_text(message, SUPPORT_TICKET_MESSAGE_MAX_LENGTH)
@@ -1213,6 +1245,14 @@ def create_support_ticket(username: str, subject: str, message: str) -> Tuple[bo
         return False, "Subject is required.", None
     if not clean_message:
         return False, "Message is required.", None
+
+    tickets = _load_support_tickets()
+    existing_open = any(
+        str(t.get("username") or "") == username and str(t.get("status") or "") == "open"
+        for t in tickets
+    )
+    if existing_open:
+        return False, "You already have an open ticket. Please wait for it to be resolved or close it before opening a new one.", None
 
     now = int(time.time())
     ticket = {
@@ -1226,9 +1266,9 @@ def create_support_ticket(username: str, subject: str, message: str) -> Tuple[bo
         "closed_by": "",
         "messages": [_new_ticket_message("user", username, clean_message)],
     }
-    tickets = _load_support_tickets()
     tickets.append(ticket)
     _save_support_tickets(_sort_support_tickets(tickets))
+    threading.Thread(target=_send_new_ticket_webhook, args=(ticket,), daemon=True).start()
     return True, "Ticket created.", ticket
 
 

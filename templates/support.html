@@ -16,8 +16,11 @@
   <a href="/login" class="mt-5 inline-flex h-11 items-center justify-center rounded-xl bg-[#0EF475] px-5 text-sm font-medium text-black transition hover:bg-[#0BC95E]">Go to Login</a>
 </section>
 {% else %}
-<section class="glass-panel rounded-3xl p-5 sm:p-6">
+<section class="glass-panel rounded-3xl p-5 sm:p-6" id="new-ticket-section">
   <h2 class="mb-4 font-space text-lg font-semibold text-white sm:text-xl">Open a New Ticket</h2>
+  <div id="existing-open-ticket-notice" class="hidden rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
+    You already have an open ticket. Please wait for it to be resolved or close it before opening a new one.
+  </div>
   <form id="new-ticket-form" class="grid gap-4 sm:grid-cols-2">
     <div class="sm:col-span-2">
       <label for="ticket-subject" class="mb-1.5 block text-xs font-medium text-zinc-400">Subject</label>
@@ -168,6 +171,12 @@
       const tickets = Array.isArray(data.tickets) ? data.tickets : [];
       const open = tickets.filter(t => t.status !== 'closed');
       const closed = tickets.filter(t => t.status === 'closed');
+
+      const hasOpen = open.length > 0;
+      const noticeEl = document.getElementById('existing-open-ticket-notice');
+      const formEl = document.getElementById('new-ticket-form');
+      if (noticeEl) noticeEl.classList.toggle('hidden', !hasOpen);
+      if (formEl) formEl.classList.toggle('hidden', hasOpen);
 
       openListEl.innerHTML = open.length
         ? open.map(renderOpenTicket).join('')
