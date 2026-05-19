@@ -243,6 +243,7 @@
     <button class="tab-btn" onclick="showTab('pending')">⏳ Pending Topups</button>
     <button class="tab-btn" onclick="showTab('users')">👥 Users</button>
     <button class="tab-btn" onclick="showTab('blacklist')">🚫 Blacklist</button>
+    <button class="tab-btn" onclick="showTab('support')">🎫 Support Tickets</button>
   </div>
 
   <!-- Settings Tab -->
@@ -340,20 +341,47 @@
     </div>
   </div>
 
+  <!-- Support Tickets Tab -->
+  <div id="tab-support" class="tab-panel">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;gap:0.75rem;flex-wrap:wrap;">
+        <h3>🎫 Support Tickets</h3>
+        <button class="btn btn-secondary btn-sm" onclick="loadSupportTickets()">🔄 Refresh</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:minmax(300px,1fr) minmax(320px,1.2fr);gap:1rem;">
+        <div style="border:1px solid var(--border);border-radius:12px;max-height:70vh;overflow:auto;background:rgba(255,255,255,0.02);">
+          <div id="support-ticket-list" style="padding:0.5rem;">
+            <div class="empty-row" style="padding:1rem;">Loading...</div>
+          </div>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,0.02);display:flex;flex-direction:column;min-height:460px;">
+          <div id="support-ticket-detail" style="padding:1rem;display:flex;flex-direction:column;height:100%;">
+            <p style="color:var(--muted);font-size:0.9rem;">Select a ticket to view transcript and reply.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   {% endif %}
 </div>
 
 <script>
+  const tabOrder = ['settings','pending','users','blacklist','support'];
+  let supportTicketsCache = [];
+  let selectedSupportTicketId = '';
+
   function showTab(name) {
     document.querySelectorAll('.tab-btn').forEach((b, i) => {
-      const tabs = ['settings','pending','users','blacklist'];
-      b.classList.toggle('active', tabs[i] === name);
+      b.classList.toggle('active', tabOrder[i] === name);
     });
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     document.getElementById('tab-' + name).classList.add('active');
     if (name === 'pending') loadPending();
     if (name === 'users') loadUsers();
     if (name === 'blacklist') loadBlacklist();
+    if (name === 'support') loadSupportTickets();
   }
 
   function showMsg(msg, isError) {
@@ -528,8 +556,163 @@
     else showMsg(res.error || 'Error', true);
   }
 
+  function escapeHtml(v) {
+    return String(v || '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
+  }
+
+  function supportFmtDate(ts) {
+    if (!ts) return '—';
+    return new Date(ts * 1000).toLocaleString();
+  }
+
+  function renderSupportList() {
+    const listEl = document.getElementById('support-ticket-list');
+    if (!listEl) return;
+    if (!supportTicketsCache.length) {
+      listEl.innerHTML = '<div class="empty-row" style="padding:1rem;">No tickets found</div>';
+      return;
+    }
+    listEl.innerHTML = supportTicketsCache.map(t => {
+      const isActive = t.id === selectedSupportTicketId;
+      const statusColor = t.status === 'closed' ? '#ff8080' : '#00e676';
+      const needsResponse = t.needs_admin_response
+        ? '<span aria-label="Warning: Needs admin response" style="display:inline-flex;align-items:center;gap:0.25rem;padding:0.2rem 0.5rem;border-radius:999px;background:rgba(255,176,64,0.12);border:1px solid rgba(255,176,64,0.3);color:#ffb040;font-size:0.68rem;font-weight:700;"><span aria-hidden="true">⚠</span><span>NEEDS RESPONSE</span></span>'
+        : '';
+      return `
+        <button type="button" data-ticket-id="${escapeHtml(t.id)}" style="width:100%;text-align:left;padding:0.8rem;border:1px solid ${isActive ? 'rgba(41,121,255,0.5)' : 'var(--border)'};background:${isActive ? 'rgba(41,121,255,0.08)' : 'rgba(255,255,255,0.01)'};border-radius:10px;cursor:pointer;margin-bottom:0.5rem;">
+          <div style="display:flex;justify-content:space-between;gap:0.5rem;align-items:flex-start;">
+            <div style="min-width:0;">
+              <div style="font-size:0.86rem;color:var(--text);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(t.subject)}</div>
+              <div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">User: ${escapeHtml(t.username)} • ${escapeHtml(t.id)}</div>
+            </div>
+            <span style="font-size:0.7rem;font-weight:700;color:${statusColor};">${t.status === 'closed' ? 'CLOSED' : 'OPEN'}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:0.5rem;margin-top:0.45rem;">
+            <div style="font-size:0.72rem;color:var(--muted);">Updated: ${supportFmtDate(t.updated_at)}</div>
+            ${needsResponse}
+          </div>
+        </button>
+      `;
+    }).join('');
+  }
+
+  function renderSupportTicketDetail() {
+    const detailEl = document.getElementById('support-ticket-detail');
+    if (!detailEl) return;
+    const ticket = supportTicketsCache.find(t => t.id === selectedSupportTicketId);
+    if (!ticket) {
+      detailEl.innerHTML = '<p style="color:var(--muted);font-size:0.9rem;">Select a ticket to view transcript and reply.</p>';
+      return;
+    }
+
+    const isClosed = ticket.status === 'closed';
+    const msgs = Array.isArray(ticket.messages) ? ticket.messages : [];
+    const transcriptHtml = msgs.length
+      ? msgs.map(m => {
+          const isAdmin = m.author_type === 'admin';
+          return `
+            <div style="border:1px solid ${isAdmin ? 'rgba(41,121,255,0.35)' : 'var(--border)'};background:${isAdmin ? 'rgba(41,121,255,0.08)' : 'rgba(255,255,255,0.02)'};border-radius:10px;padding:0.65rem 0.7rem;">
+              <div style="display:flex;justify-content:space-between;gap:0.5rem;font-size:0.72rem;margin-bottom:0.35rem;">
+                <span style="font-weight:700;color:var(--text);">${isAdmin ? 'Admin' : escapeHtml(m.author || ticket.username)}</span>
+                <span style="color:var(--muted);">${supportFmtDate(m.timestamp)}</span>
+              </div>
+              <div style="font-size:0.84rem;color:#d9d9df;white-space:pre-wrap;line-height:1.45;">${escapeHtml(m.message)}</div>
+            </div>
+          `;
+        }).join('')
+      : '<p style="color:var(--muted);font-size:0.85rem;">No transcript messages.</p>';
+
+    detailEl.innerHTML = `
+      <div style="display:flex;justify-content:space-between;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.9rem;">
+        <div>
+          <div style="font-size:1rem;font-weight:700;color:var(--text);">${escapeHtml(ticket.subject)}</div>
+          <div style="font-size:0.78rem;color:var(--muted);margin-top:2px;">User: ${escapeHtml(ticket.username)} • Created: ${supportFmtDate(ticket.created_at)}</div>
+        </div>
+        <div style="font-size:0.78rem;font-weight:700;color:${isClosed ? '#ff8080' : '#00e676'};">${isClosed ? 'CLOSED' : 'OPEN'}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:0.6rem;flex:1;min-height:0;overflow:auto;padding-right:2px;">${transcriptHtml}</div>
+      <div style="margin-top:0.9rem;border-top:1px solid var(--border);padding-top:0.9rem;">
+        ${isClosed ? '<p style="font-size:0.82rem;color:#ff8080;">This ticket is closed.</p>' : `
+          <textarea id="support-admin-reply" rows="4" maxlength="2000" placeholder="Type your response..."
+            style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:9px;padding:0.65rem 0.75rem;color:var(--text);font-size:0.85rem;outline:none;font-family:inherit;"></textarea>
+          <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;margin-top:0.6rem;">
+            <button class="btn btn-primary btn-sm" onclick="adminReplyToSupportTicket()">Send Reply</button>
+            <button class="btn btn-danger btn-sm" onclick="adminCloseSupportTicket()">Close Ticket</button>
+            <span id="support-detail-status" style="font-size:0.76rem;color:var(--muted);"></span>
+          </div>
+        `}
+      </div>
+    `;
+  }
+
+  async function loadSupportTickets() {
+    const listEl = document.getElementById('support-ticket-list');
+    if (listEl) listEl.innerHTML = '<div class="empty-row" style="padding:1rem;">Loading...</div>';
+    try {
+      const r = await fetch('/api/admin/support-tickets');
+      const data = await r.json();
+      supportTicketsCache = Array.isArray(data.tickets) ? data.tickets : [];
+      if (!selectedSupportTicketId && supportTicketsCache.length) {
+        selectedSupportTicketId = supportTicketsCache[0].id;
+      }
+      if (selectedSupportTicketId && !supportTicketsCache.some(t => t.id === selectedSupportTicketId)) {
+        selectedSupportTicketId = supportTicketsCache.length ? supportTicketsCache[0].id : '';
+      }
+      renderSupportList();
+      renderSupportTicketDetail();
+    } catch (e) {
+      if (listEl) listEl.innerHTML = '<div class="empty-row" style="padding:1rem;color:#ff8080;">Failed to load support tickets</div>';
+    }
+  }
+
+  async function adminReplyToSupportTicket() {
+    if (!selectedSupportTicketId) return;
+    const input = document.getElementById('support-admin-reply');
+    const status = document.getElementById('support-detail-status');
+    const message = (input?.value || '').trim();
+    if (!message) {
+      if (status) status.textContent = 'Reply message required.';
+      return;
+    }
+    if (status) status.textContent = 'Sending...';
+    const res = await apiPost(`/api/admin/support-tickets/${encodeURIComponent(selectedSupportTicketId)}/reply`, {message});
+    if (res.ok) {
+      if (input) input.value = '';
+      if (status) status.textContent = 'Reply sent.';
+      await loadSupportTickets();
+      return;
+    }
+    if (status) status.textContent = res.error || 'Reply failed.';
+  }
+
+  async function adminCloseSupportTicket() {
+    if (!selectedSupportTicketId) return;
+    if (!confirm('Close this ticket?')) return;
+    const res = await apiPost(`/api/admin/support-tickets/${encodeURIComponent(selectedSupportTicketId)}/close`, {});
+    if (res.ok) {
+      showMsg('Ticket closed', false);
+      await loadSupportTickets();
+      return;
+    }
+    showMsg(res.error || 'Failed to close ticket', true);
+  }
+
+  document.getElementById('support-ticket-list')?.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-ticket-id]');
+    if (!btn) return;
+    selectedSupportTicketId = btn.dataset.ticketId || '';
+    renderSupportList();
+    renderSupportTicketDetail();
+  });
+
   {% if is_admin %}
   loadPending();
+  loadSupportTickets();
   {% endif %}
 </script>
 </body>
