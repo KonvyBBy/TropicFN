@@ -1228,7 +1228,7 @@ def _format_purchase_webhook_currency(amount: Any) -> str:
         numeric_amount = float(amount or 0)
     except (TypeError, ValueError):
         numeric_amount = 0.0
-    return f"€{numeric_amount:.2f}"
+    return f"${numeric_amount:.2f}"
 
 
 def _get_purchase_item_summary(item: dict) -> str:
@@ -1253,6 +1253,7 @@ def _build_purchase_webhook_payload(
     purchase_result: dict,
     latest_order: Optional[dict],
     user_price: float,
+    username: str,
 ) -> dict:
     item = (purchase_result or {}).get("item") or {}
     item_id = item.get("item_id") or item.get("fortnite_item_id") or "N/A"
@@ -1264,7 +1265,7 @@ def _build_purchase_webhook_payload(
     fields = [
         {
             "name": "👤 User",
-            "value": "Hidden",
+            "value": str(username or "Unknown"),
             "inline": True,
         },
         {
@@ -1273,17 +1274,12 @@ def _build_purchase_webhook_payload(
             "inline": True,
         },
         {
-            "name": "Product",
-            "value": DEFAULT_PURCHASE_PRODUCT_NAME,
-            "inline": True,
-        },
-        {
             "name": "Status",
             "value": "Purchased",
             "inline": True,
         },
         {
-            "name": "💰 EUR Spent",
+            "name": "💰 USD Spent",
             "value": _format_purchase_webhook_currency(user_price),
             "inline": True,
         },
@@ -1314,15 +1310,15 @@ def _build_purchase_webhook_payload(
         )
 
     return {
-        "username": "TropicFN",
+        "username": "Itemz",
         "avatar_url": DISCORD_PURCHASE_THUMBNAIL_URL,
         "embeds": [
             {
                 "title": "✅ Order Confirmed - Thank You!",
-                "description": "Your TropicFN Fortnite purchase was completed successfully.",
+                "description": "Your Itemz Fortnite purchase was completed successfully.",
                 "color": 0x0EF475,
                 "author": {
-                    "name": "TropicFN Purchase Notification",
+                    "name": "Itemz Purchase Notification",
                     "icon_url": DISCORD_PURCHASE_THUMBNAIL_URL,
                 },
                 "thumbnail": {
@@ -1333,7 +1329,7 @@ def _build_purchase_webhook_payload(
                 },
                 "fields": fields,
                 "footer": {
-                    "text": "Powered by TropicFN • discord.gg/tropicfn",
+                    "text": "Powered by Itemz • discord.gg/itemz",
                     "icon_url": DISCORD_PURCHASE_THUMBNAIL_URL,
                 },
                 "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
@@ -1346,11 +1342,17 @@ def send_purchase_discord_webhook(
     purchase_result: dict,
     latest_order: Optional[dict],
     user_price: float,
+    username: str,
 ) -> None:
     if not DISCORD_PURCHASE_WEBHOOK_URL:
         return
 
-    payload = _build_purchase_webhook_payload(purchase_result, latest_order, user_price)
+    payload = _build_purchase_webhook_payload(
+        purchase_result,
+        latest_order,
+        user_price,
+        username,
+    )
     webhook_logger = logging.getLogger("purchase_webhook")
 
     try:
@@ -5313,6 +5315,7 @@ def api_fortnite_buy():
                 purchase_result=purchase_result,
                 latest_order=latest_order,
                 user_price=user_price,
+                username=username,
             )
         except Exception as e:
             app.logger.warning("Purchase webhook helper failed for item %s: %s", item_id, e)
