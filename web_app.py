@@ -1389,7 +1389,7 @@ def _safe_webhook_display_username(username: Any) -> str:
     cleaned = str(username or "").strip()
     if not cleaned:
         return "Unknown"
-    # Prevent Discord mass-mention formatting in webhook embeds.
+    # Prevent Discord mass-mention formatting in webhook embeds by inserting U+200B.
     cleaned = cleaned.replace("@", "@\u200b")
     return cleaned[:64]
 
