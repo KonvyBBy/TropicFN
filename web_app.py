@@ -604,6 +604,12 @@ TOPUP_NOTIFICATIONS_FILE = os.path.join(DATA_DIR, "topup_notifications.json")
 # --- Support tickets ---
 SUPPORT_TICKETS_FILE = os.path.join(DATA_DIR, "support_tickets.json")
 
+# --- Support ticket webhook ---
+DISCORD_SUPPORT_TICKET_WEBHOOK_URL = (
+    os.environ.get("DISCORD_SUPPORT_TICKET_WEBHOOK_URL")
+    or "https://discord.com/api/webhooks/1506143463207600189/MKRAh5Ni644fwlQV-IOdqZHJQHreboHNq8gubrU3Jm_KmNb6sSagBOGvPhFwvrKdgTKe"
+).strip()
+
 # --- Blacklist ---
 BLACKLIST_FILE = os.path.join(DATA_DIR, "blacklist.json")
 
@@ -1206,8 +1212,6 @@ def _new_ticket_message(author_type: str, author: str, message: str) -> dict:
     }
 
 
-SUPPORT_TICKET_WEBHOOK_URL = "https://discord.com/api/webhooks/1506143463207600189/MKRAh5Ni644fwlQV-IOdqZHJQHreboHNq8gubrU3Jm_KmNb6sSagBOGvPhFwvrKdgTKe"
-
 
 def _send_new_ticket_webhook(ticket: dict) -> None:
     try:
@@ -1225,11 +1229,13 @@ def _send_new_ticket_webhook(ticket: dict) -> None:
                 },
             ],
             "footer": {"text": "TropicFN Support"},
-            "timestamp": datetime.datetime.utcfromtimestamp(ticket.get("created_at") or time.time()).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "timestamp": datetime.datetime.fromtimestamp(
+                ticket.get("created_at") or time.time(), tz=datetime.timezone.utc
+            ).strftime("%Y-%m-%dT%H:%M:%SZ"),
         }
-        requests.post(SUPPORT_TICKET_WEBHOOK_URL, json={"embeds": [embed]}, timeout=5)
-    except Exception:
-        pass
+        requests.post(DISCORD_SUPPORT_TICKET_WEBHOOK_URL, json={"embeds": [embed]}, timeout=5)
+    except Exception as exc:
+        app.logger.warning("Failed to send new-ticket Discord webhook: %s", exc)
 
 
 def create_support_ticket(username: str, subject: str, message: str) -> Tuple[bool, str, Optional[dict]]:
