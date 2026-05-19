@@ -581,7 +581,7 @@
       const isActive = t.id === selectedSupportTicketId;
       const statusColor = t.status === 'closed' ? '#ff8080' : '#00e676';
       const needsResponse = t.needs_admin_response
-        ? '<span style="display:inline-flex;align-items:center;gap:0.25rem;padding:0.2rem 0.5rem;border-radius:999px;background:rgba(255,176,64,0.12);border:1px solid rgba(255,176,64,0.3);color:#ffb040;font-size:0.68rem;font-weight:700;"><span aria-hidden="true">⚠</span><span>NEEDS RESPONSE</span></span>'
+        ? '<span aria-label="Warning: Needs admin response" style="display:inline-flex;align-items:center;gap:0.25rem;padding:0.2rem 0.5rem;border-radius:999px;background:rgba(255,176,64,0.12);border:1px solid rgba(255,176,64,0.3);color:#ffb040;font-size:0.68rem;font-weight:700;"><span aria-hidden="true">⚠</span><span>NEEDS RESPONSE</span></span>'
         : '';
       return `
         <button type="button" data-ticket-id="${escapeHtml(t.id)}" style="width:100%;text-align:left;padding:0.8rem;border:1px solid ${isActive ? 'rgba(41,121,255,0.5)' : 'var(--border)'};background:${isActive ? 'rgba(41,121,255,0.08)' : 'rgba(255,255,255,0.01)'};border-radius:10px;cursor:pointer;margin-bottom:0.5rem;">

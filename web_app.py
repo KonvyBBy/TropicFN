@@ -1130,22 +1130,28 @@ def _save_support_tickets(tickets: list) -> None:
 def _format_ticket_text(value: Any, max_length: int) -> str:
     text = str(value or "").strip()
     if len(text) > max_length:
-        truncated = text[:max_length].rstrip()
+        trim_limit = max(max_length - 3, 1)
+        truncated = text[:trim_limit].rstrip()
         boundary = truncated.rfind(" ")
-        if boundary >= max_length // 2:
+        if boundary >= max(trim_limit // 2, 1):
             truncated = truncated[:boundary].rstrip()
-        if len(truncated) > 3:
-            truncated = f"{truncated[:-3].rstrip()}..."
-        else:
-            truncated = "..."
-        text = truncated
+        if not truncated:
+            truncated = (text[:trim_limit] or text[:1]).strip() or text[:1]
+        text = f"{truncated}..."
     return text
 
 
 def _sort_support_tickets(tickets: list) -> list:
+    def _ts(value: Any) -> int:
+        try:
+            parsed = int(value or 0)
+            return parsed if parsed > 0 else -1
+        except Exception:
+            return -1
+
     return sorted(
         tickets,
-        key=lambda t: (int(t.get("updated_at") or 0), int(t.get("created_at") or 0)),
+        key=lambda t: (_ts(t.get("updated_at")), _ts(t.get("created_at"))),
         reverse=True,
     )
 
@@ -1162,7 +1168,7 @@ def _serialize_ticket_for_user(ticket: dict) -> dict:
         "closed_at": int(ticket.get("closed_at") or 0),
         "closed_by": str(ticket.get("closed_by") or ""),
         "messages": messages,
-        "admin_replied": str(last_message.get("author_type") or "") == "admin",
+        "last_message_from_admin": str(last_message.get("author_type") or "") == "admin",
         "last_message_preview": str(last_message.get("message") or "")[:140],
     }
 
