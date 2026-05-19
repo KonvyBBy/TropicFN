@@ -20,12 +20,12 @@
   <h2 class="mb-4 font-space text-lg font-semibold text-white sm:text-xl">Open a New Ticket</h2>
   <form id="new-ticket-form" class="grid gap-4 sm:grid-cols-2">
     <div class="sm:col-span-2">
-      <label class="mb-1.5 block text-xs font-medium text-zinc-400">Subject</label>
+      <label for="ticket-subject" class="mb-1.5 block text-xs font-medium text-zinc-400">Subject</label>
       <input id="ticket-subject" maxlength="120" required type="text" placeholder="Briefly describe your issue"
         class="h-12 w-full rounded-xl border border-white/15 bg-black/35 px-4 text-sm text-white placeholder:text-zinc-500 transition">
     </div>
     <div class="sm:col-span-2">
-      <label class="mb-1.5 block text-xs font-medium text-zinc-400">Message</label>
+      <label for="ticket-message" class="mb-1.5 block text-xs font-medium text-zinc-400">Message</label>
       <textarea id="ticket-message" rows="5" maxlength="2000" required placeholder="Explain your issue in detail..."
         class="w-full rounded-xl border border-white/15 bg-black/35 px-4 py-3 text-sm text-white placeholder:text-zinc-500 transition resize-y"></textarea>
       <p class="mt-1 text-right text-[11px] text-zinc-500"><span id="ticket-msg-count">0</span>/2000</p>

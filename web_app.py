@@ -1385,6 +1385,15 @@ def _format_purchase_webhook_currency(amount: Any) -> str:
     return f"${numeric_amount:.2f}"
 
 
+def _safe_webhook_display_username(username: Any) -> str:
+    cleaned = str(username or "").strip()
+    if not cleaned:
+        return "Unknown"
+    # Prevent Discord mass-mention formatting in webhook embeds.
+    cleaned = cleaned.replace("@", "@\u200b")
+    return cleaned[:64]
+
+
 def _get_purchase_item_summary(item: dict) -> str:
     if not isinstance(item, dict):
         return "Fortnite Account"
@@ -1419,7 +1428,7 @@ def _build_purchase_webhook_payload(
     fields = [
         {
             "name": "👤 User",
-            "value": str(username or "Unknown"),
+            "value": _safe_webhook_display_username(username),
             "inline": True,
         },
         {
