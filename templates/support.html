@@ -111,8 +111,8 @@
   }
 
   function renderOpenTicket(ticket) {
-    const needs = ticket.needs_user_response
-      ? '<span class="ml-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2 py-0.5 text-[11px] font-semibold text-cyan-300">Admin replied</span>'
+    const needs = ticket.admin_replied
+      ? '<span class="ml-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2 py-0.5 text-[11px] font-semibold text-cyan-300">Needs your response</span>'
       : '';
     return `
       <article class="rounded-2xl border border-white/10 bg-black/20 p-4">

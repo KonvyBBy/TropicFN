@@ -1134,6 +1134,10 @@ def _format_ticket_text(value: Any, max_length: int) -> str:
         boundary = truncated.rfind(" ")
         if boundary >= max_length // 2:
             truncated = truncated[:boundary].rstrip()
+        if len(truncated) > 3:
+            truncated = f"{truncated[:-3].rstrip()}..."
+        else:
+            truncated = "..."
         text = truncated
     return text
 
@@ -1158,7 +1162,7 @@ def _serialize_ticket_for_user(ticket: dict) -> dict:
         "closed_at": int(ticket.get("closed_at") or 0),
         "closed_by": str(ticket.get("closed_by") or ""),
         "messages": messages,
-        "needs_user_response": str(last_message.get("author_type") or "") == "admin",
+        "admin_replied": str(last_message.get("author_type") or "") == "admin",
         "last_message_preview": str(last_message.get("message") or "")[:140],
     }
 
@@ -1224,7 +1228,7 @@ def create_support_ticket(username: str, subject: str, message: str) -> Tuple[bo
 
 def _append_ticket_message(ticket: dict, author_type: str, author: str, message: str) -> Tuple[bool, str]:
     if str(ticket.get("status") or "") != "open":
-        return False, "Cannot add message to a closed ticket."
+        return False, "This ticket is closed. Please open a new ticket if you need further assistance."
     clean_message = _format_ticket_text(message, SUPPORT_TICKET_MESSAGE_MAX_LENGTH)
     if not clean_message:
         return False, "Message is required."
