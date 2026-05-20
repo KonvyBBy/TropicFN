@@ -1517,7 +1517,7 @@ def _build_purchase_webhook_payload(
         "avatar_url": DISCORD_PURCHASE_THUMBNAIL_URL,
         "embeds": [
             {
-                "title": "✅ Order Confirmed - Thank You!",
+                "title": "[FAKE] ✅ Order Confirmed - Thank You!",
                 "description": "Your Itemz Fortnite purchase was completed successfully.",
                 "color": 0x0EF475,
                 "author": {
