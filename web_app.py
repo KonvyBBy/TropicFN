@@ -634,6 +634,7 @@ GIVEAWAY_SCORE_LIMITS = {
     "memory_digits": 5000,
     "typing_sprint": 500,
 }
+DEFAULT_GIVEAWAY_SCORE_LIMIT = 1000
 
 # --- Support ticket webhook ---
 DISCORD_SUPPORT_TICKET_WEBHOOK_URL = (
@@ -2822,7 +2823,7 @@ def _settle_giveaway_if_due(state: dict) -> bool:
     winner = next(iter(entries), None)
 
     if winner:
-        reward_cents = int(giveaway.get("reward_cents") or 0)
+        reward_cents = max(0, int(giveaway.get("reward_cents") or 0))
         if reward_cents > 0:
             add_balance(winner["username"], reward_cents)
         giveaway["winner"] = {
@@ -5509,6 +5510,7 @@ def api_admin_giveaway():
         giveaway = state.get("active")
         if not isinstance(giveaway, dict):
             return jsonify({"error": "No giveaway found."}), 404
+        # Move giveaway end into the past so settlement runs immediately.
         giveaway["ends_at"] = int(time.time()) - 1
         state["active"] = giveaway
         _save_giveaway_state(state)
@@ -5597,7 +5599,7 @@ def api_giveaway_submit_score():
         return jsonify({"error": "This giveaway is for customers only."}), 403
 
     game = str(giveaway.get("game") or "")
-    score_limit = int(GIVEAWAY_SCORE_LIMITS.get(game, 1000))
+    score_limit = int(GIVEAWAY_SCORE_LIMITS.get(game, DEFAULT_GIVEAWAY_SCORE_LIMIT))
     if score > score_limit:
         return jsonify({"error": "Submitted score exceeds the allowed range for this game."}), 400
 
