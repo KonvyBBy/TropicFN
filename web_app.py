@@ -609,6 +609,33 @@ SUPPORT_TICKETS_FILE = os.path.join(DATA_DIR, "support_tickets.json")
 # --- Fake orders scheduler config ---
 FAKE_ORDERS_FILE = os.path.join(DATA_DIR, "fake_orders_config.json")
 
+# --- Giveaways ---
+GIVEAWAY_FILE = os.path.join(DATA_DIR, "giveaway.json")
+GIVEAWAY_AUDIENCE_EVERYONE = "everyone"
+GIVEAWAY_AUDIENCE_CUSTOMERS_ONLY = "customers_only"
+GIVEAWAY_ALLOWED_AUDIENCES = {
+    GIVEAWAY_AUDIENCE_EVERYONE,
+    GIVEAWAY_AUDIENCE_CUSTOMERS_ONLY,
+}
+MAX_GIVEAWAY_DURATION_MINUTES = 10080
+MAX_GIVEAWAY_ABSOLUTE_SCORE = 1_000_000_000
+GIVEAWAY_SUBMIT_COOLDOWN_SECONDS = 2
+GIVEAWAY_GAMES = {
+    "click_frenzy": "Click Frenzy",
+    "reaction_tap": "Reaction Tap",
+    "math_rush": "Math Rush",
+    "memory_digits": "Memory Digits",
+    "typing_sprint": "Typing Sprint",
+}
+GIVEAWAY_SCORE_LIMITS = {
+    "click_frenzy": 500,
+    "reaction_tap": 500,
+    "math_rush": 500,
+    "memory_digits": 5000,
+    "typing_sprint": 500,
+}
+DEFAULT_GIVEAWAY_SCORE_LIMIT = 1000
+
 # --- Support ticket webhook ---
 DISCORD_SUPPORT_TICKET_WEBHOOK_URL = (
     os.environ.get("DISCORD_SUPPORT_TICKET_WEBHOOK_URL")
@@ -2688,6 +2715,168 @@ def user_has_purchases(username):
     return len(purchases) > 0
 
 
+def _default_giveaway_state() -> dict:
+    return {"active": None, "leaderboards": {}}
+
+
+def _load_giveaway_state() -> dict:
+    if not os.path.exists(GIVEAWAY_FILE):
+        return _default_giveaway_state()
+    try:
+        with open(GIVEAWAY_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f) or {}
+        if not isinstance(data, dict):
+            return _default_giveaway_state()
+        if not isinstance(data.get("leaderboards"), dict):
+            data["leaderboards"] = {}
+        if "active" not in data:
+            data["active"] = None
+        return data
+    except Exception:
+        return _default_giveaway_state()
+
+
+def _save_giveaway_state(state: dict) -> None:
+    with open(GIVEAWAY_FILE, "w", encoding="utf-8") as f:
+        json.dump(state, f, indent=2)
+
+
+def _giveaway_is_active(giveaway: Optional[dict], now_ts: Optional[int] = None) -> bool:
+    if not isinstance(giveaway, dict):
+        return False
+    if giveaway.get("ended") or giveaway.get("settled"):
+        return False
+    now = int(now_ts or time.time())
+    try:
+        starts_at = int(giveaway.get("starts_at") or 0)
+        ends_at = int(giveaway.get("ends_at") or 0)
+    except (TypeError, ValueError):
+        return False
+    return starts_at > 0 and ends_at > 0 and starts_at <= now < ends_at
+
+
+def _user_can_join_giveaway(username: str, audience: str) -> bool:
+    if audience == GIVEAWAY_AUDIENCE_CUSTOMERS_ONLY:
+        return user_has_purchases(username)
+    return True
+
+
+def _sorted_leaderboard_entries(state: dict, giveaway_id: str) -> list:
+    leaderboards = state.get("leaderboards")
+    if not isinstance(leaderboards, dict):
+        return []
+    board = leaderboards.get(giveaway_id) or {}
+    if not isinstance(board, dict):
+        return []
+
+    entries = []
+    for username, entry in board.items():
+        if not isinstance(entry, dict):
+            continue
+        try:
+            score = int(entry.get("score") or 0)
+        except (TypeError, ValueError):
+            score = 0
+        try:
+            updated_at = int(entry.get("updated_at") or 0)
+        except (TypeError, ValueError):
+            updated_at = 0
+        entries.append(
+            {
+                "username": str(username),
+                "score": max(0, score),
+                "updated_at": updated_at,
+                "source": str(entry.get("source") or "player"),
+            }
+        )
+
+    entries.sort(key=lambda e: (-e["score"], e["updated_at"]))
+    for idx, entry in enumerate(entries, start=1):
+        entry["rank"] = idx
+    return entries
+
+
+def _get_user_leaderboard_position(entries: list, username: str) -> Optional[dict]:
+    for entry in entries:
+        if entry.get("username") == username:
+            return {"rank": entry.get("rank"), "score": entry.get("score", 0)}
+    return None
+
+
+def _settle_giveaway_if_due(state: dict) -> bool:
+    giveaway = state.get("active")
+    if not isinstance(giveaway, dict):
+        return False
+    if giveaway.get("settled"):
+        return False
+
+    now = int(time.time())
+    try:
+        ends_at = int(giveaway.get("ends_at") or 0)
+    except (TypeError, ValueError):
+        ends_at = 0
+    if ends_at <= 0 or now <= ends_at:
+        return False
+
+    giveaway_id = str(giveaway.get("id") or "")
+    entries = _sorted_leaderboard_entries(state, giveaway_id)
+    winner = next(iter(entries), None)
+
+    if winner:
+        reward_cents = max(0, int(giveaway.get("reward_cents") or 0))
+        if reward_cents > 0:
+            add_balance(winner["username"], reward_cents)
+        giveaway["winner"] = {
+            "username": winner["username"],
+            "score": winner["score"],
+            "rank": 1,
+            "awarded_cents": max(0, reward_cents),
+            "awarded_at": now,
+        }
+    else:
+        giveaway["winner"] = None
+
+    giveaway["ended"] = True
+    giveaway["settled"] = True
+    giveaway["settled_at"] = now
+    state["active"] = giveaway
+    _save_giveaway_state(state)
+    return True
+
+
+def _serialize_giveaway_state_for_user(state: dict, username: str) -> dict:
+    giveaway = state.get("active")
+    if not isinstance(giveaway, dict):
+        return {"active": None, "leaderboard": [], "my_position": None}
+
+    giveaway_id = str(giveaway.get("id") or "")
+    entries = _sorted_leaderboard_entries(state, giveaway_id)
+    audience = str(giveaway.get("audience") or GIVEAWAY_AUDIENCE_EVERYONE)
+    now = int(time.time())
+    active_now = _giveaway_is_active(giveaway, now)
+    my_position = _get_user_leaderboard_position(entries, username)
+
+    return {
+        "active": {
+            "id": giveaway_id,
+            "game": str(giveaway.get("game") or ""),
+            "game_label": GIVEAWAY_GAMES.get(str(giveaway.get("game") or ""), "Unknown"),
+            "audience": audience,
+            "reward_cents": int(giveaway.get("reward_cents") or 0),
+            "starts_at": int(giveaway.get("starts_at") or 0),
+            "ends_at": int(giveaway.get("ends_at") or 0),
+            "ended": bool(giveaway.get("ended")),
+            "settled": bool(giveaway.get("settled")),
+            "winner": giveaway.get("winner"),
+            "active_now": active_now,
+            "eligible": _user_can_join_giveaway(username, audience),
+        },
+        "leaderboard": entries[:10],
+        "my_position": my_position,
+        "server_time": now,
+    }
+
+
 
 # ===================== AUTH ROUTES =====================
 
@@ -4756,6 +4945,23 @@ def dashboard():
         active_page="home",
     )
 
+
+@app.route("/giveaway")
+@login_required_page
+def giveaway_page():
+    username = session["username"]
+    balance_cents = get_balance(username)
+    has_topup = user_has_any_topup(username)
+    return render_template(
+        "giveaway.html",
+        username=username,
+        balance=f"{balance_cents / 100:.2f}",
+        logged_in=True,
+        has_topup=has_topup,
+        active_page="giveaway",
+        giveaway_games=GIVEAWAY_GAMES,
+    )
+
 # Balance page
 @app.route("/balance")
 @login_required_page
@@ -5013,6 +5219,7 @@ def konvyadmin_page():
         "konvyadmin.html",
         is_admin=is_admin,
         current_multiplier=f"{get_lzt_multiplier():.2f}",
+        max_giveaway_duration_minutes=MAX_GIVEAWAY_DURATION_MINUTES,
         error=error,
         notice=notice,
     )
@@ -5221,6 +5428,212 @@ def api_admin_blacklist():
         return jsonify({"ok": True})
 
     return jsonify({"error": "Unknown action"}), 400
+
+
+@app.route("/api/admin/giveaway", methods=["GET", "POST"])
+def api_admin_giveaway():
+    if not session.get("is_konvy_admin"):
+        return jsonify({"error": "Unauthorized"}), 403
+
+    state = _load_giveaway_state()
+    _settle_giveaway_if_due(state)
+
+    if request.method == "GET":
+        active = state.get("active")
+        leaderboard = []
+        if isinstance(active, dict):
+            leaderboard = _sorted_leaderboard_entries(state, str(active.get("id") or ""))[:10]
+        return jsonify(
+            {
+                "active": active,
+                "leaderboard": leaderboard,
+                "games": GIVEAWAY_GAMES,
+                "audiences": list(sorted(GIVEAWAY_ALLOWED_AUDIENCES)),
+            }
+        )
+
+    data = request.json or {}
+    action = str(data.get("action") or "").strip().lower()
+
+    if action == "create":
+        existing = state.get("active")
+        if _giveaway_is_active(existing):
+            return jsonify({"error": "An active giveaway is already running."}), 400
+
+        game = str(data.get("game") or "").strip()
+        if game not in GIVEAWAY_GAMES:
+            return jsonify({"error": "Invalid game."}), 400
+
+        audience = str(data.get("audience") or GIVEAWAY_AUDIENCE_EVERYONE).strip()
+        if audience not in GIVEAWAY_ALLOWED_AUDIENCES:
+            return jsonify({"error": "Invalid audience."}), 400
+
+        try:
+            duration_minutes = int(data.get("duration_minutes") or 0)
+        except (TypeError, ValueError):
+            duration_minutes = 0
+        if duration_minutes < 1 or duration_minutes > MAX_GIVEAWAY_DURATION_MINUTES:
+            return jsonify({"error": f"Duration must be between 1 and {MAX_GIVEAWAY_DURATION_MINUTES} minutes."}), 400
+
+        try:
+            reward_dollars = float(data.get("reward_dollars") or 0)
+        except (TypeError, ValueError):
+            reward_dollars = -1
+        if reward_dollars < 0:
+            return jsonify({"error": "Reward must be 0 or greater."}), 400
+
+        now = int(time.time())
+        giveaway_id = f"gw_{now}_{secrets.token_hex(4)}"
+        reward_cents = int(round(reward_dollars * 100))
+        giveaway = {
+            "id": giveaway_id,
+            "game": game,
+            "audience": audience,
+            "reward_cents": reward_cents,
+            "starts_at": now,
+            "ends_at": now + (duration_minutes * 60),
+            "created_at": now,
+            "ended": False,
+            "settled": False,
+            "winner": None,
+        }
+        state["active"] = giveaway
+        leaderboards = state.get("leaderboards")
+        if not isinstance(leaderboards, dict):
+            leaderboards = {}
+            state["leaderboards"] = leaderboards
+        leaderboards[giveaway_id] = {}
+        _save_giveaway_state(state)
+        return jsonify({"ok": True, "active": giveaway})
+
+    if action == "end_now":
+        giveaway = state.get("active")
+        if not isinstance(giveaway, dict):
+            return jsonify({"error": "No giveaway found."}), 404
+        # Move giveaway end into the past so settlement runs immediately.
+        giveaway["ends_at"] = int(time.time()) - 1
+        state["active"] = giveaway
+        _save_giveaway_state(state)
+        _settle_giveaway_if_due(state)
+        active = state.get("active")
+        leaderboard = []
+        if isinstance(active, dict):
+            leaderboard = _sorted_leaderboard_entries(state, str(active.get("id") or ""))[:10]
+        return jsonify({"ok": True, "active": active, "leaderboard": leaderboard})
+
+    if action == "manual_score":
+        giveaway = state.get("active")
+        if not isinstance(giveaway, dict):
+            return jsonify({"error": "No giveaway found."}), 404
+
+        username = str(data.get("username") or "").strip()
+        if not username:
+            return jsonify({"error": "Username required."}), 400
+
+        users = _load_users()
+        if username not in users:
+            return jsonify({"error": "User not found."}), 404
+
+        try:
+            score = int(data.get("score") or 0)
+        except (TypeError, ValueError):
+            score = -1
+        if score < 0:
+            return jsonify({"error": "Score must be >= 0."}), 400
+
+        giveaway_id = str(giveaway.get("id") or "")
+        leaderboards = state.get("leaderboards")
+        if not isinstance(leaderboards, dict):
+            leaderboards = {}
+            state["leaderboards"] = leaderboards
+        board = leaderboards.get(giveaway_id)
+        if not isinstance(board, dict):
+            board = {}
+            leaderboards[giveaway_id] = board
+
+        board[username] = {
+            "score": score,
+            "updated_at": int(time.time()),
+            "source": "admin_manual",
+        }
+        _save_giveaway_state(state)
+        leaderboard = _sorted_leaderboard_entries(state, giveaway_id)[:10]
+        return jsonify({"ok": True, "leaderboard": leaderboard})
+
+    return jsonify({"error": "Unknown action."}), 400
+
+
+@app.route("/api/giveaway/status", methods=["GET"])
+@login_required_api
+def api_giveaway_status():
+    username = session["username"]
+    state = _load_giveaway_state()
+    _settle_giveaway_if_due(state)
+    return jsonify(_serialize_giveaway_state_for_user(state, username))
+
+
+@app.route("/api/giveaway/submit-score", methods=["POST"])
+@login_required_api
+def api_giveaway_submit_score():
+    username = session["username"]
+    data = request.json or {}
+    try:
+        score = int(data.get("score") or 0)
+    except (TypeError, ValueError):
+        score = -1
+    if score < 0:
+        return jsonify({"error": "Score must be >= 0."}), 400
+    if score > MAX_GIVEAWAY_ABSOLUTE_SCORE:
+        return jsonify({"error": "Score is too large."}), 400
+
+    state = _load_giveaway_state()
+    _settle_giveaway_if_due(state)
+    giveaway = state.get("active")
+    if not isinstance(giveaway, dict):
+        return jsonify({"error": "No giveaway is configured."}), 404
+    if not _giveaway_is_active(giveaway):
+        return jsonify({"error": "Giveaway is not active."}), 400
+
+    audience = str(giveaway.get("audience") or GIVEAWAY_AUDIENCE_EVERYONE)
+    if not _user_can_join_giveaway(username, audience):
+        return jsonify({"error": "This giveaway is for customers only."}), 403
+
+    game = str(giveaway.get("game") or "")
+    score_limit = int(GIVEAWAY_SCORE_LIMITS.get(game, DEFAULT_GIVEAWAY_SCORE_LIMIT))
+    if score > score_limit:
+        return jsonify({"error": "Submitted score exceeds the allowed range for this game."}), 400
+
+    now = int(time.time())
+    last_submit_at = int(session.get("giveaway_last_submit_ts") or 0)
+    if (now - last_submit_at) < GIVEAWAY_SUBMIT_COOLDOWN_SECONDS:
+        return jsonify({"error": "Please wait before submitting again."}), 429
+    session["giveaway_last_submit_ts"] = now
+
+    giveaway_id = str(giveaway.get("id") or "")
+    leaderboards = state.get("leaderboards")
+    if not isinstance(leaderboards, dict):
+        leaderboards = {}
+        state["leaderboards"] = leaderboards
+    board = leaderboards.get(giveaway_id)
+    if not isinstance(board, dict):
+        board = {}
+        leaderboards[giveaway_id] = board
+
+    existing = board.get(username) if isinstance(board.get(username), dict) else {}
+    current_best = int(existing.get("score") or 0) if existing else 0
+    if score > current_best:
+        board[username] = {
+            "score": score,
+            "updated_at": int(time.time()),
+            "source": "player",
+        }
+        _save_giveaway_state(state)
+
+    payload = _serialize_giveaway_state_for_user(state, username)
+    payload["ok"] = True
+    payload["submitted_score"] = score
+    payload["accepted"] = score > current_best
+    return jsonify(payload)
 
 
 @app.route("/api/fortnite/name-account", methods=["POST"])
