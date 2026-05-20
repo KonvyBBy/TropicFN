@@ -2312,6 +2312,12 @@ def get_shopify_order_by_ref(order_ref: str):
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-change-this")
 KONVY_ADMIN_PASSWORD = os.environ.get("KONVY_ADMIN_PASSWORD", "Kelvilo40")
+try:
+    session_lifetime_days = int(os.environ.get("SESSION_LIFETIME_DAYS", "30"))
+except (TypeError, ValueError):
+    session_lifetime_days = 30
+app.config["PERMANENT_SESSION_LIFETIME"] = datetime.timedelta(days=max(1, session_lifetime_days))
+app.config["SESSION_REFRESH_EACH_REQUEST"] = True
 
 
 ensure_cosmetic_lookup_runtime_initialized()
@@ -2403,6 +2409,7 @@ def _build_fallback_purchase_title(item_id: int) -> str:
 def enforce_purchase_lock():
     if "username" not in session:
         return None
+    session.permanent = True
 
     locked_purchase = get_purchase_lock()
     if not locked_purchase:
@@ -2886,6 +2893,7 @@ def login():
         )
 
     session["username"] = username
+    session.permanent = True
     session.pop("pending_verify_username", None)
     return redirect(url_for("index"))
 
@@ -3013,6 +3021,7 @@ def verify_email():
 
     mark_email_verified(username)
     session["username"] = username
+    session.permanent = True
     session.pop("pending_verify_username", None)
     return redirect(url_for("index"))
 
