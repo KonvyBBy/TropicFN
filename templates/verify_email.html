@@ -53,10 +53,55 @@
     from { opacity: 0; transform: translateY(14px) scale(.985); }
     to { opacity: 1; transform: translateY(0) scale(1); }
   }
+  .spam-reminder-popup {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 60;
+    width: min(320px, calc(100vw - 32px));
+    border: 1px solid rgba(245, 158, 11, 0.5);
+    background: rgba(32, 18, 3, 0.94);
+    box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.2), 0 10px 35px rgba(0, 0, 0, 0.45);
+    border-radius: 14px;
+    padding: 12px 14px;
+    opacity: 0;
+    transform: translateY(10px);
+    pointer-events: none;
+    transition: opacity .2s ease, transform .2s ease;
+  }
+  .spam-reminder-popup.show {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+  .spam-reminder-popup.blinking {
+    animation: spam-popup-blink 1.4s ease-in-out 2;
+  }
+  @keyframes spam-popup-blink {
+    0%, 100% { box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.2), 0 10px 35px rgba(0, 0, 0, 0.45); }
+    50% { box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.8), 0 0 18px rgba(245, 158, 11, 0.5); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .spam-reminder-popup.blinking {
+      animation: none;
+    }
+  }
 </style>
 {% endblock %}
 
 {% block content %}
+<div id="spam-reminder-popup" class="spam-reminder-popup" hidden>
+  <div class="flex items-start justify-between gap-3">
+    <div>
+      <p class="text-xs font-semibold uppercase tracking-wide text-amber-300">Verification Tip</p>
+      <p class="mt-1 text-sm text-amber-100">Did not get your code? Check your spam folder.</p>
+    </div>
+    <button id="spam-reminder-close" type="button" class="text-amber-300 hover:text-amber-200 text-lg leading-none cursor-pointer">
+      <span aria-hidden="true">×</span>
+      <span class="sr-only">Close reminder</span>
+    </button>
+  </div>
+</div>
 <div class="auth-page-wrap px-4">
   <div class="w-full max-w-md">
     <div class="auth-panel rounded-3xl p-6 sm:p-8">
@@ -111,4 +156,26 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    const POPUP_DELAY_MS = 1200;
+    const POPUP_HIDE_MS = 200;
+    const popup = document.getElementById('spam-reminder-popup');
+    const closeBtn = document.getElementById('spam-reminder-close');
+    if (!popup || !closeBtn) return;
+    setTimeout(() => {
+      popup.hidden = false;
+      popup.classList.add('show', 'blinking');
+    }, POPUP_DELAY_MS);
+    closeBtn.addEventListener('click', function () {
+      popup.classList.remove('show', 'blinking');
+      setTimeout(function () {
+        popup.hidden = true;
+      }, POPUP_HIDE_MS);
+    });
+  })();
+</script>
 {% endblock %}
