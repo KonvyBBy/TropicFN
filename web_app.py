@@ -2809,7 +2809,7 @@ def _settle_giveaway_if_due(state: dict) -> bool:
 
     giveaway_id = str(giveaway.get("id") or "")
     entries = _sorted_leaderboard_entries(state, giveaway_id)
-    winner = entries[0] if entries else None
+    winner = next(iter(entries), None)
 
     if winner:
         reward_cents = int(giveaway.get("reward_cents") or 0)
@@ -5500,7 +5500,6 @@ def api_admin_giveaway():
         if not isinstance(giveaway, dict):
             return jsonify({"error": "No giveaway found."}), 404
         giveaway["ends_at"] = int(time.time()) - 1
-        giveaway["ended"] = True
         state["active"] = giveaway
         _save_giveaway_state(state)
         state = _load_giveaway_state()
@@ -5542,10 +5541,8 @@ def api_admin_giveaway():
             board = {}
             leaderboards[giveaway_id] = board
 
-        previous = board.get(username) if isinstance(board.get(username), dict) else {}
-        previous_best = int(previous.get("score") or 0) if previous else 0
         board[username] = {
-            "score": max(previous_best, score),
+            "score": score,
             "updated_at": int(time.time()),
             "source": "admin_manual",
         }

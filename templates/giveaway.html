@@ -64,6 +64,8 @@
   let sessionBest = 0;
   let currentScore = 0;
   let gameCleanup = null;
+  const REACTION_TAP_INTERVAL_MS = 900;
+  const TYPING_SPRINT_WORDS = ['victory', 'legendary', 'fortnite', 'battle', 'royale', 'storm', 'squad', 'reload', 'ranked', 'crown', 'island', 'build', 'edit', 'arena'];
 
   const statusEl = document.getElementById('gw-status');
   const hostEl = document.getElementById('gw-game-host');
@@ -243,7 +245,7 @@
           targetBtn.textContent = 'Wait…';
           targetBtn.style.background = 'rgba(255,255,255,.05)';
         }, 650);
-      }, 900);
+      }, REACTION_TAP_INTERVAL_MS);
     };
     targetBtn.onclick = () => {
       if (!visible) return;
@@ -370,7 +372,6 @@
   }
 
   function mountTypingSprint() {
-    const words = ['victory', 'legendary', 'fortnite', 'battle', 'royale', 'storm', 'squad', 'reload', 'ranked', 'crown', 'island', 'build', 'edit', 'arena'];
     hostEl.innerHTML = `
       <div class="space-y-3 text-center w-full max-w-md">
         <p class="gw-muted">Type each word and press Enter. 30-second sprint.</p>
@@ -386,7 +387,7 @@
     let stopTimer = null;
     let currentWord = '';
     const nextWord = () => {
-      currentWord = words[Math.floor(Math.random() * words.length)];
+      currentWord = TYPING_SPRINT_WORDS[Math.floor(Math.random() * TYPING_SPRINT_WORDS.length)];
       wordEl.textContent = currentWord;
       input.value = '';
       input.focus();
