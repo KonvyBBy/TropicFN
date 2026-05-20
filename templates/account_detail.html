@@ -74,6 +74,20 @@
         Instant Buy
       </button>
       <p id="instant-buy-status" class="mt-3 text-sm text-zinc-400">Buy now and we will handle delivery after purchase.</p>
+      <div id="instant-buy-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 p-4">
+        <div class="w-full max-w-md rounded-2xl border border-white/10 bg-[#0b1220] p-5 shadow-2xl">
+          <h3 class="font-space text-lg font-semibold text-white">Confirm Purchase</h3>
+          <p class="mt-2 text-sm text-zinc-300">Before continuing, confirm that by purchasing this account you agree to our <a href="/terms" target="_blank" rel="noopener noreferrer" class="text-emerald-400 hover:text-emerald-300">Terms of Service</a>.</p>
+          <label class="mt-4 flex cursor-pointer items-start gap-2 text-sm text-zinc-200">
+            <input id="instant-buy-tos-check" type="checkbox" class="mt-0.5 h-4 w-4 rounded border-zinc-600 bg-zinc-900 text-emerald-500 focus:ring-emerald-500">
+            <span>By purchasing this, I agree with the Terms of Service.</span>
+          </label>
+          <div class="mt-5 flex gap-2">
+            <button id="instant-buy-cancel-btn" type="button" class="inline-flex flex-1 items-center justify-center rounded-xl border border-white/15 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-white/5">Cancel</button>
+            <button id="instant-buy-confirm-btn" type="button" disabled class="inline-flex flex-1 items-center justify-center rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60">Confirm Purchase</button>
+          </div>
+        </div>
+      </div>
       {% else %}
       <a href="{{ url_for('register') }}" class="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-indigo-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-400">
         Sign up to Instant Buy
@@ -212,10 +226,14 @@
 
     const buyBtn = document.getElementById('instant-buy-btn');
     const statusEl = document.getElementById('instant-buy-status');
+    const modal = document.getElementById('instant-buy-modal');
+    const tosCheck = document.getElementById('instant-buy-tos-check');
+    const cancelBtn = document.getElementById('instant-buy-cancel-btn');
+    const confirmBtn = document.getElementById('instant-buy-confirm-btn');
     if (!buyBtn || !statusEl) return;
     let instantBuyInFlight = false;
 
-    buyBtn.addEventListener('click', () => {
+    function startInstantBuy() {
       if (instantBuyInFlight) return;
       const detail = window.ACCOUNT_DETAIL || {};
       const itemId = Number(detail.item_id || 0);
@@ -233,6 +251,45 @@
       const params = new URLSearchParams({ item_id: String(itemId) });
       if (title) params.set('title', title);
       window.location.href = `/purchase-processing?${params.toString()}`;
+    }
+
+    if (modal && tosCheck && cancelBtn && confirmBtn) {
+      const closeModal = () => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      };
+      const openModal = () => {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      };
+      buyBtn.addEventListener('click', () => {
+        if (instantBuyInFlight) return;
+        tosCheck.checked = false;
+        confirmBtn.disabled = true;
+        openModal();
+      });
+      cancelBtn.addEventListener('click', closeModal);
+      modal.addEventListener('click', (event) => {
+        if (event.target === modal) closeModal();
+      });
+      tosCheck.addEventListener('change', () => {
+        confirmBtn.disabled = !tosCheck.checked;
+      });
+      confirmBtn.addEventListener('click', () => {
+        if (!tosCheck.checked) return;
+        closeModal();
+        startInstantBuy();
+      });
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !modal.classList.contains('hidden')) {
+          closeModal();
+        }
+      });
+      return;
+    }
+
+    buyBtn.addEventListener('click', () => {
+      startInstantBuy();
     });
   });
 </script>
