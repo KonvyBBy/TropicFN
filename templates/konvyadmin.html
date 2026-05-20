@@ -245,6 +245,7 @@
     <button class="tab-btn" onclick="showTab('blacklist')">🚫 Blacklist</button>
     <button class="tab-btn" onclick="showTab('support')">🎫 Support Tickets</button>
     <button class="tab-btn" onclick="showTab('fakeorders')">🎭 Fake Orders</button>
+    <button class="tab-btn" onclick="showTab('giveaway')">🏆 Giveaways</button>
   </div>
 
   <!-- Settings Tab -->
@@ -406,11 +407,79 @@
     </div>
   </div>
 
+  <!-- Giveaway Tab -->
+  <div id="tab-giveaway" class="tab-panel">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;gap:0.75rem;flex-wrap:wrap;">
+        <h3>🏆 Giveaway Manager</h3>
+        <button class="btn btn-secondary btn-sm" onclick="loadGiveawayAdmin()">🔄 Refresh</button>
+      </div>
+
+      <div id="ga-active-summary" style="margin-bottom:1rem;color:var(--muted);font-size:0.86rem;">Loading giveaway status…</div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0.75rem;margin-bottom:0.85rem;">
+        <div>
+          <label>Game</label>
+          <select id="ga-game">
+            <option value="click_frenzy">Click Frenzy</option>
+            <option value="reaction_tap">Reaction Tap</option>
+            <option value="math_rush">Math Rush</option>
+            <option value="memory_digits">Memory Digits</option>
+            <option value="typing_sprint">Typing Sprint</option>
+          </select>
+        </div>
+        <div>
+          <label>Audience</label>
+          <select id="ga-audience">
+            <option value="everyone">Everyone</option>
+            <option value="customers_only">Customers only</option>
+          </select>
+        </div>
+        <div>
+          <label>Duration (minutes)</label>
+          <input id="ga-duration" type="number" min="1" max="10080" value="60" />
+        </div>
+        <div>
+          <label>Reward ($)</label>
+          <input id="ga-reward" type="number" step="0.01" min="0" value="10.00" />
+        </div>
+      </div>
+      <div style="display:flex;gap:0.6rem;flex-wrap:wrap;margin-bottom:1.3rem;">
+        <button class="btn btn-primary" onclick="createGiveaway()">Create Giveaway</button>
+        <button class="btn btn-danger" onclick="endGiveawayNow()">End & Settle Now</button>
+      </div>
+
+      <h3 style="margin-bottom:0.7rem;">Manual Leaderboard Entry</h3>
+      <div style="display:flex;gap:0.65rem;flex-wrap:wrap;align-items:flex-end;margin-bottom:1rem;">
+        <div style="min-width:220px;flex:1;">
+          <label>Username</label>
+          <input id="ga-manual-username" type="text" placeholder="username" />
+        </div>
+        <div style="width:160px;">
+          <label>High Score</label>
+          <input id="ga-manual-score" type="number" min="0" value="0" />
+        </div>
+        <button class="btn btn-secondary" onclick="manualGiveawayScore()">Save Score</button>
+      </div>
+
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr><th>Rank</th><th>User</th><th>Score</th><th>Updated</th></tr>
+          </thead>
+          <tbody id="ga-leaderboard">
+            <tr class="empty-row"><td colspan="4">No leaderboard data</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   {% endif %}
 </div>
 
 <script>
-  const tabOrder = ['settings','pending','users','blacklist','support','fakeorders'];
+  const tabOrder = ['settings','pending','users','blacklist','support','fakeorders','giveaway'];
   let supportTicketsCache = [];
   let selectedSupportTicketId = '';
 
@@ -425,6 +494,7 @@
     if (name === 'blacklist') loadBlacklist();
     if (name === 'support') loadSupportTickets();
     if (name === 'fakeorders') loadFakeOrdersConfig();
+    if (name === 'giveaway') loadGiveawayAdmin();
   }
 
   function showMsg(msg, isError) {
@@ -826,6 +896,104 @@
       showFoMsg('Fired fake order for ' + res.username, false);
     } else {
       showFoMsg(res.error || 'Error', true);
+    }
+  }
+
+  function gaFmtDate(ts) {
+    if (!ts) return '—';
+    return new Date(ts * 1000).toLocaleString();
+  }
+
+  function renderGiveawayLeaderboard(rows) {
+    const tbody = document.getElementById('ga-leaderboard');
+    const list = Array.isArray(rows) ? rows : [];
+    if (!list.length) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="4">No leaderboard data</td></tr>';
+      return;
+    }
+    tbody.innerHTML = '';
+    list.forEach(r => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>#${r.rank || '—'}</td>
+        <td style="color:var(--text);font-weight:600;"></td>
+        <td style="color:#00e676;font-weight:700;"></td>
+        <td></td>
+      `;
+      tr.cells[1].textContent = r.username || '—';
+      tr.cells[2].textContent = String(r.score ?? 0);
+      tr.cells[3].textContent = gaFmtDate(r.updated_at);
+      tbody.appendChild(tr);
+    });
+  }
+
+  async function loadGiveawayAdmin() {
+    const r = await fetch('/api/admin/giveaway');
+    const data = await r.json();
+    if (!r.ok || data.error) {
+      showMsg(data.error || 'Failed to load giveaway', true);
+      return;
+    }
+
+    const active = data.active;
+    const summary = document.getElementById('ga-active-summary');
+    if (!active) {
+      summary.textContent = 'No giveaway is active.';
+    } else {
+      const reward = '$' + ((active.reward_cents || 0) / 100).toFixed(2);
+      const audience = active.audience === 'customers_only' ? 'Customers only' : 'Everyone';
+      const winner = active.winner ? ` | Winner: ${active.winner.username} (${active.winner.score})` : '';
+      summary.textContent = `Game: ${active.game} | Reward: ${reward} | Audience: ${audience} | Starts: ${gaFmtDate(active.starts_at)} | Ends: ${gaFmtDate(active.ends_at)}${winner}`;
+    }
+    renderGiveawayLeaderboard(data.leaderboard || []);
+  }
+
+  async function createGiveaway() {
+    const game = document.getElementById('ga-game').value;
+    const audience = document.getElementById('ga-audience').value;
+    const duration = parseInt(document.getElementById('ga-duration').value || '0', 10);
+    const reward = parseFloat(document.getElementById('ga-reward').value || '0');
+    const res = await apiPost('/api/admin/giveaway', {
+      action: 'create',
+      game,
+      audience,
+      duration_minutes: duration,
+      reward_dollars: reward,
+    });
+    if (res.ok) {
+      showMsg('Giveaway created', false);
+      loadGiveawayAdmin();
+    } else {
+      showMsg(res.error || 'Failed to create giveaway', true);
+    }
+  }
+
+  async function endGiveawayNow() {
+    if (!confirm('End and settle the giveaway now?')) return;
+    const res = await apiPost('/api/admin/giveaway', { action: 'end_now' });
+    if (res.ok) {
+      showMsg('Giveaway ended and settled', false);
+      renderGiveawayLeaderboard(res.leaderboard || []);
+      loadGiveawayAdmin();
+    } else {
+      showMsg(res.error || 'Failed to end giveaway', true);
+    }
+  }
+
+  async function manualGiveawayScore() {
+    const username = document.getElementById('ga-manual-username').value.trim();
+    const score = parseInt(document.getElementById('ga-manual-score').value || '0', 10);
+    if (!username) {
+      showMsg('Username required', true);
+      return;
+    }
+    const res = await apiPost('/api/admin/giveaway', { action: 'manual_score', username, score });
+    if (res.ok) {
+      showMsg('Manual score saved', false);
+      renderGiveawayLeaderboard(res.leaderboard || []);
+      document.getElementById('ga-manual-score').value = '0';
+    } else {
+      showMsg(res.error || 'Failed to save score', true);
     }
   }
 
