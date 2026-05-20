@@ -617,12 +617,21 @@ GIVEAWAY_ALLOWED_AUDIENCES = {
     GIVEAWAY_AUDIENCE_EVERYONE,
     GIVEAWAY_AUDIENCE_CUSTOMERS_ONLY,
 }
+MAX_GIVEAWAY_DURATION_MINUTES = 10080
+GIVEAWAY_SUBMIT_COOLDOWN_SECONDS = 2
 GIVEAWAY_GAMES = {
     "click_frenzy": "Click Frenzy",
     "reaction_tap": "Reaction Tap",
     "math_rush": "Math Rush",
     "memory_digits": "Memory Digits",
     "typing_sprint": "Typing Sprint",
+}
+GIVEAWAY_SCORE_LIMITS = {
+    "click_frenzy": 500,
+    "reaction_tap": 500,
+    "math_rush": 500,
+    "memory_digits": 5000,
+    "typing_sprint": 500,
 }
 
 # --- Support ticket webhook ---
@@ -2779,7 +2788,7 @@ def _sorted_leaderboard_entries(state: dict, giveaway_id: str) -> list:
             }
         )
 
-    entries.sort(key=lambda e: (-e["score"], e["updated_at"], e["username"].lower()))
+    entries.sort(key=lambda e: (-e["score"], e["updated_at"]))
     for idx, entry in enumerate(entries, start=1):
         entry["rank"] = idx
     return entries
@@ -5425,7 +5434,6 @@ def api_admin_giveaway():
 
     state = _load_giveaway_state()
     _settle_giveaway_if_due(state)
-    state = _load_giveaway_state()
 
     if request.method == "GET":
         active = state.get("active")
@@ -5461,8 +5469,8 @@ def api_admin_giveaway():
             duration_minutes = int(data.get("duration_minutes") or 0)
         except (TypeError, ValueError):
             duration_minutes = 0
-        if duration_minutes < 1 or duration_minutes > 10080:
-            return jsonify({"error": "Duration must be between 1 and 10080 minutes."}), 400
+        if duration_minutes < 1 or duration_minutes > MAX_GIVEAWAY_DURATION_MINUTES:
+            return jsonify({"error": f"Duration must be between 1 and {MAX_GIVEAWAY_DURATION_MINUTES} minutes."}), 400
 
         try:
             reward_dollars = float(data.get("reward_dollars") or 0)
@@ -5502,9 +5510,7 @@ def api_admin_giveaway():
         giveaway["ends_at"] = int(time.time()) - 1
         state["active"] = giveaway
         _save_giveaway_state(state)
-        state = _load_giveaway_state()
         _settle_giveaway_if_due(state)
-        state = _load_giveaway_state()
         active = state.get("active")
         leaderboard = []
         if isinstance(active, dict):
@@ -5559,7 +5565,6 @@ def api_giveaway_status():
     username = session["username"]
     state = _load_giveaway_state()
     _settle_giveaway_if_due(state)
-    state = _load_giveaway_state()
     return jsonify(_serialize_giveaway_state_for_user(state, username))
 
 
@@ -5579,7 +5584,6 @@ def api_giveaway_submit_score():
 
     state = _load_giveaway_state()
     _settle_giveaway_if_due(state)
-    state = _load_giveaway_state()
     giveaway = state.get("active")
     if not isinstance(giveaway, dict):
         return jsonify({"error": "No giveaway is configured."}), 404
@@ -5589,6 +5593,17 @@ def api_giveaway_submit_score():
     audience = str(giveaway.get("audience") or GIVEAWAY_AUDIENCE_EVERYONE)
     if not _user_can_join_giveaway(username, audience):
         return jsonify({"error": "This giveaway is for customers only."}), 403
+
+    game = str(giveaway.get("game") or "")
+    score_limit = int(GIVEAWAY_SCORE_LIMITS.get(game, 1000))
+    if score > score_limit:
+        return jsonify({"error": "Submitted score exceeds the allowed range for this game."}), 400
+
+    now = int(time.time())
+    last_submit_at = int(session.get("giveaway_last_submit_ts") or 0)
+    if (now - last_submit_at) < GIVEAWAY_SUBMIT_COOLDOWN_SECONDS:
+        return jsonify({"error": "Please wait before submitting again."}), 429
+    session["giveaway_last_submit_ts"] = now
 
     giveaway_id = str(giveaway.get("id") or "")
     leaderboards = state.get("leaderboards")
@@ -5610,7 +5625,6 @@ def api_giveaway_submit_score():
         }
         _save_giveaway_state(state)
 
-    state = _load_giveaway_state()
     payload = _serialize_giveaway_state_for_user(state, username)
     payload["ok"] = True
     payload["submitted_score"] = score
