@@ -618,6 +618,7 @@ GIVEAWAY_ALLOWED_AUDIENCES = {
     GIVEAWAY_AUDIENCE_CUSTOMERS_ONLY,
 }
 MAX_GIVEAWAY_DURATION_MINUTES = 10080
+MAX_GIVEAWAY_ABSOLUTE_SCORE = 1_000_000_000
 GIVEAWAY_SUBMIT_COOLDOWN_SECONDS = 2
 GIVEAWAY_GAMES = {
     "click_frenzy": "Click Frenzy",
@@ -2750,7 +2751,7 @@ def _giveaway_is_active(giveaway: Optional[dict], now_ts: Optional[int] = None) 
         ends_at = int(giveaway.get("ends_at") or 0)
     except (TypeError, ValueError):
         return False
-    return starts_at > 0 and ends_at > 0 and starts_at <= now <= ends_at
+    return starts_at > 0 and ends_at > 0 and starts_at <= now < ends_at
 
 
 def _user_can_join_giveaway(username: str, audience: str) -> bool:
@@ -5217,6 +5218,7 @@ def konvyadmin_page():
         "konvyadmin.html",
         is_admin=is_admin,
         current_multiplier=f"{get_lzt_multiplier():.2f}",
+        max_giveaway_duration_minutes=MAX_GIVEAWAY_DURATION_MINUTES,
         error=error,
         notice=notice,
     )
@@ -5579,7 +5581,7 @@ def api_giveaway_submit_score():
         score = -1
     if score < 0:
         return jsonify({"error": "Score must be >= 0."}), 400
-    if score > 1_000_000_000:
+    if score > MAX_GIVEAWAY_ABSOLUTE_SCORE:
         return jsonify({"error": "Score is too large."}), 400
 
     state = _load_giveaway_state()
