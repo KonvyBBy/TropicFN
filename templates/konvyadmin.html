@@ -244,6 +244,7 @@
     <button class="tab-btn" onclick="showTab('users')">👥 Users</button>
     <button class="tab-btn" onclick="showTab('blacklist')">🚫 Blacklist</button>
     <button class="tab-btn" onclick="showTab('support')">🎫 Support Tickets</button>
+    <button class="tab-btn" onclick="showTab('fakeorders')">🎭 Fake Orders</button>
   </div>
 
   <!-- Settings Tab -->
@@ -375,11 +376,41 @@
     </div>
   </div>
 
+  <!-- Fake Orders Tab -->
+  <div id="tab-fakeorders" class="tab-panel">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;gap:0.75rem;flex-wrap:wrap;">
+        <h3>🎭 Fake Orders Scheduler</h3>
+        <div style="display:flex;gap:0.5rem;align-items:center;">
+          <span id="fo-status-badge" style="padding:0.25rem 0.75rem;border-radius:999px;font-size:0.75rem;font-weight:700;">—</span>
+          <button id="fo-toggle-btn" class="btn btn-sm btn-secondary" onclick="toggleFakeOrders()">Loading…</button>
+        </div>
+      </div>
+
+      <p style="color:var(--muted);font-size:0.85rem;margin-bottom:1rem;">
+        Orders fire automatically in Chicago time: <strong>6–12/hr</strong> from 9am–11pm, and <strong>0–2/hr</strong> overnight.
+        Amounts: ~10% cheap ($1–$5), ~70% mid ($10–$25), ~20% high ($60–$120).
+      </p>
+
+      <div style="margin-bottom:1rem;">
+        <label>Usernames (one per line)</label>
+        <textarea id="fo-usernames" rows="8" placeholder="username1&#10;username2&#10;username3" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:9px;padding:0.7rem 0.9rem;font-size:0.9rem;color:var(--text);resize:vertical;font-family:monospace;outline:none;"></textarea>
+      </div>
+
+      <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="saveFakeOrdersConfig()">💾 Save Usernames</button>
+        <button class="btn btn-warn" onclick="fireOneFakeOrder()">⚡ Fire One Now</button>
+      </div>
+
+      <div id="fo-msg" style="margin-top:1rem;display:none;padding:0.625rem 0.875rem;border-radius:8px;font-size:0.85rem;"></div>
+    </div>
+  </div>
+
   {% endif %}
 </div>
 
 <script>
-  const tabOrder = ['settings','pending','users','blacklist','support'];
+  const tabOrder = ['settings','pending','users','blacklist','support','fakeorders'];
   let supportTicketsCache = [];
   let selectedSupportTicketId = '';
 
@@ -393,6 +424,7 @@
     if (name === 'users') loadUsers();
     if (name === 'blacklist') loadBlacklist();
     if (name === 'support') loadSupportTickets();
+    if (name === 'fakeorders') loadFakeOrdersConfig();
   }
 
   function showMsg(msg, isError) {
@@ -738,6 +770,75 @@
   loadPending();
   loadSupportTickets();
   {% endif %}
+
+  // ---- Fake Orders ----
+  async function loadFakeOrdersConfig() {
+    const r = await fetch('/api/admin/fake-orders/config');
+    const cfg = await r.json();
+    const enabled = !!cfg.enabled;
+    const badge = document.getElementById('fo-status-badge');
+    const btn = document.getElementById('fo-toggle-btn');
+    if (enabled) {
+      badge.textContent = '🟢 ENABLED';
+      badge.style.background = 'rgba(0,230,118,0.1)';
+      badge.style.border = '1px solid rgba(0,230,118,0.3)';
+      badge.style.color = '#00e676';
+      btn.textContent = '⏹ Disable';
+      btn.className = 'btn btn-sm btn-danger';
+    } else {
+      badge.textContent = '🔴 DISABLED';
+      badge.style.background = 'rgba(255,80,80,0.1)';
+      badge.style.border = '1px solid rgba(255,80,80,0.3)';
+      badge.style.color = '#ff6b6b';
+      btn.textContent = '▶ Enable';
+      btn.className = 'btn btn-sm btn-primary';
+    }
+    const unames = (cfg.usernames || []);
+    document.getElementById('fo-usernames').value = unames.join('\n');
+  }
+
+  async function saveFakeOrdersConfig() {
+    const raw = document.getElementById('fo-usernames').value;
+    const usernames = raw.split('\n').map(u => u.trim()).filter(Boolean);
+    const res = await apiPost('/api/admin/fake-orders/config', { usernames });
+    if (res.ok) {
+      showFoMsg('Usernames saved (' + (res.config.usernames||[]).length + ' total)', false);
+    } else {
+      showFoMsg(res.error || 'Error saving', true);
+    }
+  }
+
+  async function toggleFakeOrders() {
+    const badge = document.getElementById('fo-status-badge');
+    const enabled = badge.textContent.includes('ENABLED');
+    const res = await apiPost('/api/admin/fake-orders/config', { enabled: !enabled });
+    if (res.ok) {
+      showFoMsg('Fake orders ' + (res.config.enabled ? 'enabled' : 'disabled'), false);
+      loadFakeOrdersConfig();
+    } else {
+      showFoMsg(res.error || 'Error', true);
+    }
+  }
+
+  async function fireOneFakeOrder() {
+    const res = await apiPost('/api/admin/fake-orders/fire-one', {});
+    if (res.ok) {
+      showFoMsg('Fired fake order for ' + res.username, false);
+    } else {
+      showFoMsg(res.error || 'Error', true);
+    }
+  }
+
+  function showFoMsg(msg, isError) {
+    const el = document.getElementById('fo-msg');
+    el.textContent = msg;
+    el.style.display = 'block';
+    el.style.background = isError ? 'rgba(255,80,80,0.08)' : 'rgba(0,230,118,0.08)';
+    el.style.border = isError ? '1px solid rgba(255,80,80,0.25)' : '1px solid rgba(0,230,118,0.25)';
+    el.style.color = isError ? '#ff8080' : '#00e676';
+    clearTimeout(el._timer);
+    el._timer = setTimeout(() => el.style.display = 'none', 5000);
+  }
 </script>
 </body>
 </html>

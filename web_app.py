@@ -10,11 +10,13 @@ import hashlib
 import base64
 import datetime
 import logging
+import random
 import secrets
 import smtplib
 import threading
 from email.message import EmailMessage
 from typing import List, Tuple, Optional, Set, Dict, Any
+from zoneinfo import ZoneInfo
 
 import requests
 from flask import (
@@ -603,6 +605,9 @@ TOPUP_NOTIFICATIONS_FILE = os.path.join(DATA_DIR, "topup_notifications.json")
 
 # --- Support tickets ---
 SUPPORT_TICKETS_FILE = os.path.join(DATA_DIR, "support_tickets.json")
+
+# --- Fake orders scheduler config ---
+FAKE_ORDERS_FILE = os.path.join(DATA_DIR, "fake_orders_config.json")
 
 # --- Support ticket webhook ---
 DISCORD_SUPPORT_TICKET_WEBHOOK_URL = (
@@ -1517,7 +1522,7 @@ def _build_purchase_webhook_payload(
         "avatar_url": DISCORD_PURCHASE_THUMBNAIL_URL,
         "embeds": [
             {
-                "title": "✅ Order Confirmed - Thank You!",
+                "title": "[FAKE] ✅ Order Confirmed - Thank You!",
                 "description": "Your Itemz Fortnite purchase was completed successfully.",
                 "color": 0x0EF475,
                 "author": {
@@ -1562,6 +1567,199 @@ def send_purchase_discord_webhook(
         response.raise_for_status()
     except requests.RequestException as exc:
         webhook_logger.warning("Purchase webhook send failed: %s", exc)
+
+
+# ===================== FAKE ORDERS SCHEDULER =====================
+
+_CHICAGO_TZ = ZoneInfo("America/Chicago")
+_fake_orders_lock = threading.Lock()
+_fake_orders_scheduler_started = False
+_fake_orders_scheduler_lock = threading.Lock()
+_FAKE_SCHEDULER_POLL_INTERVAL = 30       # seconds to sleep while disabled / no usernames
+_FAKE_MIN_HOUR_REMAINING_SECONDS = 60    # minimum remaining window to attempt scheduling
+
+# Account product names to randomly pick from for fake embeds
+_FAKE_ACCOUNT_TITLES = [
+    "Black Knight | 47 Skins",
+    "Renegade Raider | 31 Skins",
+    "Galaxy Scout | 22 Skins",
+    "Aerial Assault Trooper | 18 Skins",
+    "Skull Trooper | 39 Skins",
+    "Ghoul Trooper | 27 Skins",
+    "Season 2 OG | 14 Skins",
+    "Wonder | 55 Skins",
+    "Purple Skull Trooper | 33 Skins",
+    "Ikonik | 11 Skins",
+    "Recon Expert | 29 Skins",
+    "Travis Scott | 8 Skins",
+    "Merry Marauder | 43 Skins",
+    "Eon | 16 Skins",
+    "Dark Voyager | 52 Skins",
+    "Double Helix | 7 Skins",
+    "Minty Pickaxe | 19 Skins",
+    "OG Account | 64 Skins",
+    "John Wick | 38 Skins",
+    "The Reaper | 24 Skins",
+]
+
+
+def _random_fake_price() -> float:
+    """
+    Returns a random fake USD price.
+    ~10% cheap ($1.00-$4.99), ~70% mid ($10-$24.99), ~20% high ($60-$120)
+    """
+    roll = random.random()
+    if roll < 0.10:
+        # Cheap — include odd cents
+        return round(random.uniform(1.00, 4.99), 2)
+    elif roll < 0.80:
+        # Mid range
+        return round(random.uniform(10.00, 24.99), 2)
+    else:
+        # High
+        return round(random.uniform(60.00, 120.00), 2)
+
+
+def _random_fake_item_id() -> int:
+    return random.randint(100000, 9999999)
+
+
+def _build_fake_purchase_webhook_payload(username: str) -> dict:
+    price = _random_fake_price()
+    title = random.choice(_FAKE_ACCOUNT_TITLES)
+    item_id = _random_fake_item_id()
+    purchase_result = {
+        "item": {
+            "item_id": item_id,
+            "title_en": title,
+        }
+    }
+    return _build_purchase_webhook_payload(purchase_result, None, price, username)
+
+
+def _send_one_fake_order(username: str) -> None:
+    if not DISCORD_PURCHASE_WEBHOOK_URL:
+        return
+    payload = _build_fake_purchase_webhook_payload(username)
+    try:
+        r = requests.post(
+            DISCORD_PURCHASE_WEBHOOK_URL,
+            json=payload,
+            timeout=DISCORD_PURCHASE_WEBHOOK_TIMEOUT,
+        )
+        r.raise_for_status()
+    except requests.RequestException as exc:
+        app.logger.warning("Fake order webhook failed: %s", exc)
+
+
+def _load_fake_orders_config() -> dict:
+    if not os.path.exists(FAKE_ORDERS_FILE):
+        return {"enabled": False, "usernames": []}
+    try:
+        with open(FAKE_ORDERS_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            if not isinstance(data, dict):
+                return {"enabled": False, "usernames": []}
+            return data
+    except Exception:
+        return {"enabled": False, "usernames": []}
+
+
+def _save_fake_orders_config(cfg: dict) -> None:
+    with open(FAKE_ORDERS_FILE, "w", encoding="utf-8") as f:
+        json.dump(cfg, f, indent=2)
+
+
+def _chicago_hour_now() -> int:
+    """Return current hour (0-23) in Chicago time."""
+    return datetime.datetime.now(tz=_CHICAGO_TZ).hour
+
+
+def _orders_for_current_hour() -> int:
+    """
+    Return how many fake orders to send during the current Chicago hour.
+    9am-11pm (hour 9..22): uniform 6-12
+    11pm-9am (hour 23 or 0..8): 60% chance of 0, 40% chance of 1-2
+    """
+    hour = _chicago_hour_now()
+    if 9 <= hour <= 22:
+        return random.randint(6, 12)
+    else:
+        if random.random() < 0.60:
+            return 0
+        return random.randint(1, 2)
+
+
+def _fake_orders_scheduler_loop() -> None:
+    """
+    Each iteration handles one full Chicago hour.
+    Decides how many orders to send that hour, spaces them evenly with jitter.
+    """
+    while True:
+        cfg = _load_fake_orders_config()
+        if not cfg.get("enabled"):
+            time.sleep(_FAKE_SCHEDULER_POLL_INTERVAL)
+            continue
+
+        usernames = [u for u in (cfg.get("usernames") or []) if u]
+        if not usernames:
+            time.sleep(_FAKE_SCHEDULER_POLL_INTERVAL)
+            continue
+
+        count = _orders_for_current_hour()
+
+        if count == 0:
+            # Sleep until the top of the next hour
+            now = datetime.datetime.now(tz=_CHICAGO_TZ)
+            next_hour = (now + datetime.timedelta(hours=1)).replace(minute=0, second=0, microsecond=0)
+            sleep_secs = max((next_hour - now).total_seconds(), 1)
+            time.sleep(sleep_secs)
+            continue
+
+        # Spread `count` orders across the hour (3600 seconds) with random spacing
+        now_chicago = datetime.datetime.now(tz=_CHICAGO_TZ)
+        hour_start = now_chicago.replace(minute=0, second=0, microsecond=0)
+        hour_end = hour_start + datetime.timedelta(hours=1)
+
+        # Remaining seconds in the current hour
+        remaining = max((hour_end - now_chicago).total_seconds(), _FAKE_MIN_HOUR_REMAINING_SECONDS)
+
+        # Generate `count` uniformly-random offsets within [0, remaining)
+        offsets = sorted(random.uniform(0, remaining) for _ in range(count))
+
+        for offset in offsets:
+            cfg = _load_fake_orders_config()
+            if not cfg.get("enabled"):
+                break
+            usernames = [u for u in (cfg.get("usernames") or []) if u]
+            if not usernames:
+                break
+
+            now_ts = datetime.datetime.now(tz=_CHICAGO_TZ)
+            already_elapsed = (now_ts - now_chicago).total_seconds()
+            wait = offset - already_elapsed
+            if wait > 0:
+                time.sleep(wait)
+
+            username = random.choice(usernames)
+            threading.Thread(target=_send_one_fake_order, args=(username,), daemon=True).start()
+
+        # Sleep until the top of the next hour
+        now = datetime.datetime.now(tz=_CHICAGO_TZ)
+        next_hour = (now + datetime.timedelta(hours=1)).replace(minute=0, second=0, microsecond=0)
+        sleep_secs = max((next_hour - now).total_seconds(), 1)
+        time.sleep(sleep_secs)
+
+
+def start_fake_orders_scheduler() -> None:
+    global _fake_orders_scheduler_started
+    with _fake_orders_scheduler_lock:
+        if _fake_orders_scheduler_started:
+            return
+        _fake_orders_scheduler_started = True
+    t = threading.Thread(target=_fake_orders_scheduler_loop, daemon=True)
+    t.start()
+
 
 def find_account_by_item_id(item_id: int):
     """
@@ -2321,6 +2519,7 @@ app.config["SESSION_REFRESH_EACH_REQUEST"] = True
 
 
 ensure_cosmetic_lookup_runtime_initialized()
+start_fake_orders_scheduler()
 
 
 def login_required_page(f):
@@ -5686,10 +5885,55 @@ def api_fortnite_my_accounts():
     return jsonify({"accounts": accounts})
 
 
+# ===================== ADMIN FAKE ORDERS API =====================
+
+@app.route("/api/admin/fake-orders/config", methods=["GET", "POST"])
+def api_admin_fake_orders_config():
+    if not session.get("is_konvy_admin"):
+        return jsonify({"error": "Unauthorized"}), 403
+
+    if request.method == "GET":
+        cfg = _load_fake_orders_config()
+        return jsonify(cfg)
+
+    data = request.json or {}
+    cfg = _load_fake_orders_config()
+
+    if "enabled" in data:
+        cfg["enabled"] = bool(data["enabled"])
+
+    if "usernames" in data:
+        raw = data["usernames"]
+        if isinstance(raw, list):
+            cfg["usernames"] = [str(u).strip() for u in raw if str(u).strip()]
+        elif isinstance(raw, str):
+            cfg["usernames"] = [u.strip() for u in raw.splitlines() if u.strip()]
+
+    _save_fake_orders_config(cfg)
+    start_fake_orders_scheduler()
+    return jsonify({"ok": True, "config": cfg})
+
+
+@app.route("/api/admin/fake-orders/fire-one", methods=["POST"])
+def api_admin_fake_orders_fire_one():
+    if not session.get("is_konvy_admin"):
+        return jsonify({"error": "Unauthorized"}), 403
+
+    cfg = _load_fake_orders_config()
+    usernames = [u for u in (cfg.get("usernames") or []) if u]
+    if not usernames:
+        return jsonify({"error": "No usernames configured"}), 400
+
+    username = random.choice(usernames)
+    threading.Thread(target=_send_one_fake_order, args=(username,), daemon=True).start()
+    return jsonify({"ok": True, "username": username})
+
+
 # ===================== RUN =====================
 
 if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 5000))
     ensure_cosmetic_lookup_runtime_initialized()
+    start_fake_orders_scheduler()
     app.run(host="0.0.0.0", port=port)
