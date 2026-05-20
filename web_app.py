@@ -1575,6 +1575,8 @@ _CHICAGO_TZ = ZoneInfo("America/Chicago")
 _fake_orders_lock = threading.Lock()
 _fake_orders_scheduler_started = False
 _fake_orders_scheduler_lock = threading.Lock()
+_FAKE_SCHEDULER_POLL_INTERVAL = 30       # seconds to sleep while disabled / no usernames
+_FAKE_MIN_HOUR_REMAINING_SECONDS = 60    # minimum remaining window to attempt scheduling
 
 # Account product names to randomly pick from for fake embeds
 _FAKE_ACCOUNT_TITLES = [
@@ -1696,12 +1698,12 @@ def _fake_orders_scheduler_loop() -> None:
     while True:
         cfg = _load_fake_orders_config()
         if not cfg.get("enabled"):
-            time.sleep(30)
+            time.sleep(_FAKE_SCHEDULER_POLL_INTERVAL)
             continue
 
         usernames = [u for u in (cfg.get("usernames") or []) if u]
         if not usernames:
-            time.sleep(30)
+            time.sleep(_FAKE_SCHEDULER_POLL_INTERVAL)
             continue
 
         count = _orders_for_current_hour()
@@ -1720,7 +1722,7 @@ def _fake_orders_scheduler_loop() -> None:
         hour_end = hour_start + datetime.timedelta(hours=1)
 
         # Remaining seconds in the current hour
-        remaining = max((hour_end - now_chicago).total_seconds(), 60)
+        remaining = max((hour_end - now_chicago).total_seconds(), _FAKE_MIN_HOUR_REMAINING_SECONDS)
 
         # Generate `count` uniformly-random offsets within [0, remaining)
         offsets = sorted(random.uniform(0, remaining) for _ in range(count))
