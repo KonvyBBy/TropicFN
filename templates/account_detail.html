@@ -3,15 +3,27 @@
 
 {% block extra_styles %}
 <style>
-  .detail-shell { display: grid; gap: 18px; }
-  @media (min-width: 1024px) { .detail-shell { grid-template-columns: minmax(0,1fr) 360px; } }
-  .detail-panel { border: 1px solid rgba(255,255,255,.1); background: rgba(9,14,26,.72); }
-  .detail-section + .detail-section { margin-top: 14px; }
-  .detail-header { border-bottom: 1px solid rgba(255,255,255,.08); }
-  .detail-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+  .detail-page-header {
+    margin: -8px -12px 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    background: linear-gradient(90deg, rgba(17,24,39,.78), rgba(17,24,39,.38));
+  }
+  @media (min-width: 640px) {
+    .detail-page-header { margin: -10px -16px 16px; padding: 16px 20px; }
+  }
+  .detail-shell { display: grid; gap: 22px; }
+  @media (min-width: 1024px) { .detail-shell { grid-template-columns: minmax(0,1fr) 400px; } }
+  .detail-panel { border: 1px solid rgba(143,168,204,.22); background: #070d16; }
+  .detail-section + .detail-section { margin-top: 16px; }
+  .detail-header {
+    border-bottom: 1px solid rgba(143,168,204,.16);
+    background: linear-gradient(90deg, rgba(26,35,49,.82), rgba(26,35,49,.38));
+  }
+  .detail-grid { display: flex; flex-wrap: wrap; gap: 7px; }
   .detail-tile {
-    width: 72px; height: 72px; border-radius: 10px; border: 2px solid rgba(255,255,255,.16);
-    background: linear-gradient(145deg,#20294c,#10172f); overflow: hidden; display: flex; align-items: center; justify-content: center;
+    width: 74px; height: 74px; border-radius: 7px; border: 2px solid rgba(255,255,255,.22);
+    background: linear-gradient(145deg,#1c2535,#111827); overflow: hidden; display: flex; align-items: center; justify-content: center;
   }
   .detail-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .detail-tile-fallback { font-size: .68rem; font-weight: 700; color: #dbe5ff; text-align: center; padding: 4px; }
@@ -25,14 +37,35 @@
   .detail-tile[data-rarity="dc"]           { border-color: #6366f1; }
   .detail-tile[data-rarity="icon"]         { border-color: #06b6d4; }
   .detail-tile[data-rarity="gaming_legends"] { border-color: #8b5cf6; }
-  .info-row { display: flex; justify-content: space-between; gap: 8px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,.08); }
+  .price-panel {
+    background: linear-gradient(180deg, #09dd79 0%, #02cf74 100%);
+    border: 1px solid rgba(22,163,74,.45);
+    color: #04130b;
+  }
+  .buy-btn {
+    background: rgba(13,103,59,.14);
+    border: 1px solid rgba(4,108,60,.4);
+    color: #000;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+  }
+  .buy-btn:hover { background: rgba(13,103,59,.22); }
+  .stat-card-head {
+    font-size: 1.12rem;
+    font-weight: 700;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    color: #fff;
+    border-bottom: 1px solid rgba(143,168,204,.16);
+    background: linear-gradient(90deg, rgba(26,35,49,.82), rgba(26,35,49,.38));
+  }
+  .info-row { display: flex; justify-content: space-between; gap: 8px; padding: 10px 0; border-bottom: 1px solid rgba(143,168,204,.16); }
   .info-row:last-child { border-bottom: none; }
-  .reliable-info-header { font-size: .6rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #aaa; }
 </style>
 {% endblock %}
 
 {% block content %}
-<header class="glass-panel rounded-3xl px-5 py-6 sm:px-7">
+<header class="detail-page-header">
   <div class="flex items-center gap-3">
     <a href="/dashboard" class="text-zinc-400 hover:text-white transition"><i class="ri-arrow-left-line text-xl"></i></a>
     <div>
@@ -45,14 +78,13 @@
 <section class="detail-shell">
   <div class="space-y-4">
     {% for section_id, label, icon, color in [
-      ('skins','SKINS','ri-t-shirt-2-line','#a855f7'),
       ('pickaxes','PICKAXES','ri-hammer-line','#38bdf8'),
       ('emotes','EMOTES','ri-music-2-line','#60a5fa'),
       ('gliders','GLIDERS','ri-send-plane-line','#22c55e')
     ] %}
-    <article class="detail-panel detail-section rounded-2xl overflow-hidden">
+    <article class="detail-panel detail-section rounded-xl overflow-hidden">
       <div class="detail-header px-4 py-3">
-        <h2 class="font-space text-lg font-bold text-white flex items-center gap-2"><i class="{{ icon }}" style="color:{{ color }}"></i>{{ label }} (<span data-count="{{ section_id }}">0</span>)</h2>
+        <h2 class="font-space text-lg font-bold text-white flex items-center gap-2 tracking-wide"><i class="{{ icon }}" style="color:{{ color }}"></i>{{ label }} (<span data-count="{{ section_id }}">0</span>)</h2>
       </div>
       <div class="p-4">
         <div class="detail-grid" id="grid-{{ section_id }}"></div>
@@ -62,18 +94,18 @@
   </div>
 
   <aside class="space-y-4">
-    <section class="detail-panel rounded-2xl p-5 text-center">
-      <div class="font-space text-4xl font-bold">${{ '%.2f'|format(account_detail.price) }}</div>
-      <div class="mt-1 text-sm text-zinc-400">💎 {{ account_detail.vbucks }} V-Bucks included</div>
+    <section class="price-panel rounded-xl p-5 text-center">
+      <div class="font-space text-4xl font-bold">{{ '%.2f'|format(account_detail.price) }} {{ account_detail.currency_symbol|default('€', true) }}</div>
+      <div class="mt-1 text-lg"><i class="ri-vip-diamond-line mr-1"></i>{{ account_detail.vbucks }} V-Bucks included</div>
       {% if logged_in %}
       <button
         id="instant-buy-btn"
         type="button"
-        class="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
+        class="buy-btn mt-4 inline-flex w-full items-center justify-center rounded-xl px-4 py-2 text-lg font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
       >
-        Instant Buy
+        <i class="ri-shopping-cart-line mr-2"></i>Purchase now
       </button>
-      <p id="instant-buy-status" class="mt-3 text-sm text-zinc-400">Buy now and we will handle delivery after purchase.</p>
+      <p id="instant-buy-status" class="mt-3 text-sm text-black">Buy now and we will handle delivery after purchase.</p>
       <div id="instant-buy-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 p-4">
         <div class="w-full max-w-md rounded-2xl border border-white/10 bg-[#0b1220] p-5 shadow-2xl">
           <h3 class="font-space text-lg font-semibold text-white">Confirm Purchase</h3>
@@ -96,9 +128,9 @@
       {% endif %}
     </section>
 
-    <section class="detail-panel rounded-2xl p-5">
-      <p class="reliable-info-header mb-3"><i class="ri-shield-check-line mr-1"></i>RELIABLE INFORMATION</p>
-      <div>
+    <section class="detail-panel rounded-xl overflow-hidden">
+      <p class="stat-card-head px-5 py-3"><i class="ri-shield-check-line mr-1"></i>RELIABLE INFORMATION</p>
+      <div class="p-5">
         <div class="info-row"><span class="text-zinc-400">Level</span><strong class="text-emerald-400">{{ account_detail.level }}</strong></div>
         <div class="info-row"><span class="text-zinc-400">V-Bucks</span><strong class="text-emerald-400">{{ account_detail.vbucks }}</strong></div>
         <div class="info-row"><span class="text-zinc-400">Last Activity</span><strong class="text-zinc-200">{{ account_detail.last_activity }}</strong></div>
@@ -110,9 +142,9 @@
       </div>
     </section>
 
-    <section class="detail-panel rounded-2xl p-5">
-      <p class="reliable-info-header mb-3"><i class="ri-information-line mr-1"></i>STATUS</p>
-      <div class="space-y-2 text-sm">
+    <section class="detail-panel rounded-xl overflow-hidden">
+      <p class="stat-card-head px-5 py-3"><i class="ri-information-line mr-1"></i>STATUS</p>
+      <div class="space-y-2 p-5 text-sm">
         {% set s = account_detail.status %}
         {% for key, label, icon in [
           ('xbox_linkable',    'Xbox Linkable',    'ri-xbox-line'),
