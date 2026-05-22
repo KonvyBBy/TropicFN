@@ -3,6 +3,7 @@
 
 
 import os
+import re
 import time
 import json
 import hmac
@@ -1176,6 +1177,9 @@ def _save_ticket_attachments(ticket_id: str, files) -> Tuple[list, Optional[str]
     file_list = files if isinstance(files, list) else [files]
     if len(file_list) > TICKET_UPLOAD_MAX_FILES_PER_MESSAGE:
         return [], f"Maximum {TICKET_UPLOAD_MAX_FILES_PER_MESSAGE} files per message."
+    # Validate ticket_id to prevent path traversal
+    if not re.fullmatch(r"tkt_[0-9a-f]{12}", ticket_id):
+        return [], "Invalid ticket ID."
     ticket_dir = os.path.join(TICKET_UPLOADS_DIR, ticket_id)
     os.makedirs(ticket_dir, exist_ok=True)
     attachments = []
@@ -5349,18 +5353,36 @@ def serve_ticket_upload(ticket_id: str, filename: str):
     """Serve a ticket attachment file. Accessible to ticket owner or admin."""
     if "username" not in session:
         return jsonify({"error": "Unauthorized"}), 403
+    # Validate ticket_id format to prevent path traversal
+    if not re.fullmatch(r"tkt_[0-9a-f]{12}", ticket_id):
+        return jsonify({"error": "Not found"}), 404
+    # Validate filename format (stored as {16 hex chars}_{safe_name})
+    safe_fn = secure_filename(filename)
+    if not safe_fn or safe_fn != filename:
+        return jsonify({"error": "Not found"}), 404
     is_admin = bool(session.get("is_konvy_admin"))
-    if not is_admin:
-        tickets = _load_support_tickets()
-        ticket = _find_ticket(tickets, ticket_id)
-        if not ticket or str(ticket.get("username") or "") != session["username"]:
-            return jsonify({"error": "Not found"}), 404
+    tickets = _load_support_tickets()
+    ticket = _find_ticket(tickets, ticket_id)
+    if not ticket:
+        return jsonify({"error": "Not found"}), 404
+    if not is_admin and str(ticket.get("username") or "") != session["username"]:
+        return jsonify({"error": "Not found"}), 404
+    # Verify the filename actually exists in this ticket's attachments
+    all_attachments = [
+        a.get("stored_name")
+        for m in (ticket.get("messages") or [])
+        for a in (m.get("attachments") or [])
+    ]
+    if filename not in all_attachments:
+        return jsonify({"error": "Not found"}), 404
     ticket_dir = os.path.join(TICKET_UPLOADS_DIR, ticket_id)
     return send_from_directory(ticket_dir, filename)
 
 
 @app.route("/api/admin/support-tickets", methods=["GET"])
 def api_admin_support_tickets():
+    if not session.get("is_konvy_admin"):
+        return jsonify({"error": "Unauthorized"}), 403
     tickets = _sort_support_tickets(_load_support_tickets())
     return jsonify({"tickets": [_serialize_ticket_for_admin(t) for t in tickets]})
 
