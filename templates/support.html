@@ -29,9 +29,14 @@
     </div>
     <div class="sm:col-span-2">
       <label for="ticket-message" class="mb-1.5 block text-xs font-medium text-zinc-400">Message</label>
-      <textarea id="ticket-message" rows="5" maxlength="2000" required placeholder="Explain your issue in detail..."
+      <textarea id="ticket-message" rows="5" maxlength="2000" placeholder="Explain your issue in detail..."
         class="w-full rounded-xl border border-white/15 bg-black/35 px-4 py-3 text-sm text-white placeholder:text-zinc-500 transition resize-y"></textarea>
       <p class="mt-1 text-right text-[11px] text-zinc-500"><span id="ticket-msg-count">0</span>/2000</p>
+    </div>
+    <div class="sm:col-span-2">
+      <label class="mb-1.5 block text-xs font-medium text-zinc-400">Attachments <span class="text-zinc-600">(optional — images, videos, zips, PDFs · max 10 MB each · up to 5 files)</span></label>
+      <input id="ticket-files" type="file" name="files[]" multiple accept=".jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.avi,.webm,.zip,.pdf"
+        class="block w-full text-xs text-zinc-400 file:mr-3 file:rounded-lg file:border-0 file:bg-white/10 file:px-3 file:py-1.5 file:text-xs file:text-zinc-200 file:cursor-pointer hover:file:bg-white/15">
     </div>
     <div class="sm:col-span-2">
       <button type="submit"
@@ -41,7 +46,6 @@
       <span id="ticket-create-status" class="ml-3 text-xs text-zinc-400"></span>
     </div>
   </form>
-</section>
 
 <section class="glass-panel rounded-3xl p-5 sm:p-6">
   <div class="mb-4 flex items-center justify-between gap-2">
@@ -92,6 +96,25 @@
     return `<span class="rounded-full border px-2 py-0.5 text-[11px] font-semibold ${cls}">${text}</span>`;
   }
 
+  const IMAGE_EXTS = new Set(['jpg','jpeg','png','gif','webp']);
+  const VIDEO_EXTS = new Set(['mp4','mov','avi','webm']);
+
+  function renderAttachments(attachments, ticketId) {
+    if (!Array.isArray(attachments) || !attachments.length) return '';
+    return `<div class="mt-2 flex flex-wrap gap-2">${attachments.map(a => {
+      const ext = (a.original_name || '').split('.').pop().toLowerCase();
+      const url = `/ticket-uploads/${encodeURIComponent(ticketId)}/${encodeURIComponent(a.stored_name)}`;
+      const name = escapeHtml(a.original_name || a.stored_name);
+      if (IMAGE_EXTS.has(ext)) {
+        return `<a href="${url}" target="_blank" rel="noopener" class="block"><img src="${url}" alt="${name}" class="max-h-40 max-w-xs rounded-lg border border-white/10 object-cover hover:opacity-90 transition"></a>`;
+      }
+      if (VIDEO_EXTS.has(ext)) {
+        return `<video src="${url}" controls class="max-h-40 max-w-xs rounded-lg border border-white/10"></video>`;
+      }
+      return `<a href="${url}" target="_blank" rel="noopener" download class="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-zinc-300 hover:text-white transition">📎 ${name}</a>`;
+    }).join('')}</div>`;
+  }
+
   function renderMessages(ticket) {
     const msgs = Array.isArray(ticket.messages) ? ticket.messages : [];
     if (!msgs.length) return '<p class="text-xs text-zinc-500">No messages yet.</p>';
@@ -108,6 +131,7 @@
             <span class="text-zinc-500">${fmtDate(m.timestamp)}</span>
           </div>
           <p class="whitespace-pre-wrap text-sm text-zinc-200">${escapeHtml(m.message)}</p>
+          ${renderAttachments(m.attachments, ticket.id)}
         </div>
       `;
     }).join('');
@@ -128,8 +152,13 @@
         </div>
         <div class="space-y-2">${renderMessages(ticket)}</div>
         <form class="reply-form mt-3 flex flex-col gap-2" data-ticket-id="${escapeHtml(ticket.id)}">
-          <textarea required maxlength="2000" rows="3" placeholder="Write a reply..."
+          <textarea maxlength="2000" rows="3" placeholder="Write a reply..."
             class="w-full rounded-xl border border-white/15 bg-black/35 px-3 py-2 text-sm text-white placeholder:text-zinc-500"></textarea>
+          <div>
+            <label class="mb-1 block text-[11px] text-zinc-500">Attachments <span class="text-zinc-600">(optional · images, videos, zips, PDFs · max 10 MB · up to 5)</span></label>
+            <input type="file" name="files[]" multiple accept=".jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.avi,.webm,.zip,.pdf"
+              class="block w-full text-xs text-zinc-400 file:mr-3 file:rounded-lg file:border-0 file:bg-white/10 file:px-3 file:py-1.5 file:text-xs file:text-zinc-200 file:cursor-pointer hover:file:bg-white/15">
+          </div>
           <div class="flex flex-wrap items-center gap-2">
             <button type="submit" class="rounded-lg bg-[#0EF475] px-3 py-1.5 text-xs font-semibold text-black transition hover:bg-[#0BC95E]">Send Reply</button>
             <button type="button" class="close-ticket-btn rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-300 transition hover:bg-red-500/20" data-ticket-id="${escapeHtml(ticket.id)}">Close Ticket</button>
@@ -198,8 +227,15 @@
   newTicketForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
     createStatusEl.textContent = 'Submitting...';
-    const payload = {subject: subjectInput.value, message: messageInput.value};
-    const data = await apiPost('/api/support/tickets', payload);
+    const fd = new FormData();
+    fd.append('subject', subjectInput.value);
+    fd.append('message', messageInput.value);
+    const filesInput = document.getElementById('ticket-files');
+    if (filesInput?.files) {
+      for (const f of filesInput.files) fd.append('files[]', f);
+    }
+    const res = await fetch('/api/support/tickets', {method: 'POST', body: fd});
+    const data = await res.json();
     if (data.ok) {
       createStatusEl.textContent = 'Ticket created.';
       newTicketForm.reset();
@@ -216,12 +252,20 @@
     e.preventDefault();
     const ticketId = form.dataset.ticketId;
     const textarea = form.querySelector('textarea');
+    const fileInput = form.querySelector('input[type="file"]');
     const status = form.querySelector('.reply-status');
-    if (!ticketId || !textarea) return;
+    if (!ticketId) return;
     status.textContent = 'Sending...';
-    const data = await apiPost(`/api/support/tickets/${encodeURIComponent(ticketId)}/reply`, {message: textarea.value});
+    const fd = new FormData();
+    fd.append('message', textarea?.value || '');
+    if (fileInput?.files) {
+      for (const f of fileInput.files) fd.append('files[]', f);
+    }
+    const res = await fetch(`/api/support/tickets/${encodeURIComponent(ticketId)}/reply`, {method: 'POST', body: fd});
+    const data = await res.json();
     if (data.ok) {
-      textarea.value = '';
+      if (textarea) textarea.value = '';
+      if (fileInput) fileInput.value = '';
       status.textContent = 'Sent.';
       await loadTickets();
       return;

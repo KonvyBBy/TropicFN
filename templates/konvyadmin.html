@@ -732,6 +732,23 @@
 
     const isClosed = ticket.status === 'closed';
     const msgs = Array.isArray(ticket.messages) ? ticket.messages : [];
+    const IMAGE_EXTS_ADMIN = new Set(['jpg','jpeg','png','gif','webp']);
+    const VIDEO_EXTS_ADMIN = new Set(['mp4','mov','avi','webm']);
+    function renderAdminAttachments(attachments) {
+      if (!Array.isArray(attachments) || !attachments.length) return '';
+      return '<div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:0.4rem;">' + attachments.map(a => {
+        const ext = (a.original_name || '').split('.').pop().toLowerCase();
+        const url = `/ticket-uploads/${encodeURIComponent(ticket.id)}/${encodeURIComponent(a.stored_name)}`;
+        const name = escapeHtml(a.original_name || a.stored_name);
+        if (IMAGE_EXTS_ADMIN.has(ext)) {
+          return `<a href="${url}" target="_blank" rel="noopener"><img src="${url}" alt="${name}" style="max-height:120px;max-width:200px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);object-fit:cover;"></a>`;
+        }
+        if (VIDEO_EXTS_ADMIN.has(ext)) {
+          return `<video src="${url}" controls style="max-height:120px;max-width:200px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);"></video>`;
+        }
+        return `<a href="${url}" target="_blank" rel="noopener" download style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.25rem 0.6rem;border-radius:6px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.05);color:#d9d9df;font-size:0.75rem;text-decoration:none;">📎 ${name}</a>`;
+      }).join('') + '</div>';
+    }
     const transcriptHtml = msgs.length
       ? msgs.map(m => {
           const isAdmin = m.author_type === 'admin';
@@ -742,6 +759,7 @@
                 <span style="color:var(--muted);">${supportFmtDate(m.timestamp)}</span>
               </div>
               <div style="font-size:0.84rem;color:#d9d9df;white-space:pre-wrap;line-height:1.45;">${escapeHtml(m.message)}</div>
+              ${renderAdminAttachments(m.attachments)}
             </div>
           `;
         }).join('')
@@ -760,6 +778,11 @@
         ${isClosed ? '<p style="font-size:0.82rem;color:#ff8080;">This ticket is closed.</p>' : `
           <textarea id="support-admin-reply" rows="4" maxlength="2000" placeholder="Type your response..."
             style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:9px;padding:0.65rem 0.75rem;color:var(--text);font-size:0.85rem;outline:none;font-family:inherit;"></textarea>
+          <div style="margin-top:0.4rem;">
+            <label style="font-size:0.72rem;color:var(--muted);display:block;margin-bottom:0.25rem;">Attachments (optional · images, videos, zips, PDFs · max 10 MB · up to 5)</label>
+            <input id="support-admin-files" type="file" name="files[]" multiple accept=".jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.avi,.webm,.zip,.pdf"
+              style="font-size:0.75rem;color:var(--muted);">
+          </div>
           <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;margin-top:0.6rem;">
             <button class="btn btn-primary btn-sm" onclick="adminReplyToSupportTicket()">Send Reply</button>
             <button class="btn btn-danger btn-sm" onclick="adminCloseSupportTicket()">Close Ticket</button>
@@ -795,21 +818,30 @@
   async function adminReplyToSupportTicket() {
     if (!selectedSupportTicketId) return;
     const input = document.getElementById('support-admin-reply');
+    const filesInput = document.getElementById('support-admin-files');
     const status = document.getElementById('support-detail-status');
     const message = (input?.value || '').trim();
-    if (!message) {
-      if (status) status.textContent = 'Reply message required.';
+    const hasFiles = filesInput?.files?.length > 0;
+    if (!message && !hasFiles) {
+      if (status) status.textContent = 'Reply message or attachment required.';
       return;
     }
     if (status) status.textContent = 'Sending...';
-    const res = await apiPost(`/api/admin/support-tickets/${encodeURIComponent(selectedSupportTicketId)}/reply`, {message});
-    if (res.ok) {
+    const fd = new FormData();
+    fd.append('message', message);
+    if (filesInput?.files) {
+      for (const f of filesInput.files) fd.append('files[]', f);
+    }
+    const res = await fetch(`/api/admin/support-tickets/${encodeURIComponent(selectedSupportTicketId)}/reply`, {method: 'POST', body: fd});
+    const data = await res.json();
+    if (data.ok) {
       if (input) input.value = '';
+      if (filesInput) filesInput.value = '';
       if (status) status.textContent = 'Reply sent.';
       await loadSupportTickets();
       return;
     }
-    if (status) status.textContent = res.error || 'Reply failed.';
+    if (status) status.textContent = data.error || 'Reply failed.';
   }
 
   async function adminCloseSupportTicket() {

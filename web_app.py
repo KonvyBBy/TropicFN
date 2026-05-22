@@ -28,10 +28,12 @@ from flask import (
     redirect,
     url_for,
     session,
+    send_from_directory,
 )
 
 
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 from functools import wraps
 
 
@@ -605,6 +607,7 @@ TOPUP_NOTIFICATIONS_FILE = os.path.join(DATA_DIR, "topup_notifications.json")
 
 # --- Support tickets ---
 SUPPORT_TICKETS_FILE = os.path.join(DATA_DIR, "support_tickets.json")
+TICKET_UPLOADS_DIR = os.path.join(DATA_DIR, "ticket_uploads")
 
 # --- Fake orders scheduler config ---
 FAKE_ORDERS_FILE = os.path.join(DATA_DIR, "fake_orders_config.json")
@@ -1147,6 +1150,52 @@ def dismiss_notification(username: str, notif_id: str) -> bool:
 
 SUPPORT_TICKET_SUBJECT_MAX_LENGTH = 120
 SUPPORT_TICKET_MESSAGE_MAX_LENGTH = 2000
+TICKET_UPLOAD_MAX_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB per file
+TICKET_UPLOAD_MAX_FILES_PER_MESSAGE = 5
+TICKET_UPLOAD_ALLOWED_EXTENSIONS = {
+    "jpg", "jpeg", "png", "gif", "webp",
+    "mp4", "mov", "avi", "webm",
+    "zip",
+    "pdf",
+}
+
+
+def _ticket_upload_allowed(filename: str) -> bool:
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    return ext in TICKET_UPLOAD_ALLOWED_EXTENSIONS
+
+
+def _save_ticket_attachments(ticket_id: str, files) -> Tuple[list, Optional[str]]:
+    """Save uploaded files for a ticket message.
+
+    Returns (attachments_list, error_message).
+    attachments_list entries: {"stored_name": "...", "original_name": "..."}
+    """
+    if not files:
+        return [], None
+    file_list = files if isinstance(files, list) else [files]
+    if len(file_list) > TICKET_UPLOAD_MAX_FILES_PER_MESSAGE:
+        return [], f"Maximum {TICKET_UPLOAD_MAX_FILES_PER_MESSAGE} files per message."
+    ticket_dir = os.path.join(TICKET_UPLOADS_DIR, ticket_id)
+    os.makedirs(ticket_dir, exist_ok=True)
+    attachments = []
+    for f in file_list:
+        original_name = f.filename or ""
+        if not original_name:
+            continue
+        if not _ticket_upload_allowed(original_name):
+            return [], f"File type not allowed: {original_name.rsplit('.', 1)[-1].lower() if '.' in original_name else 'unknown'}"
+        f.seek(0, 2)
+        size = f.tell()
+        f.seek(0)
+        if size > TICKET_UPLOAD_MAX_SIZE_BYTES:
+            return [], f"File too large (max {TICKET_UPLOAD_MAX_SIZE_BYTES // (1024 * 1024)} MB): {original_name}"
+        safe = secure_filename(original_name) or "file"
+        stored_name = f"{secrets.token_hex(8)}_{safe}"
+        dest = os.path.join(ticket_dir, stored_name)
+        f.save(dest)
+        attachments.append({"stored_name": stored_name, "original_name": original_name})
+    return attachments, None
 
 
 def _load_support_tickets() -> list:
@@ -1234,12 +1283,13 @@ def _find_ticket(tickets: list, ticket_id: str) -> Optional[dict]:
     return None
 
 
-def _new_ticket_message(author_type: str, author: str, message: str) -> dict:
+def _new_ticket_message(author_type: str, author: str, message: str, attachments: Optional[list] = None) -> dict:
     return {
         "id": secrets.token_hex(8),
         "author_type": author_type,
         "author": author,
         "message": message,
+        "attachments": attachments or [],
         "timestamp": int(time.time()),
     }
 
@@ -1270,12 +1320,12 @@ def _send_new_ticket_webhook(ticket: dict) -> None:
         app.logger.warning("Failed to send new-ticket Discord webhook: %s", exc)
 
 
-def create_support_ticket(username: str, subject: str, message: str) -> Tuple[bool, str, Optional[dict]]:
+def create_support_ticket(username: str, subject: str, message: str, attachments: Optional[list] = None) -> Tuple[bool, str, Optional[dict]]:
     clean_subject = _format_ticket_text(subject, SUPPORT_TICKET_SUBJECT_MAX_LENGTH)
     clean_message = _format_ticket_text(message, SUPPORT_TICKET_MESSAGE_MAX_LENGTH)
     if not clean_subject:
         return False, "Subject is required.", None
-    if not clean_message:
+    if not clean_message and not attachments:
         return False, "Message is required.", None
 
     tickets = _load_support_tickets()
@@ -1296,7 +1346,7 @@ def create_support_ticket(username: str, subject: str, message: str) -> Tuple[bo
         "updated_at": now,
         "closed_at": 0,
         "closed_by": "",
-        "messages": [_new_ticket_message("user", username, clean_message)],
+        "messages": [_new_ticket_message("user", username, clean_message, attachments)],
     }
     tickets.append(ticket)
     _save_support_tickets(_sort_support_tickets(tickets))
@@ -1304,14 +1354,14 @@ def create_support_ticket(username: str, subject: str, message: str) -> Tuple[bo
     return True, "Ticket created.", ticket
 
 
-def _append_ticket_message(ticket: dict, author_type: str, author: str, message: str) -> Tuple[bool, str]:
+def _append_ticket_message(ticket: dict, author_type: str, author: str, message: str, attachments: Optional[list] = None) -> Tuple[bool, str]:
     if str(ticket.get("status") or "") != "open":
         return False, "This ticket is closed. Please open a new ticket if you need further assistance."
     clean_message = _format_ticket_text(message, SUPPORT_TICKET_MESSAGE_MAX_LENGTH)
-    if not clean_message:
+    if not clean_message and not attachments:
         return False, "Message is required."
     messages = ticket.get("messages") if isinstance(ticket.get("messages"), list) else []
-    messages.append(_new_ticket_message(author_type, author, clean_message))
+    messages.append(_new_ticket_message(author_type, author, clean_message, attachments))
     ticket["messages"] = messages
     ticket["updated_at"] = int(time.time())
     return True, "Reply sent."
@@ -2543,6 +2593,8 @@ except (TypeError, ValueError):
     session_lifetime_days = 30
 app.config["PERMANENT_SESSION_LIFETIME"] = datetime.timedelta(days=max(1, session_lifetime_days))
 app.config["SESSION_REFRESH_EACH_REQUEST"] = True
+# Allow up to 5 files × 10 MB + some overhead for support ticket uploads
+app.config["MAX_CONTENT_LENGTH"] = 55 * 1024 * 1024
 
 
 ensure_cosmetic_lookup_runtime_initialized()
@@ -5292,10 +5344,23 @@ def api_admin_pending_topups():
     return jsonify({"error": "Unknown action"}), 400
 
 
+@app.route("/ticket-uploads/<ticket_id>/<filename>")
+def serve_ticket_upload(ticket_id: str, filename: str):
+    """Serve a ticket attachment file. Accessible to ticket owner or admin."""
+    if "username" not in session:
+        return jsonify({"error": "Unauthorized"}), 403
+    is_admin = bool(session.get("is_konvy_admin"))
+    if not is_admin:
+        tickets = _load_support_tickets()
+        ticket = _find_ticket(tickets, ticket_id)
+        if not ticket or str(ticket.get("username") or "") != session["username"]:
+            return jsonify({"error": "Not found"}), 404
+    ticket_dir = os.path.join(TICKET_UPLOADS_DIR, ticket_id)
+    return send_from_directory(ticket_dir, filename)
+
+
 @app.route("/api/admin/support-tickets", methods=["GET"])
 def api_admin_support_tickets():
-    if not session.get("is_konvy_admin"):
-        return jsonify({"error": "Unauthorized"}), 403
     tickets = _sort_support_tickets(_load_support_tickets())
     return jsonify({"tickets": [_serialize_ticket_for_admin(t) for t in tickets]})
 
@@ -5304,13 +5369,16 @@ def api_admin_support_tickets():
 def api_admin_support_ticket_reply(ticket_id: str):
     if not session.get("is_konvy_admin"):
         return jsonify({"error": "Unauthorized"}), 403
-    data = request.json or {}
-    message = data.get("message")
+    message = request.form.get("message") or (request.json or {}).get("message") or ""
+    uploaded_files = request.files.getlist("files[]")
     tickets = _load_support_tickets()
     ticket = _find_ticket(tickets, ticket_id)
     if not ticket:
         return jsonify({"error": "Ticket not found"}), 404
-    ok, msg = _append_ticket_message(ticket, "admin", "Admin", message)
+    attachments, upload_err = _save_ticket_attachments(ticket_id, uploaded_files)
+    if upload_err:
+        return jsonify({"error": upload_err}), 400
+    ok, msg = _append_ticket_message(ticket, "admin", "Admin", message, attachments)
     if not ok:
         return jsonify({"error": msg}), 400
     _save_support_tickets(_sort_support_tickets(tickets))
@@ -5755,14 +5823,44 @@ def api_support_tickets():
         mine = [t for t in tickets if str(t.get("username") or "") == username]
         return jsonify({"tickets": [_serialize_ticket_for_user(t) for t in mine]})
 
-    data = request.json or {}
+    subject = request.form.get("subject") or (request.json or {}).get("subject") or ""
+    message = request.form.get("message") or (request.json or {}).get("message") or ""
+    uploaded_files = [f for f in request.files.getlist("files[]") if f.filename]
+
+    # Validate files before creating the ticket
+    if len(uploaded_files) > TICKET_UPLOAD_MAX_FILES_PER_MESSAGE:
+        return jsonify({"error": f"Maximum {TICKET_UPLOAD_MAX_FILES_PER_MESSAGE} files per message."}), 400
+    for f in uploaded_files:
+        if not _ticket_upload_allowed(f.filename):
+            ext = f.filename.rsplit(".", 1)[-1].lower() if "." in f.filename else "unknown"
+            return jsonify({"error": f"File type not allowed: {ext}"}), 400
+        f.seek(0, 2)
+        size = f.tell()
+        f.seek(0)
+        if size > TICKET_UPLOAD_MAX_SIZE_BYTES:
+            return jsonify({"error": f"File too large (max {TICKET_UPLOAD_MAX_SIZE_BYTES // (1024 * 1024)} MB): {f.filename}"}), 400
+
     ok, msg, ticket = create_support_ticket(
         username=username,
-        subject=data.get("subject"),
-        message=data.get("message"),
+        subject=subject,
+        message=message,
     )
     if not ok:
         return jsonify({"error": msg}), 400
+
+    # Save files now that we have the ticket id
+    if uploaded_files:
+        attachments, upload_err = _save_ticket_attachments(ticket["id"], uploaded_files)
+        if upload_err:
+            return jsonify({"error": upload_err}), 400
+        if attachments and ticket.get("messages"):
+            ticket["messages"][0]["attachments"] = attachments
+            all_tickets = _load_support_tickets()
+            stored = _find_ticket(all_tickets, ticket["id"])
+            if stored and stored.get("messages"):
+                stored["messages"][0]["attachments"] = attachments
+            _save_support_tickets(_sort_support_tickets(all_tickets))
+
     return jsonify({"ok": True, "message": msg, "ticket": _serialize_ticket_for_user(ticket)})
 
 
@@ -5770,13 +5868,16 @@ def api_support_tickets():
 @login_required_api
 def api_support_ticket_reply(ticket_id: str):
     username = session["username"]
-    data = request.json or {}
-    message = data.get("message")
+    message = request.form.get("message") or (request.json or {}).get("message") or ""
+    uploaded_files = [f for f in request.files.getlist("files[]") if f.filename]
     tickets = _load_support_tickets()
     ticket = _find_ticket(tickets, ticket_id)
     if not ticket or str(ticket.get("username") or "") != username:
         return jsonify({"error": "Ticket not found"}), 404
-    ok, msg = _append_ticket_message(ticket, "user", username, message)
+    attachments, upload_err = _save_ticket_attachments(ticket_id, uploaded_files)
+    if upload_err:
+        return jsonify({"error": upload_err}), 400
+    ok, msg = _append_ticket_message(ticket, "user", username, message, attachments)
     if not ok:
         return jsonify({"error": msg}), 400
     _save_support_tickets(_sort_support_tickets(tickets))
