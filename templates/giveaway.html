@@ -3,16 +3,74 @@
 
 {% block extra_styles %}
 <style>
+  /* ── Layout ─────────────────────────────────────────────── */
   .gw-card { background:#141414; border:1px solid rgba(255,255,255,.08); border-radius:14px; }
-  .gw-input { background:#1f1f1f; border:1px solid rgba(255,255,255,.12); color:#f4f4f5; border-radius:10px; padding:.6rem .75rem; width:100%; }
-  .gw-btn { border-radius:10px; padding:.6rem .85rem; font-size:.88rem; font-weight:600; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.05); color:#f4f4f5; }
+  .gw-input { background:#1f1f1f; border:1px solid rgba(255,255,255,.12); color:#f4f4f5; border-radius:10px; padding:.6rem .75rem; width:100%; font-size:1rem; }
+  .gw-btn { border-radius:10px; padding:.6rem .85rem; font-size:.88rem; font-weight:600; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.05); color:#f4f4f5; cursor:pointer; transition:all .15s; }
+  .gw-btn:hover:not(:disabled) { background:rgba(255,255,255,.1); transform:translateY(-1px); }
+  .gw-btn:active:not(:disabled) { transform:translateY(0) scale(.97); }
   .gw-btn-primary { background:#0EF475; color:#041208; border-color:#0EF475; }
-  .gw-btn:disabled { opacity:.55; cursor:not-allowed; }
+  .gw-btn-primary:hover:not(:disabled) { background:#1dff85; box-shadow:0 0 18px rgba(14,244,117,.35); }
+  .gw-btn:disabled { opacity:.45; cursor:not-allowed; transform:none !important; }
   .gw-score-chip { border:1px solid rgba(14,244,117,.35); background:rgba(14,244,117,.1); color:#baf9d9; border-radius:999px; padding:.2rem .65rem; font-size:.75rem; font-weight:700; }
   .gw-table th,.gw-table td { text-align:left; padding:.55rem .5rem; border-bottom:1px solid rgba(255,255,255,.08); font-size:.82rem; }
   .gw-table th { color:#a1a1aa; font-size:.72rem; text-transform:uppercase; letter-spacing:.08em; }
-  .gw-target { min-height:120px; display:flex; align-items:center; justify-content:center; border:1px dashed rgba(255,255,255,.15); border-radius:12px; padding:1rem; }
+  .gw-target { min-height:240px; display:flex; align-items:center; justify-content:center; border:1px solid rgba(255,255,255,.06); border-radius:12px; padding:1.25rem; position:relative; overflow:hidden; background:rgba(255,255,255,.01); transition:box-shadow .2s; }
   .gw-muted { color:#9ca3af; font-size:.86rem; }
+
+  /* ── Timer ──────────────────────────────────────────────── */
+  .gw-timer-ok    { color:#0EF475; font-weight:800; font-size:1.2rem; display:inline-block; transition:color .3s; }
+  .gw-timer-warn  { color:#fbbf24; font-weight:800; font-size:1.2rem; display:inline-block; }
+  .gw-timer-danger{ color:#ef4444; font-weight:800; font-size:1.2rem; display:inline-block; animation:gw-tick .4s infinite; }
+  @keyframes gw-tick { 0%,100%{transform:scale(1)} 50%{transform:scale(1.22)} }
+  .gw-bar-wrap { height:5px; background:rgba(255,255,255,.07); border-radius:999px; overflow:hidden; margin-top:4px; }
+  .gw-bar { height:100%; border-radius:999px; transition:width 1s linear, background .5s; background:#0EF475; }
+
+  /* ── Score pop ──────────────────────────────────────────── */
+  @keyframes gw-pop { 0%{opacity:1;transform:translateY(0) scale(1)} 100%{opacity:0;transform:translateY(-56px) scale(1.5)} }
+  .gw-score-pop { position:absolute; pointer-events:none; font-size:1.15rem; font-weight:900; color:#0EF475; text-shadow:0 0 10px rgba(14,244,117,.8); animation:gw-pop .7s ease-out forwards; z-index:20; }
+
+  /* ── Flash ──────────────────────────────────────────────── */
+  @keyframes gw-correct { 0%,100%{box-shadow:none} 45%{box-shadow:0 0 0 4px rgba(14,244,117,.5),inset 0 0 28px rgba(14,244,117,.1)} }
+  @keyframes gw-wrong   { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-5px)} 40%,80%{transform:translateX(5px)} }
+  .gw-flash-ok  { animation:gw-correct .45s ease; }
+  .gw-flash-bad { animation:gw-wrong .4s ease; }
+
+  /* ── Entrance / question transitions ─────────────────────── */
+  @keyframes gw-in  { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes gw-qin { from{opacity:0;transform:translateX(16px)} to{opacity:1;transform:translateX(0)} }
+  .gw-in  { animation:gw-in  .3s ease; }
+  .gw-qin { animation:gw-qin .22s ease; }
+
+  /* ── Color Match (Stroop Test) ───────────────────────────── */
+  .gw-stroop { font-size:2.8rem; font-weight:900; letter-spacing:.04em; text-shadow:0 0 28px currentColor; user-select:none; }
+  .gw-color-btn {
+    border-radius:12px; padding:.65rem 1.1rem; font-size:.92rem; font-weight:700;
+    border:2px solid rgba(255,255,255,.18); cursor:pointer; transition:all .14s;
+    min-width:88px; user-select:none;
+  }
+  .gw-color-btn:hover { transform:scale(1.08); filter:brightness(1.15); border-color:rgba(255,255,255,.5); }
+  .gw-color-btn:active { transform:scale(.94); }
+
+  /* ── Reaction Tap ───────────────────────────────────────── */
+  #gw-rt-arena { position:relative; height:220px; width:100%; border-radius:12px; background:rgba(255,255,255,.014); border:1px dashed rgba(255,255,255,.1); }
+  .gw-rt-btn {
+    position:absolute; width:30%; padding:.65rem 0; text-align:center;
+    border-radius:10px; font-weight:700; font-size:.95rem; cursor:pointer;
+    border:2px solid transparent; transition:opacity .1s; user-select:none;
+  }
+  @keyframes gw-appear { 0%{transform:scale(.35);opacity:0} 70%{transform:scale(1.1)} 100%{transform:scale(1);opacity:1} }
+  @keyframes gw-glow   { 0%,100%{box-shadow:0 0 18px rgba(14,244,117,.3)} 50%{box-shadow:0 0 38px rgba(14,244,117,.8)} }
+  .gw-rt-active { background:rgba(14,244,117,.15)!important; border-color:#0EF475!important; color:#0EF475!important; animation:gw-appear .2s ease, gw-glow .55s .2s infinite; }
+
+  /* ── Memory Digits ──────────────────────────────────────── */
+  .gw-digit { display:inline-block; font-size:2.2rem; font-weight:900; padding:.05rem .22rem; animation:gw-in .15s ease both; }
+  .gw-digit-on  { color:#0EF475; text-shadow:0 0 14px rgba(14,244,117,.5); }
+  .gw-digit-off { color:#374151; }
+
+  /* ── Math Rush / Typing Sprint shared ───────────────────── */
+  .gw-big-q    { font-size:2rem; font-weight:900; min-height:2.4rem; }
+  .gw-word-big { font-size:2.2rem; font-weight:900; letter-spacing:.08em; text-shadow:0 0 25px rgba(255,255,255,.1); }
 </style>
 {% endblock %}
 
@@ -64,33 +122,35 @@
   let sessionBest = 0;
   let currentScore = 0;
   let gameCleanup = null;
-  const REACTION_TAP_APPEARANCE_INTERVAL_MS = 900;
-  const MEMORY_DIGIT_COUNT = 10;
-  const TYPING_SPRINT_WORDS = ['victory', 'legendary', 'fortnite', 'battle', 'royale', 'storm', 'squad', 'reload', 'ranked', 'crown', 'island', 'build', 'edit', 'arena'];
 
-  const statusEl = document.getElementById('gw-status');
-  const hostEl = document.getElementById('gw-game-host');
-  const leaderboardBodyEl = document.getElementById('gw-leaderboard-body');
-  const myRankEl = document.getElementById('gw-my-rank');
+  const REACTION_TAP_MS  = 900;
+  const MEMORY_DIGIT_MAX = 10;
+  const TYPING_WORDS = ['victory','legendary','fortnite','battle','royale','storm','squad','reload','ranked','crown','island','build','edit','arena','loot','sniper','glider','shield','emote','season'];
+
+  const statusEl  = document.getElementById('gw-status');
+  const hostEl    = document.getElementById('gw-game-host');
+  const lbBodyEl  = document.getElementById('gw-leaderboard-body');
+  const myRankEl  = document.getElementById('gw-my-rank');
   const submitBtn = document.getElementById('gw-submit-score-btn');
-  const refreshBtn = document.getElementById('gw-refresh-btn');
-  const currentScoreEl = document.getElementById('gw-current-score');
-  const sessionBestEl = document.getElementById('gw-session-best');
+  const refreshBtn= document.getElementById('gw-refresh-btn');
+  const curScEl   = document.getElementById('gw-current-score');
+  const bestEl    = document.getElementById('gw-session-best');
 
-  function setCurrentScore(score) {
-    currentScore = Math.max(0, parseInt(score || 0, 10) || 0);
-    sessionBest = Math.max(sessionBest, currentScore);
-    currentScoreEl.textContent = String(currentScore);
-    sessionBestEl.textContent = String(sessionBest);
+  /* ── Core helpers ────────────────────────────────────────── */
+  function setCurrentScore(s) {
+    currentScore = Math.max(0, parseInt(s || 0, 10) || 0);
+    sessionBest  = Math.max(sessionBest, currentScore);
+    curScEl.textContent = String(currentScore);
+    bestEl.textContent  = String(sessionBest);
   }
 
-  function fmtDate(ts) {
-    if (!ts) return '—';
-    return new Date(ts * 1000).toLocaleString();
-  }
+  function fmtDate(ts) { return ts ? new Date(ts * 1000).toLocaleString() : '—'; }
+  function fmtMoney(c) { return '$' + ((c || 0) / 100).toFixed(2); }
 
-  function fmtMoney(cents) {
-    return '$' + ((cents || 0) / 100).toFixed(2);
+  function escapeHtml(v) {
+    return String(v || '')
+      .replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
+      .replaceAll('"','&quot;').replaceAll("'",'&#39;');
   }
 
   function clearGame() {
@@ -100,26 +160,76 @@
     setCurrentScore(0);
   }
 
-  function renderLeaderboard() {
-    const entries = (gwData && Array.isArray(gwData.leaderboard)) ? gwData.leaderboard : [];
-    if (!entries.length) {
-      leaderboardBodyEl.innerHTML = '<tr><td colspan="3" class="gw-muted">No scores yet.</td></tr>';
-    } else {
-      leaderboardBodyEl.innerHTML = entries.map(e => (
-        `<tr><td>${e.rank}</td><td>${escapeHtml(e.username)}</td><td style="font-weight:700;color:#d1fae5;">${e.score}</td></tr>`
-      )).join('');
+  function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
     }
-    const mine = gwData && gwData.my_position;
-    myRankEl.textContent = mine ? `Your rank: #${mine.rank} • Score: ${mine.score}` : 'You are not ranked yet.';
+    return a;
   }
 
-  function escapeHtml(v) {
-    return String(v || '')
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#39;');
+  function randPick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+  /* ── Animation helpers ───────────────────────────────────── */
+  function spawnPop(text) {
+    const el = document.createElement('span');
+    el.textContent = text || '+1';
+    el.className = 'gw-score-pop';
+    el.style.left = (15 + Math.random() * 70) + '%';
+    el.style.top  = '20%';
+    hostEl.appendChild(el);
+    setTimeout(() => el.remove(), 750);
+  }
+
+  function flashHost(ok) {
+    const cls = ok ? 'gw-flash-ok' : 'gw-flash-bad';
+    hostEl.classList.remove('gw-flash-ok', 'gw-flash-bad');
+    void hostEl.offsetWidth; // force reflow so animation re-triggers
+    hostEl.classList.add(cls);
+    setTimeout(() => hostEl.classList.remove(cls), 500);
+  }
+
+  function timerTick(timeEl, barEl, total) {
+    return function(left) {
+      timeEl.textContent = String(left);
+      if (barEl) {
+        barEl.style.width = ((left / total) * 100) + '%';
+        barEl.style.background = left <= 5 ? '#ef4444' : left <= 10 ? '#fbbf24' : '#0EF475';
+      }
+      timeEl.className = left <= 5 ? 'gw-timer-danger' : left <= 10 ? 'gw-timer-warn' : 'gw-timer-ok';
+    };
+  }
+
+  function withRoundTimer(seconds, onTick, onDone) {
+    let remaining = seconds;
+    onTick(remaining);
+    const id = setInterval(() => {
+      remaining -= 1;
+      onTick(remaining);
+      if (remaining <= 0) { clearInterval(id); onDone(); }
+    }, 1000);
+    return () => clearInterval(id);
+  }
+
+  function timerHTML(id_t, id_bar, dur) {
+    return `
+      <div class="flex items-center justify-center gap-2">
+        <span class="text-zinc-400 text-sm">Time:</span>
+        <span id="${id_t}" class="gw-timer-ok">${dur}</span>
+        <span class="text-zinc-400 text-sm">s</span>
+      </div>
+      <div class="gw-bar-wrap"><div id="${id_bar}" class="gw-bar" style="width:100%;"></div></div>`;
+  }
+
+  /* ── Leaderboard / status ────────────────────────────────── */
+  function renderLeaderboard() {
+    const entries = (gwData && Array.isArray(gwData.leaderboard)) ? gwData.leaderboard : [];
+    lbBodyEl.innerHTML = entries.length
+      ? entries.map(e => `<tr><td>${e.rank}</td><td>${escapeHtml(e.username)}</td><td style="font-weight:700;color:#d1fae5;">${e.score}</td></tr>`).join('')
+      : '<tr><td colspan="3" class="gw-muted">No scores yet.</td></tr>';
+    const m = gwData && gwData.my_position;
+    myRankEl.textContent = m ? `Your rank: #${m.rank} • Score: ${m.score}` : 'You are not ranked yet.';
   }
 
   function renderStatusAndGame() {
@@ -131,16 +241,13 @@
       hostEl.innerHTML = '<p class="gw-muted">Wait for admin to start a giveaway.</p>';
       return;
     }
-
-    const winner = active.winner
+    const winStr = active.winner
       ? ` Winner: <strong>${escapeHtml(active.winner.username)}</strong> (${active.winner.score}).`
       : '';
-
     statusEl.innerHTML = `
-      <strong>${escapeHtml(active.game_label)}</strong> • Reward: <strong>${fmtMoney(active.reward_cents)}</strong> • Audience: <strong>${active.audience === 'customers_only' ? 'Customers only' : 'Everyone'}</strong><br>
-      Start: ${fmtDate(active.starts_at)} • End: ${fmtDate(active.ends_at)}${winner}
-    `;
-
+      <strong>${escapeHtml(active.game_label)}</strong> • Reward: <strong>${fmtMoney(active.reward_cents)}</strong> •
+      Audience: <strong>${active.audience === 'customers_only' ? 'Customers only' : 'Everyone'}</strong><br>
+      Start: ${fmtDate(active.starts_at)} • End: ${fmtDate(active.ends_at)}${winStr}`;
     if (!active.active_now) {
       submitBtn.disabled = true;
       hostEl.innerHTML = '<p class="gw-muted">This giveaway is not active right now.</p>';
@@ -148,298 +255,402 @@
     }
     if (!active.eligible) {
       submitBtn.disabled = true;
-      hostEl.innerHTML = '<p class="gw-muted">This giveaway is customers-only and your account is currently not eligible.</p>';
+      hostEl.innerHTML = '<p class="gw-muted">This giveaway is customers-only and your account is not currently eligible.</p>';
       return;
     }
-
     submitBtn.disabled = false;
     mountGameByKey(active.game);
   }
 
-  function withRoundTimer(seconds, onTick, onDone) {
-    let remaining = seconds;
-    onTick(remaining);
-    const id = setInterval(() => {
-      remaining -= 1;
-      onTick(remaining);
-      if (remaining <= 0) {
-        clearInterval(id);
-        onDone();
-      }
-    }, 1000);
-    return () => clearInterval(id);
-  }
-
-  function mountGameByKey(gameKey) {
-    if (gameKey === 'click_frenzy') return mountClickFrenzy();
-    if (gameKey === 'reaction_tap') return mountReactionTap();
-    if (gameKey === 'math_rush') return mountMathRush();
-    if (gameKey === 'memory_digits') return mountMemoryDigits();
-    if (gameKey === 'typing_sprint') return mountTypingSprint();
+  function mountGameByKey(key) {
+    if (key === 'color_match')   return mountColorMatch();
+    if (key === 'reaction_tap')  return mountReactionTap();
+    if (key === 'math_rush')     return mountMathRush();
+    if (key === 'memory_digits') return mountMemoryDigits();
+    if (key === 'typing_sprint') return mountTypingSprint();
     hostEl.innerHTML = '<p class="gw-muted">Unsupported game selected.</p>';
   }
 
-  function mountClickFrenzy() {
+  /* ══════════════════════════════════════════════════════════
+     GAME: Color Match (Stroop Test)
+     Can't cheat: requires human colour perception — a bot
+     clicking randomly scores only ~25%; a DOM-inspection
+     script must re-read ink colour every question.
+  ══════════════════════════════════════════════════════════ */
+  function mountColorMatch() {
+    const COLORS = [
+      { name:'Red',    hex:'#ef4444' },
+      { name:'Blue',   hex:'#60a5fa' },
+      { name:'Green',  hex:'#0EF475' },
+      { name:'Yellow', hex:'#fbbf24' },
+      { name:'Purple', hex:'#c084fc' },
+      { name:'Orange', hex:'#fb923c' },
+    ];
+    const DUR = 30;
     hostEl.innerHTML = `
-      <div class="space-y-3 text-center w-full">
-        <p class="gw-muted">Click the target as many times as possible in 20 seconds.</p>
-        <p class="text-sm text-zinc-300">Time left: <span id="gw-cf-time">20</span>s</p>
-        <button id="gw-cf-start" class="gw-btn gw-btn-primary">Start Round</button>
-        <button id="gw-cf-target" class="gw-btn" disabled style="font-size:1.15rem;padding:1rem 1.25rem;">🎯 Click!</button>
+      <div class="space-y-4 text-center w-full gw-in">
+        <p class="gw-muted">Click the color <strong style="color:#f4f4f5">the word is written in</strong> — not what it says.</p>
+        ${timerHTML('gw-cm-t','gw-cm-bar', DUR)}
+        <div id="gw-cm-word" style="min-height:76px;display:flex;align-items:center;justify-content:center;">
+          <button id="gw-cm-start" class="gw-btn gw-btn-primary px-6 py-3 text-base">Start Round</button>
+        </div>
+        <div id="gw-cm-choices" class="flex flex-wrap justify-center gap-3"></div>
+        <p id="gw-cm-hint" class="gw-muted text-xs" style="min-height:1.2em;"></p>
       </div>`;
-    const startBtn = document.getElementById('gw-cf-start');
-    const targetBtn = document.getElementById('gw-cf-target');
-    const timeEl = document.getElementById('gw-cf-time');
-    let stopTimer = null;
-    startBtn.onclick = () => {
+
+    const timeEl   = document.getElementById('gw-cm-t');
+    const barEl    = document.getElementById('gw-cm-bar');
+    const wordEl   = document.getElementById('gw-cm-word');
+    const choicesEl= document.getElementById('gw-cm-choices');
+    const hintEl   = document.getElementById('gw-cm-hint');
+    const startBtn = document.getElementById('gw-cm-start');
+    const tick     = timerTick(timeEl, barEl, DUR);
+
+    let running = false, inkColor = null, stopTimer = null;
+
+    function nextQ() {
+      const [wordObj, inkObj, ...rest] = shuffle(COLORS);
+      inkColor = inkObj;
+      const choices = shuffle([inkObj, ...shuffle(rest).slice(0, 3)]);
+      wordEl.innerHTML = `<span class="gw-stroop gw-qin" style="color:${inkObj.hex};">${wordObj.name.toUpperCase()}</span>`;
+      choicesEl.innerHTML = choices.map(c =>
+        `<button class="gw-color-btn" data-n="${c.name}"
+           style="background:${c.hex};color:${c.name==='Yellow'?'#111':'#fff'};box-shadow:0 3px 12px ${c.hex}55;">
+           ${c.name}</button>`
+      ).join('');
+      choicesEl.querySelectorAll('.gw-color-btn').forEach(b => { b.onclick = () => pick(b.dataset.n); });
+    }
+
+    function pick(name) {
+      if (!running) return;
+      if (name === inkColor.name) {
+        setCurrentScore(currentScore + 1);
+        spawnPop('+1');
+        flashHost(true);
+        hintEl.textContent = '✓ Correct!';
+      } else {
+        flashHost(false);
+        hintEl.textContent = `✗ The ink was ${inkColor.name}`;
+      }
+      nextQ();
+    }
+
+    function startRound() {
       setCurrentScore(0);
-      targetBtn.disabled = false;
-      startBtn.disabled = true;
-      stopTimer = withRoundTimer(20, (left) => { timeEl.textContent = String(left); }, () => {
-        targetBtn.disabled = true;
-        startBtn.disabled = false;
+      running = true;
+      hintEl.textContent = '';
+      if (stopTimer) stopTimer();
+      nextQ();
+      stopTimer = withRoundTimer(DUR, tick, () => {
+        running = false; inkColor = null;
+        wordEl.innerHTML = `<div class="gw-in text-center"><p class="text-2xl font-bold" style="color:#0EF475;">Round Complete!</p><p class="gw-muted mt-1">Score: ${currentScore}</p></div>`;
+        choicesEl.innerHTML = `<button id="gw-cm-again" class="gw-btn gw-btn-primary">Play Again</button>`;
+        document.getElementById('gw-cm-again').onclick = startRound;
       });
-    };
-    targetBtn.onclick = () => setCurrentScore(currentScore + 1);
-    gameCleanup = () => { if (stopTimer) stopTimer(); };
+    }
+
+    startBtn.onclick = startRound;
+    gameCleanup = () => { if (stopTimer) stopTimer(); running = false; };
   }
 
+  /* ══════════════════════════════════════════════════════════
+     GAME: Reaction Tap
+     Target moves to a random grid position each flash —
+     an auto-clicker clicking fixed coordinates misses most.
+  ══════════════════════════════════════════════════════════ */
   function mountReactionTap() {
+    const DUR = 25;
+    // 3×3 grid positions (top%, left%) — button is 30% wide so left max=65% is safe
+    const GRID = [
+      {t:'8%',l:'5%'},  {t:'8%',l:'35%'},  {t:'8%',l:'65%'},
+      {t:'38%',l:'5%'}, {t:'38%',l:'35%'}, {t:'38%',l:'65%'},
+      {t:'67%',l:'5%'}, {t:'67%',l:'35%'}, {t:'67%',l:'65%'},
+    ];
     hostEl.innerHTML = `
-      <div class="space-y-3 text-center w-full">
-        <p class="gw-muted">Tap the green target as soon as it appears. 25-second round.</p>
-        <p class="text-sm text-zinc-300">Time left: <span id="gw-rt-time">25</span>s</p>
+      <div class="space-y-3 text-center w-full gw-in">
+        <p class="gw-muted">Tap 🎯 the instant it appears — it moves every time!</p>
+        ${timerHTML('gw-rt-t','gw-rt-bar', DUR)}
+        <div id="gw-rt-arena"></div>
         <button id="gw-rt-start" class="gw-btn gw-btn-primary">Start Round</button>
-        <button id="gw-rt-target" class="gw-btn" disabled style="min-width:180px;">Wait…</button>
       </div>`;
-    const startBtn = document.getElementById('gw-rt-start');
-    const targetBtn = document.getElementById('gw-rt-target');
-    const timeEl = document.getElementById('gw-rt-time');
-    let visible = false;
-    let intervalId = null;
-    let hideId = null;
-    let stopTimer = null;
+
+    const timeEl  = document.getElementById('gw-rt-t');
+    const barEl   = document.getElementById('gw-rt-bar');
+    const arena   = document.getElementById('gw-rt-arena');
+    const startBtn= document.getElementById('gw-rt-start');
+    const tick    = timerTick(timeEl, barEl, DUR);
+
+    // Static placeholder message inside arena
+    const msg = document.createElement('p');
+    msg.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#4b5563;font-size:.85rem;pointer-events:none;';
+    msg.textContent = 'Press Start';
+    arena.appendChild(msg);
+
+    // The moving tap button
+    const btn = document.createElement('button');
+    btn.className = 'gw-rt-btn';
+    btn.style.cssText = 'background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.1);color:#4b5563;visibility:hidden;';
+    btn.textContent = '🎯 TAP!';
+    arena.appendChild(btn);
+
+    let visible=false, iId=null, hId=null, stopTimer=null, lastPos=-1;
+
+    function showTarget() {
+      let idx;
+      if (GRID.length > 1) {
+        do { idx = Math.floor(Math.random() * GRID.length); } while (idx === lastPos);
+      } else {
+        idx = 0;
+      }
+      lastPos = idx;
+      btn.style.top  = GRID[idx].t;
+      btn.style.left = GRID[idx].l;
+      visible = true;
+      btn.style.visibility = 'visible';
+      btn.className = 'gw-rt-btn gw-rt-active';
+      btn.textContent = '🎯 TAP!';
+      hId = setTimeout(() => {
+        visible = false;
+        btn.style.visibility = 'hidden';
+        btn.className = 'gw-rt-btn';
+      }, 650);
+    }
+
     const clearAll = () => {
-      if (intervalId) clearInterval(intervalId);
-      if (hideId) clearTimeout(hideId);
+      if (iId) clearInterval(iId);
+      if (hId) clearTimeout(hId);
       if (stopTimer) stopTimer();
     };
+
     startBtn.onclick = () => {
       clearAll();
       setCurrentScore(0);
       startBtn.disabled = true;
-      targetBtn.disabled = false;
-      targetBtn.textContent = 'Wait…';
-      targetBtn.style.background = 'rgba(255,255,255,.05)';
-      stopTimer = withRoundTimer(25, (left) => { timeEl.textContent = String(left); }, () => {
+      msg.textContent = '';
+      btn.style.visibility = 'hidden';
+      visible = false;
+      stopTimer = withRoundTimer(DUR, tick, () => {
         clearAll();
-        targetBtn.disabled = true;
-        targetBtn.textContent = 'Round over';
+        btn.style.visibility = 'hidden';
+        visible = false;
+        msg.textContent = 'Round over!';
         startBtn.disabled = false;
       });
-      intervalId = setInterval(() => {
-        visible = true;
-        targetBtn.textContent = 'TAP NOW!';
-        targetBtn.style.background = 'rgba(14,244,117,.25)';
-        hideId = setTimeout(() => {
-          visible = false;
-          targetBtn.textContent = 'Wait…';
-          targetBtn.style.background = 'rgba(255,255,255,.05)';
-        }, 650);
-      }, REACTION_TAP_APPEARANCE_INTERVAL_MS);
+      iId = setInterval(showTarget, REACTION_TAP_MS);
     };
-    targetBtn.onclick = () => {
+
+    btn.onclick = () => {
       if (!visible) return;
       visible = false;
-      targetBtn.textContent = 'Nice!';
-      targetBtn.style.background = 'rgba(14,244,117,.25)';
+      if (hId) { clearTimeout(hId); hId = null; }
+      btn.style.visibility = 'hidden';
+      btn.className = 'gw-rt-btn';
       setCurrentScore(currentScore + 1);
+      spawnPop('+1');
+      flashHost(true);
     };
+
     gameCleanup = clearAll;
   }
 
+  /* ══════════════════════════════════════════════════════════
+     GAME: Math Rush
+  ══════════════════════════════════════════════════════════ */
   function mountMathRush() {
+    const DUR = 30;
     hostEl.innerHTML = `
-      <div class="space-y-3 text-center w-full max-w-md">
+      <div class="space-y-3 text-center w-full max-w-xs gw-in">
         <p class="gw-muted">Solve as many equations as possible in 30 seconds.</p>
-        <p class="text-sm text-zinc-300">Time left: <span id="gw-mr-time">30</span>s</p>
-        <p id="gw-mr-q" class="text-xl font-bold text-white">Press Start</p>
+        ${timerHTML('gw-mr-t','gw-mr-bar', DUR)}
+        <p id="gw-mr-q" class="gw-big-q text-white">Press Start</p>
         <div class="flex gap-2">
-          <input id="gw-mr-input" class="gw-input" inputmode="numeric" placeholder="Answer" disabled />
-          <button id="gw-mr-submit" class="gw-btn" disabled>OK</button>
+          <input id="gw-mr-in" class="gw-input text-center" inputmode="numeric" placeholder="Answer" disabled />
+          <button id="gw-mr-ok" class="gw-btn" disabled>OK</button>
         </div>
         <button id="gw-mr-start" class="gw-btn gw-btn-primary">Start Round</button>
       </div>`;
-    const startBtn = document.getElementById('gw-mr-start');
-    const submit = document.getElementById('gw-mr-submit');
-    const input = document.getElementById('gw-mr-input');
-    const qEl = document.getElementById('gw-mr-q');
-    const timeEl = document.getElementById('gw-mr-time');
-    let answer = null;
-    let stopTimer = null;
-    const nextQ = () => {
+
+    const timeEl  = document.getElementById('gw-mr-t');
+    const barEl   = document.getElementById('gw-mr-bar');
+    const qEl     = document.getElementById('gw-mr-q');
+    const inp     = document.getElementById('gw-mr-in');
+    const okBtn   = document.getElementById('gw-mr-ok');
+    const startBtn= document.getElementById('gw-mr-start');
+    const tick    = timerTick(timeEl, barEl, DUR);
+    let answer = null, stopTimer = null;
+
+    function nextQ() {
       const a = Math.floor(Math.random() * 25) + 1;
       const b = Math.floor(Math.random() * 25) + 1;
-      const op = Math.random() < 0.5 ? '+' : '-';
-      answer = (op === '+') ? (a + b) : (a - b);
-      qEl.textContent = `${a} ${op} ${b} = ?`;
-      input.value = '';
-      input.focus();
-    };
-    const submitAns = () => {
+      const ops = ['+', '-', '×'];
+      const op = randPick(ops);
+      answer = op === '+' ? a + b : op === '-' ? a - b : a * b;
+      qEl.innerHTML = `<span class="gw-qin">${a} ${op} ${b} = ?</span>`;
+      inp.value = ''; inp.focus();
+    }
+
+    function check() {
       if (answer === null) return;
-      const v = parseInt(input.value || '', 10);
-      if (v === answer) setCurrentScore(currentScore + 1);
+      const v = parseInt(inp.value || '', 10);
+      if (v === answer) { setCurrentScore(currentScore + 1); spawnPop('+1'); flashHost(true); }
+      else { flashHost(false); }
       nextQ();
-    };
-    submit.onclick = submitAns;
-    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitAns(); });
+    }
+
+    okBtn.onclick = check;
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') check(); });
     startBtn.onclick = () => {
-      setCurrentScore(0);
-      startBtn.disabled = true;
-      submit.disabled = false;
-      input.disabled = false;
+      setCurrentScore(0); startBtn.disabled = true;
+      okBtn.disabled = false; inp.disabled = false;
       nextQ();
-      stopTimer = withRoundTimer(30, (left) => { timeEl.textContent = String(left); }, () => {
-        submit.disabled = true;
-        input.disabled = true;
-        startBtn.disabled = false;
-        qEl.textContent = 'Round complete';
+      stopTimer = withRoundTimer(DUR, tick, () => {
+        okBtn.disabled = true; inp.disabled = true; startBtn.disabled = false;
+        qEl.innerHTML = `<span class="gw-in" style="color:#0EF475;">Done! Score: ${currentScore}</span>`;
       });
     };
     gameCleanup = () => { if (stopTimer) stopTimer(); };
   }
 
+  /* ══════════════════════════════════════════════════════════
+     GAME: Memory Digits
+  ══════════════════════════════════════════════════════════ */
   function mountMemoryDigits() {
     hostEl.innerHTML = `
-      <div class="space-y-3 text-center w-full max-w-md">
-        <p class="gw-muted">Memorize and type the number sequence. Correct round = +sequence length.</p>
+      <div class="space-y-3 text-center w-full max-w-xs gw-in">
+        <p class="gw-muted">Memorize the sequence, then type it. Correct = +level points.</p>
         <p id="gw-md-status" class="text-sm text-zinc-300">Press Start</p>
-        <p id="gw-md-seq" class="text-2xl font-bold tracking-[.25em] text-white">•••</p>
-        <input id="gw-md-input" class="gw-input text-center" placeholder="Type sequence" disabled />
+        <p id="gw-md-seq" class="tracking-[.2em] min-h-[2.8rem]">•••</p>
+        <input id="gw-md-in" class="gw-input text-center" placeholder="Type sequence" disabled />
         <div class="flex justify-center gap-2">
           <button id="gw-md-check" class="gw-btn" disabled>Check</button>
           <button id="gw-md-start" class="gw-btn gw-btn-primary">Start</button>
         </div>
       </div>`;
-    const status = document.getElementById('gw-md-status');
-    const seqEl = document.getElementById('gw-md-seq');
-    const input = document.getElementById('gw-md-input');
+
+    const statusEl = document.getElementById('gw-md-status');
+    const seqEl    = document.getElementById('gw-md-seq');
+    const inp      = document.getElementById('gw-md-in');
     const checkBtn = document.getElementById('gw-md-check');
     const startBtn = document.getElementById('gw-md-start');
-    let level = 3;
-    let seq = '';
-    let showTimeout = null;
-    const makeSeq = (len) => Array.from({length: len}, () => Math.floor(Math.random() * MEMORY_DIGIT_COUNT)).join('');
-    const beginRound = () => {
+    let level = 3, seq = '', tid = null;
+
+    function makeSeq(len) { return Array.from({length:len}, () => Math.floor(Math.random() * MEMORY_DIGIT_MAX)).join(''); }
+
+    function renderDigits(str, hidden) {
+      return str.split('').map((d, i) =>
+        `<span class="gw-digit ${hidden?'gw-digit-off':'gw-digit-on'}" style="animation-delay:${i*55}ms;">${hidden?'•':d}</span>`
+      ).join('');
+    }
+
+    function beginRound() {
       seq = makeSeq(level);
-      status.textContent = `Memorize ${level} digits...`;
-      seqEl.textContent = seq;
-      input.disabled = true;
-      checkBtn.disabled = true;
-      if (showTimeout) clearTimeout(showTimeout);
-      showTimeout = setTimeout(() => {
-        seqEl.textContent = '•'.repeat(level);
-        status.textContent = 'Type the sequence';
-        input.value = '';
-        input.disabled = false;
-        checkBtn.disabled = false;
-        input.focus();
-      }, 1600);
-    };
-    const check = () => {
-      const guess = (input.value || '').trim();
-      if (guess === seq) {
+      statusEl.textContent = `Memorize ${level} digit${level > 1 ? 's' : ''}…`;
+      seqEl.innerHTML = renderDigits(seq, false);
+      inp.disabled = true; checkBtn.disabled = true;
+      if (tid) clearTimeout(tid);
+      tid = setTimeout(() => {
+        seqEl.innerHTML = renderDigits(seq, true);
+        statusEl.textContent = 'Now type the sequence';
+        inp.value = ''; inp.disabled = false; checkBtn.disabled = false; inp.focus();
+      }, 1800);
+    }
+
+    function check() {
+      const g = (inp.value || '').trim();
+      if (g === seq) {
         setCurrentScore(currentScore + level);
-        level += 1;
-        beginRound();
+        spawnPop(`+${level}`);
+        flashHost(true);
+        level++;
+        statusEl.textContent = `✓ Correct! Level ${level}…`;
+        inp.disabled = true; checkBtn.disabled = true;
+        setTimeout(beginRound, 600);
       } else {
-        status.textContent = `Wrong sequence. Final level: ${level}`;
-        input.disabled = true;
-        checkBtn.disabled = true;
-        startBtn.disabled = false;
-        seqEl.textContent = seq;
+        flashHost(false);
+        statusEl.textContent = `✗ Was: ${seq}. Game over.`;
+        seqEl.innerHTML = renderDigits(seq, false);
+        inp.disabled = true; checkBtn.disabled = true; startBtn.disabled = false;
       }
-    };
+    }
+
     checkBtn.onclick = check;
-    input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !checkBtn.disabled) check(); });
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter' && !checkBtn.disabled) check(); });
     startBtn.onclick = () => {
-      setCurrentScore(0);
-      level = 3;
-      startBtn.disabled = true;
-      beginRound();
+      setCurrentScore(0); level = 3; startBtn.disabled = true; beginRound();
     };
-    gameCleanup = () => { if (showTimeout) clearTimeout(showTimeout); };
+    gameCleanup = () => { if (tid) clearTimeout(tid); };
   }
 
+  /* ══════════════════════════════════════════════════════════
+     GAME: Typing Sprint
+  ══════════════════════════════════════════════════════════ */
   function mountTypingSprint() {
+    const DUR = 30;
     hostEl.innerHTML = `
-      <div class="space-y-3 text-center w-full max-w-md">
-        <p class="gw-muted">Type each word and press Enter. 30-second sprint.</p>
-        <p class="text-sm text-zinc-300">Time left: <span id="gw-ts-time">30</span>s</p>
-        <p id="gw-ts-word" class="text-2xl font-bold text-white">Press Start</p>
-        <input id="gw-ts-input" class="gw-input text-center" placeholder="Type word" disabled />
+      <div class="space-y-3 text-center w-full max-w-xs gw-in">
+        <p class="gw-muted">Type each word and press <kbd style="background:rgba(255,255,255,.1);padding:.1rem .35rem;border-radius:5px;font-size:.8rem;">Enter</kbd>. 30-second sprint.</p>
+        ${timerHTML('gw-ts-t','gw-ts-bar', DUR)}
+        <p id="gw-ts-word" class="gw-word-big text-white">Press Start</p>
+        <input id="gw-ts-in" class="gw-input text-center" placeholder="Type here" disabled />
         <button id="gw-ts-start" class="gw-btn gw-btn-primary">Start Round</button>
       </div>`;
-    const timeEl = document.getElementById('gw-ts-time');
-    const wordEl = document.getElementById('gw-ts-word');
-    const input = document.getElementById('gw-ts-input');
-    const startBtn = document.getElementById('gw-ts-start');
-    let stopTimer = null;
-    let currentWord = '';
-    const nextWord = () => {
-      currentWord = TYPING_SPRINT_WORDS[Math.floor(Math.random() * TYPING_SPRINT_WORDS.length)];
-      wordEl.textContent = currentWord;
-      input.value = '';
-      input.focus();
-    };
-    input.addEventListener('keydown', (e) => {
-      if (e.key !== 'Enter' || input.disabled) return;
-      if ((input.value || '').trim().toLowerCase() === currentWord) setCurrentScore(currentScore + 1);
+
+    const timeEl  = document.getElementById('gw-ts-t');
+    const barEl   = document.getElementById('gw-ts-bar');
+    const wordEl  = document.getElementById('gw-ts-word');
+    const inp     = document.getElementById('gw-ts-in');
+    const startBtn= document.getElementById('gw-ts-start');
+    const tick    = timerTick(timeEl, barEl, DUR);
+    let curWord = '', stopTimer = null;
+
+    function nextWord() {
+      curWord = randPick(TYPING_WORDS);
+      wordEl.innerHTML = `<span class="gw-qin">${curWord}</span>`;
+      inp.value = ''; inp.focus();
+    }
+
+    inp.addEventListener('keydown', e => {
+      if (e.key !== 'Enter' || inp.disabled) return;
+      const v = (inp.value || '').trim().toLowerCase();
+      if (v === curWord) { setCurrentScore(currentScore + 1); spawnPop('+1'); flashHost(true); }
+      else if (v) { flashHost(false); }
       nextWord();
     });
+
     startBtn.onclick = () => {
-      setCurrentScore(0);
-      startBtn.disabled = true;
-      input.disabled = false;
+      setCurrentScore(0); startBtn.disabled = true; inp.disabled = false;
       nextWord();
-      stopTimer = withRoundTimer(30, (left) => { timeEl.textContent = String(left); }, () => {
-        input.disabled = true;
-        wordEl.textContent = 'Round complete';
-        startBtn.disabled = false;
+      stopTimer = withRoundTimer(DUR, tick, () => {
+        inp.disabled = true; startBtn.disabled = false;
+        wordEl.innerHTML = `<span class="gw-in" style="color:#0EF475;">Done! Score: ${currentScore}</span>`;
       });
     };
     gameCleanup = () => { if (stopTimer) stopTimer(); };
   }
 
+  /* ── API ──────────────────────────────────────────────────── */
   async function loadGiveaway() {
     try {
       const res = await fetch('/api/giveaway/status');
       gwData = await res.json();
       renderLeaderboard();
       renderStatusAndGame();
-    } catch (e) {
-      statusEl.textContent = 'Failed to load giveaway.';
-    }
+    } catch(e) { statusEl.textContent = 'Failed to load giveaway.'; }
   }
 
   async function submitScore() {
     if (!gwData || !gwData.active || !gwData.active.active_now) return;
-    const payload = { score: sessionBest };
     const res = await fetch('/api/giveaway/submit-score', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(payload),
+      body: JSON.stringify({score: sessionBest}),
     });
     const data = await res.json();
-    if (!res.ok || data.error) {
-      alert(data.error || 'Failed to submit score.');
-      return;
-    }
+    if (!res.ok || data.error) { alert(data.error || 'Failed to submit score.'); return; }
     gwData = data;
     renderLeaderboard();
     renderStatusAndGame();
-    alert(data.accepted ? 'Score submitted.' : 'Score submitted, but your saved best is already higher.');
+    alert(data.accepted ? 'Score submitted!' : 'Score submitted, but your saved best is already higher.');
   }
 
   submitBtn.addEventListener('click', submitScore);

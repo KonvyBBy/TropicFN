@@ -621,14 +621,14 @@ MAX_GIVEAWAY_DURATION_MINUTES = 10080
 MAX_GIVEAWAY_ABSOLUTE_SCORE = 1_000_000_000
 GIVEAWAY_SUBMIT_COOLDOWN_SECONDS = 2
 GIVEAWAY_GAMES = {
-    "click_frenzy": "Click Frenzy",
+    "color_match": "Color Match",
     "reaction_tap": "Reaction Tap",
     "math_rush": "Math Rush",
     "memory_digits": "Memory Digits",
     "typing_sprint": "Typing Sprint",
 }
 GIVEAWAY_SCORE_LIMITS = {
-    "click_frenzy": 500,
+    "color_match": 60,
     "reaction_tap": 500,
     "math_rush": 500,
     "memory_digits": 5000,
