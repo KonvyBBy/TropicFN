@@ -1181,7 +1181,12 @@ def _save_ticket_attachments(ticket_id: str, files) -> Tuple[list, Optional[str]
     if not re.fullmatch(r"tkt_[0-9a-f]{12}", ticket_id):
         return [], "Invalid ticket ID."
     ticket_dir = os.path.join(TICKET_UPLOADS_DIR, ticket_id)
-    os.makedirs(ticket_dir, exist_ok=True)
+    # Explicit canonicalization check as defense-in-depth against path traversal
+    resolved = os.path.realpath(ticket_dir)
+    safe_root = os.path.realpath(TICKET_UPLOADS_DIR)
+    if not resolved.startswith(safe_root + os.sep):
+        return [], "Invalid ticket ID."
+    os.makedirs(resolved, exist_ok=True)
     attachments = []
     for f in file_list:
         original_name = f.filename or ""
@@ -1196,7 +1201,7 @@ def _save_ticket_attachments(ticket_id: str, files) -> Tuple[list, Optional[str]
             return [], f"File too large (max {TICKET_UPLOAD_MAX_SIZE_BYTES // (1024 * 1024)} MB): {original_name}"
         safe = secure_filename(original_name) or "file"
         stored_name = f"{secrets.token_hex(8)}_{safe}"
-        dest = os.path.join(ticket_dir, stored_name)
+        dest = os.path.join(resolved, stored_name)
         f.save(dest)
         attachments.append({"stored_name": stored_name, "original_name": original_name})
     return attachments, None
@@ -5376,7 +5381,12 @@ def serve_ticket_upload(ticket_id: str, filename: str):
     if filename not in all_attachments:
         return jsonify({"error": "Not found"}), 404
     ticket_dir = os.path.join(TICKET_UPLOADS_DIR, ticket_id)
-    return send_from_directory(ticket_dir, filename)
+    # Explicit canonicalization as defense-in-depth
+    resolved_dir = os.path.realpath(ticket_dir)
+    safe_root = os.path.realpath(TICKET_UPLOADS_DIR)
+    if not resolved_dir.startswith(safe_root + os.sep):
+        return jsonify({"error": "Not found"}), 404
+    return send_from_directory(resolved_dir, filename)
 
 
 @app.route("/api/admin/support-tickets", methods=["GET"])
