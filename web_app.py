@@ -623,6 +623,8 @@ GIVEAWAY_ALLOWED_AUDIENCES = {
     GIVEAWAY_AUDIENCE_CUSTOMERS_ONLY,
 }
 GIVEAWAY_WINNER_POOL_REAL_ENTRIES_ONLY = "real_entries_only"
+USER_GIVEAWAY_ENTRIES_PREVIEW_LIMIT = 25
+ADMIN_GIVEAWAY_ENTRIES_PREVIEW_LIMIT = 200
 MAX_GIVEAWAY_DURATION_MINUTES = 10080
 MAX_GIVEAWAY_ABSOLUTE_SCORE = 1_000_000_000
 GIVEAWAY_SUBMIT_COOLDOWN_SECONDS = 2
@@ -2980,7 +2982,7 @@ def _settle_giveaway_if_due(state: dict) -> bool:
         for e in entries
         if e.get("source") in {"organic", "admin_manual", "legacy"}
     ]
-    winner = random.choice(eligible_entries) if eligible_entries else None
+    winner = secrets.choice(eligible_entries) if eligible_entries else None
 
     if winner:
         reward_cents = max(0, int(giveaway.get("reward_cents") or 0))
@@ -3038,7 +3040,7 @@ def _serialize_giveaway_state_for_user(state: dict, username: str) -> dict:
             "winner_pool": GIVEAWAY_WINNER_POOL_REAL_ENTRIES_ONLY,
             "eligible_real_entries": stats["eligible_real_entries"],
         },
-        "entries_preview": entries[:25],
+        "entries_preview": entries[:USER_GIVEAWAY_ENTRIES_PREVIEW_LIMIT],
         "server_time": now,
     }
 
@@ -5651,7 +5653,9 @@ def api_admin_giveaway():
             active.update(_get_giveaway_join_stats(state, active))
             state["active"] = active
             _save_giveaway_state(state)
-            entries = _list_giveaway_entries(state, str(active.get("id") or ""))[:200]
+            entries = _list_giveaway_entries(state, str(active.get("id") or ""))[
+                :ADMIN_GIVEAWAY_ENTRIES_PREVIEW_LIMIT
+            ]
         return jsonify(
             {
                 "active": active,
@@ -5741,7 +5745,9 @@ def api_admin_giveaway():
             active.update(_get_giveaway_join_stats(state, active))
             state["active"] = active
             _save_giveaway_state(state)
-            entries = _list_giveaway_entries(state, str(active.get("id") or ""))[:200]
+            entries = _list_giveaway_entries(state, str(active.get("id") or ""))[
+                :ADMIN_GIVEAWAY_ENTRIES_PREVIEW_LIMIT
+            ]
         return jsonify({"ok": True, "active": active, "entries": entries})
 
     if action == "manual_join":
@@ -5765,7 +5771,9 @@ def api_admin_giveaway():
         giveaway.update(_get_giveaway_join_stats(state, giveaway))
         state["active"] = giveaway
         _save_giveaway_state(state)
-        entries = _list_giveaway_entries(state, giveaway_id)[:200]
+        entries = _list_giveaway_entries(state, giveaway_id)[
+            :ADMIN_GIVEAWAY_ENTRIES_PREVIEW_LIMIT
+        ]
         return jsonify({"ok": True, "entries": entries, "active": giveaway})
 
     return jsonify({"error": "Unknown action."}), 400
