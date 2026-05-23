@@ -198,7 +198,6 @@
           </a>
           <nav class="hidden items-center gap-4 text-xs text-zinc-400 lg:flex lg:gap-5 lg:text-sm">
             <a href="/dashboard" class="transition hover:text-emerald-300 {% if active_page == 'home' %}text-emerald-400 font-medium{% endif %}">Marketplace</a>
-            <a href="/giveaway" class="transition hover:text-emerald-300 {% if active_page == 'giveaway' %}text-emerald-400 font-medium{% endif %}">Giveaway</a>
             <a href="/support" class="transition hover:text-emerald-300 {% if active_page == 'support' %}text-emerald-400 font-medium{% endif %}">Support Tickets</a>
             {% if logged_in %}
             <a href="/transactions" class="transition hover:text-emerald-300 {% if active_page == 'transactions' %}text-emerald-400 font-medium{% endif %}">Transaction History</a>
@@ -254,7 +253,6 @@
       <!-- Mobile nav -->
       <nav class="mx-auto max-w-[1400px] mt-2 flex items-center gap-2 overflow-x-auto pb-1 text-xs text-zinc-300 lg:hidden px-0">
         <a href="/dashboard" class="whitespace-nowrap rounded-lg border border-white/15 px-3 py-1.5 transition {% if active_page == 'home' %}bg-[#0EF475]/15 text-[#0EF475] border-[#0EF475]/30{% else %}bg-black/35 text-zinc-300 hover:text-white{% endif %}">Marketplace</a>
-        <a href="/giveaway" class="whitespace-nowrap rounded-lg border border-white/15 px-3 py-1.5 transition {% if active_page == 'giveaway' %}bg-[#0EF475]/15 text-[#0EF475] border-[#0EF475]/30{% else %}bg-black/35 text-zinc-300 hover:text-white{% endif %}">Giveaway</a>
         <a href="/support" class="whitespace-nowrap rounded-lg border border-white/15 px-3 py-1.5 transition {% if active_page == 'support' %}bg-[#0EF475]/15 text-[#0EF475] border-[#0EF475]/30{% else %}bg-black/35 text-zinc-300 hover:text-white{% endif %}">Support</a>
         {% if logged_in %}
         <a href="/transactions" class="whitespace-nowrap rounded-lg border border-white/15 px-3 py-1.5 transition {% if active_page == 'transactions' %}bg-[#0EF475]/15 text-[#0EF475] border-[#0EF475]/30{% else %}bg-black/35 text-zinc-300 hover:text-white{% endif %}">History</a>
@@ -286,7 +284,6 @@
           <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-300">Platform</h3>
           <nav class="flex flex-col gap-2 text-xs text-zinc-500">
             <a href="/dashboard" class="transition hover:text-emerald-400">Marketplace</a>
-            <a href="/giveaway" class="transition hover:text-emerald-400">Giveaway</a>
             <a href="/support" class="transition hover:text-emerald-400">Support</a>
             {% if logged_in %}
             <a href="/transactions" class="transition hover:text-emerald-400">Transaction History</a>

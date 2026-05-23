@@ -245,7 +245,6 @@
     <button class="tab-btn" onclick="showTab('blacklist')">🚫 Blacklist</button>
     <button class="tab-btn" onclick="showTab('support')">🎫 Support Tickets</button>
     <button class="tab-btn" onclick="showTab('fakeorders')">🎭 Fake Orders</button>
-    <button class="tab-btn" onclick="showTab('giveaway')">🏆 Giveaways</button>
   </div>
 
   <!-- Settings Tab -->
@@ -407,64 +406,11 @@
     </div>
   </div>
 
-  <!-- Giveaway Tab -->
-  <div id="tab-giveaway" class="tab-panel">
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;gap:0.75rem;flex-wrap:wrap;">
-        <h3>🏆 Giveaway Manager</h3>
-        <button class="btn btn-secondary btn-sm" onclick="loadGiveawayAdmin()">🔄 Refresh</button>
-      </div>
-
-      <div id="ga-active-summary" style="margin-bottom:1rem;color:var(--muted);font-size:0.86rem;">Loading giveaway status…</div>
-
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0.75rem;margin-bottom:0.85rem;">
-        <div>
-          <label>Audience</label>
-          <select id="ga-audience">
-            <option value="everyone">Everyone</option>
-            <option value="customers_only">Customers only</option>
-          </select>
-        </div>
-        <div>
-          <label>Duration (minutes)</label>
-          <input id="ga-duration" type="number" min="1" max="{{ max_giveaway_duration_minutes }}" value="60" />
-        </div>
-        <div>
-          <label>Reward ($)</label>
-          <input id="ga-reward" type="number" step="0.01" min="0" value="10.00" />
-        </div>
-        <div>
-          <label>Starting Simulated Joins</label>
-          <input id="ga-seed-auto" type="number" min="0" value="0" />
-        </div>
-        <div>
-          <label>Auto Joins Per Minute</label>
-          <input id="ga-auto-rate" type="number" min="0" step="0.1" value="0" />
-        </div>
-      </div>
-      <div style="display:flex;gap:0.6rem;flex-wrap:wrap;margin-bottom:1.3rem;">
-        <button class="btn btn-primary" onclick="createGiveaway()">Create Giveaway</button>
-        <button class="btn btn-danger" onclick="endGiveawayNow()">End & Settle Now</button>
-      </div>
-
-      <div style="overflow-x:auto;">
-        <table>
-          <thead>
-            <tr><th>Rank</th><th>User</th><th>Source</th><th>Joined</th></tr>
-          </thead>
-          <tbody id="ga-entries">
-            <tr class="empty-row"><td colspan="4">No entry data</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
   {% endif %}
 </div>
 
 <script>
-  const tabOrder = ['settings','pending','users','blacklist','support','fakeorders','giveaway'];
+  const tabOrder = ['settings','pending','users','blacklist','support','fakeorders'];
   let supportTicketsCache = [];
   let selectedSupportTicketId = '';
 
@@ -479,7 +425,6 @@
     if (name === 'blacklist') loadBlacklist();
     if (name === 'support') loadSupportTickets();
     if (name === 'fakeorders') loadFakeOrdersConfig();
-    if (name === 'giveaway') loadGiveawayAdmin();
   }
 
   function showMsg(msg, isError) {
@@ -913,102 +858,6 @@
       showFoMsg('Fired fake order for ' + res.username, false);
     } else {
       showFoMsg(res.error || 'Error', true);
-    }
-  }
-
-  function gaFmtDate(ts) {
-    if (!ts) return '—';
-    return new Date(ts * 1000).toLocaleString();
-  }
-
-  function giveawaySourceLabel(source) {
-    const labels = {
-      organic: 'User',
-      admin_manual: 'Admin',
-      legacy: 'Legacy',
-    };
-    return labels[source] || 'Other';
-  }
-
-  function renderGiveawayEntries(rows) {
-    const tbody = document.getElementById('ga-entries');
-    const list = Array.isArray(rows) ? rows : [];
-    if (!list.length) {
-      tbody.innerHTML = '<tr class="empty-row"><td colspan="4">No entry data</td></tr>';
-      return;
-    }
-    tbody.innerHTML = '';
-    list.forEach(r => {
-      const tr = document.createElement('tr');
-      const source = giveawaySourceLabel(r.source);
-      tr.innerHTML = `
-        <td>#${r.rank || '—'}</td>
-        <td style="color:var(--text);font-weight:600;"></td>
-        <td></td>
-        <td></td>
-      `;
-      tr.cells[1].textContent = r.username || '—';
-      tr.cells[2].textContent = source;
-      tr.cells[3].textContent = gaFmtDate(r.joined_at);
-      tbody.appendChild(tr);
-    });
-  }
-
-  async function loadGiveawayAdmin() {
-    const r = await fetch('/api/admin/giveaway');
-    const data = await r.json();
-    if (!r.ok || data.error) {
-      showMsg(data.error || 'Failed to load giveaway', true);
-      return;
-    }
-
-    const active = data.active;
-    const summary = document.getElementById('ga-active-summary');
-    if (!active) {
-      summary.textContent = 'No giveaway is active.';
-    } else {
-      const reward = '$' + ((active.reward_cents || 0) / 100).toFixed(2);
-      const audience = active.audience === 'customers_only' ? 'Customers only' : 'Everyone';
-      const winner = active.winner ? ` | Winner: ${active.winner.username}` : '';
-      summary.textContent =
-        `Reward: ${reward} | Audience: ${audience} | Starts: ${gaFmtDate(active.starts_at)} | Ends: ${gaFmtDate(active.ends_at)} ` +
-        `| Total: ${active.total_joined || 0} | User joins: ${active.organic_joined || 0} | Simulated joins: ${active.auto_joined || 0} ` +
-        `| Auto/min: ${active.auto_join_per_minute || 0} | Winner pool: non-simulated entries${winner}`;
-    }
-    renderGiveawayEntries(data.entries || []);
-  }
-
-  async function createGiveaway() {
-    const audience = document.getElementById('ga-audience').value;
-    const duration = parseInt(document.getElementById('ga-duration').value || '0', 10);
-    const reward = parseFloat(document.getElementById('ga-reward').value || '0');
-    const seedAutoJoined = parseInt(document.getElementById('ga-seed-auto').value || '0', 10);
-    const autoRate = parseFloat(document.getElementById('ga-auto-rate').value || '0');
-    const res = await apiPost('/api/admin/giveaway', {
-      action: 'create',
-      audience,
-      duration_minutes: duration,
-      reward_dollars: reward,
-      seed_auto_joined: seedAutoJoined,
-      auto_join_per_minute: autoRate,
-    });
-    if (res.ok) {
-      showMsg('Giveaway created', false);
-      loadGiveawayAdmin();
-    } else {
-      showMsg(res.error || 'Failed to create giveaway', true);
-    }
-  }
-
-  async function endGiveawayNow() {
-    if (!confirm('End and settle the giveaway now?')) return;
-    const res = await apiPost('/api/admin/giveaway', { action: 'end_now' });
-    if (res.ok) {
-      showMsg('Giveaway ended and settled', false);
-      renderGiveawayEntries(res.entries || []);
-      loadGiveawayAdmin();
-    } else {
-      showMsg(res.error || 'Failed to end giveaway', true);
     }
   }
 
