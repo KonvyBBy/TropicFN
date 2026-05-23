@@ -2874,7 +2874,7 @@ def _list_giveaway_entries(state: dict, giveaway_id: str) -> list:
                 "source": str((entry or {}).get("source") or "organic"),
             }
         )
-    rows.sort(key=lambda e: (e["joined_at"] or 0, e["username"].lower()))
+    rows.sort(key=lambda e: (e["joined_at"] or 0))
     for idx, row in enumerate(rows, start=1):
         row["rank"] = idx
     return rows
@@ -2931,7 +2931,15 @@ def _update_auto_join_progress(giveaway: dict, now_ts: Optional[int] = None) -> 
 
 def _get_giveaway_join_stats(state: dict, giveaway: dict) -> dict:
     giveaway_id = str((giveaway or {}).get("id") or "")
-    organic = len(_ensure_giveaway_entries(state, giveaway_id))
+    all_entries = _list_giveaway_entries(state, giveaway_id)
+    organic = len([e for e in all_entries if e.get("source") == "organic"])
+    eligible_real_entries = len(
+        [
+            e
+            for e in all_entries
+            if e.get("source") in {"organic", "admin_manual", "legacy_migrated"}
+        ]
+    )
     try:
         auto_joined = int((giveaway or {}).get("auto_joined_count") or 0)
     except (TypeError, ValueError):
@@ -2939,8 +2947,9 @@ def _get_giveaway_join_stats(state: dict, giveaway: dict) -> dict:
     auto_joined = max(0, auto_joined)
     return {
         "organic_joined": organic,
+        "eligible_real_entries": eligible_real_entries,
         "auto_joined": auto_joined,
-        "total_joined": organic + auto_joined,
+        "total_joined": eligible_real_entries + auto_joined,
     }
 
 
@@ -2965,7 +2974,12 @@ def _settle_giveaway_if_due(state: dict) -> bool:
 
     giveaway_id = str(giveaway.get("id") or "")
     entries = _list_giveaway_entries(state, giveaway_id)
-    winner = random.choice(entries) if entries else None
+    eligible_entries = [
+        e
+        for e in entries
+        if e.get("source") in {"organic", "admin_manual", "legacy_migrated"}
+    ]
+    winner = random.choice(eligible_entries) if eligible_entries else None
 
     if winner:
         reward_cents = max(0, int(giveaway.get("reward_cents") or 0))
@@ -3020,7 +3034,8 @@ def _serialize_giveaway_state_for_user(state: dict, username: str) -> dict:
             "organic_joined": stats["organic_joined"],
             "auto_joined": stats["auto_joined"],
             "total_joined": stats["total_joined"],
-            "winner_pool": "organic_only",
+            "winner_pool": "real_entries_only",
+            "eligible_real_entries": stats["eligible_real_entries"],
         },
         "entries_preview": entries[:25],
         "server_time": now,
@@ -5703,7 +5718,7 @@ def api_admin_giveaway():
             "auto_join_carry": "0",
             "organic_joined": 0,
             "total_joined": seed_auto_joined,
-            "winner_pool": "organic_only",
+            "winner_pool": "real_entries_only",
         }
         state["active"] = giveaway
         _ensure_giveaway_entries(state, giveaway_id)

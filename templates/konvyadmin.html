@@ -966,7 +966,7 @@
       summary.textContent =
         `Reward: ${reward} | Audience: ${audience} | Starts: ${gaFmtDate(active.starts_at)} | Ends: ${gaFmtDate(active.ends_at)} ` +
         `| Total: ${active.total_joined || 0} | User joins: ${active.organic_joined || 0} | Simulated joins: ${active.auto_joined || 0} ` +
-        `| Auto/min: ${active.auto_join_per_minute || 0} | Winner pool: real users only${winner}`;
+        `| Auto/min: ${active.auto_join_per_minute || 0} | Winner pool: non-simulated entries${winner}`;
     }
     renderGiveawayEntries(data.entries || []);
   }
