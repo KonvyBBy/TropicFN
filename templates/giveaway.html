@@ -96,7 +96,10 @@
       : '';
     statusEl.innerHTML = `Reward: <strong>${fmtMoney(active.reward_cents)}</strong> | Starts: ${fmtDate(active.starts_at)} | Ends: ${fmtDate(active.ends_at)}${winner}`;
 
-    countsEl.innerHTML = `Total joined: <strong>${active.total_joined || 0}</strong> | User joins: <strong>${active.organic_joined || 0}</strong> | Other joins: <strong>${active.auto_joined || 0}</strong> | Auto/min: <strong>${active.auto_join_per_minute || 0}</strong>`;
+    countsEl.innerHTML =
+      `Total joined: <strong>${active.total_joined || 0}</strong> | User joins: <strong>${active.organic_joined || 0}</strong> ` +
+      `| Simulated joins: <strong>${active.auto_joined || 0}</strong> | Auto/min: <strong>${active.auto_join_per_minute || 0}</strong> ` +
+      '| <strong style="color:#fbbf24;">Only real user entries can win.</strong>';
 
     if (active.ended || !active.active_now) {
       enterBtn.disabled = true;

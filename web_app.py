@@ -15,6 +15,7 @@ import random
 import secrets
 import smtplib
 import threading
+from decimal import Decimal, InvalidOperation, ROUND_DOWN
 from email.message import EmailMessage
 from typing import List, Tuple, Optional, Set, Dict, Any
 from zoneinfo import ZoneInfo
@@ -2891,10 +2892,11 @@ def _update_auto_join_progress(giveaway: dict, now_ts: Optional[int] = None) -> 
         return False
 
     try:
-        per_minute = float(giveaway.get("auto_join_per_minute") or 0)
-    except (TypeError, ValueError):
-        per_minute = 0.0
-    per_minute = max(0.0, per_minute)
+        per_minute = Decimal(str(giveaway.get("auto_join_per_minute") or 0))
+    except (InvalidOperation, TypeError, ValueError):
+        per_minute = Decimal("0")
+    if per_minute < 0:
+        per_minute = Decimal("0")
 
     now = int(now_ts or time.time())
     target_ts = min(max(now, starts_at), ends_at)
@@ -2905,24 +2907,23 @@ def _update_auto_join_progress(giveaway: dict, now_ts: Optional[int] = None) -> 
     if target_ts <= last_update_ts:
         return False
 
-    changed = False
     if per_minute > 0:
-        elapsed = target_ts - last_update_ts
+        elapsed = Decimal(target_ts - last_update_ts)
         try:
-            carry = float(giveaway.get("auto_join_carry") or 0.0)
-        except (TypeError, ValueError):
-            carry = 0.0
-        carry = max(0.0, carry)
-        generated = (elapsed * (per_minute / 60.0)) + carry
-        auto_add = int(generated)
-        giveaway["auto_join_carry"] = max(0.0, generated - auto_add)
+            carry = Decimal(str(giveaway.get("auto_join_carry") or "0"))
+        except (InvalidOperation, TypeError, ValueError):
+            carry = Decimal("0")
+        if carry < 0:
+            carry = Decimal("0")
+        generated = (elapsed * per_minute / Decimal("60")) + carry
+        auto_add = int(generated.to_integral_value(rounding=ROUND_DOWN))
+        giveaway["auto_join_carry"] = str(generated - Decimal(auto_add))
         if auto_add > 0:
             try:
                 auto_joined_count = int(giveaway.get("auto_joined_count") or 0)
             except (TypeError, ValueError):
                 auto_joined_count = 0
             giveaway["auto_joined_count"] = max(0, auto_joined_count) + auto_add
-            changed = True
 
     giveaway["auto_join_last_update_ts"] = target_ts
     return True
@@ -3019,6 +3020,7 @@ def _serialize_giveaway_state_for_user(state: dict, username: str) -> dict:
             "organic_joined": stats["organic_joined"],
             "auto_joined": stats["auto_joined"],
             "total_joined": stats["total_joined"],
+            "winner_pool": "organic_only",
         },
         "entries_preview": entries[:25],
         "server_time": now,
@@ -5698,9 +5700,10 @@ def api_admin_giveaway():
             "auto_joined_count": seed_auto_joined,
             "auto_join_per_minute": auto_join_per_minute,
             "auto_join_last_update_ts": now,
-            "auto_join_carry": 0.0,
+            "auto_join_carry": "0",
             "organic_joined": 0,
             "total_joined": seed_auto_joined,
+            "winner_pool": "organic_only",
         }
         state["active"] = giveaway
         _ensure_giveaway_entries(state, giveaway_id)

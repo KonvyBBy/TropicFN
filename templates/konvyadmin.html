@@ -965,8 +965,8 @@
       const winner = active.winner ? ` | Winner: ${active.winner.username}` : '';
       summary.textContent =
         `Reward: ${reward} | Audience: ${audience} | Starts: ${gaFmtDate(active.starts_at)} | Ends: ${gaFmtDate(active.ends_at)} ` +
-        `| Total: ${active.total_joined || 0} | User joins: ${active.organic_joined || 0} | Other joins: ${active.auto_joined || 0} ` +
-        `| Auto/min: ${active.auto_join_per_minute || 0}${winner}`;
+        `| Total: ${active.total_joined || 0} | User joins: ${active.organic_joined || 0} | Simulated joins: ${active.auto_joined || 0} ` +
+        `| Auto/min: ${active.auto_join_per_minute || 0} | Winner pool: real users only${winner}`;
     }
     renderGiveawayEntries(data.entries || []);
   }
