@@ -622,6 +622,7 @@ GIVEAWAY_ALLOWED_AUDIENCES = {
     GIVEAWAY_AUDIENCE_EVERYONE,
     GIVEAWAY_AUDIENCE_CUSTOMERS_ONLY,
 }
+GIVEAWAY_WINNER_POOL_REAL_ENTRIES_ONLY = "real_entries_only"
 MAX_GIVEAWAY_DURATION_MINUTES = 10080
 MAX_GIVEAWAY_ABSOLUTE_SCORE = 1_000_000_000
 GIVEAWAY_SUBMIT_COOLDOWN_SECONDS = 2
@@ -2811,7 +2812,7 @@ def _load_giveaway_state() -> dict:
                         joined_at = 0
                     target[username] = {
                         "joined_at": joined_at if joined_at > 0 else int(time.time()),
-                        "source": "legacy_migrated",
+                        "source": "legacy",
                     }
         if "active" not in data:
             data["active"] = None
@@ -2937,7 +2938,7 @@ def _get_giveaway_join_stats(state: dict, giveaway: dict) -> dict:
         [
             e
             for e in all_entries
-            if e.get("source") in {"organic", "admin_manual", "legacy_migrated"}
+            if e.get("source") in {"organic", "admin_manual", "legacy"}
         ]
     )
     try:
@@ -2977,7 +2978,7 @@ def _settle_giveaway_if_due(state: dict) -> bool:
     eligible_entries = [
         e
         for e in entries
-        if e.get("source") in {"organic", "admin_manual", "legacy_migrated"}
+        if e.get("source") in {"organic", "admin_manual", "legacy"}
     ]
     winner = random.choice(eligible_entries) if eligible_entries else None
 
@@ -3034,7 +3035,7 @@ def _serialize_giveaway_state_for_user(state: dict, username: str) -> dict:
             "organic_joined": stats["organic_joined"],
             "auto_joined": stats["auto_joined"],
             "total_joined": stats["total_joined"],
-            "winner_pool": "real_entries_only",
+            "winner_pool": GIVEAWAY_WINNER_POOL_REAL_ENTRIES_ONLY,
             "eligible_real_entries": stats["eligible_real_entries"],
         },
         "entries_preview": entries[:25],
@@ -5718,7 +5719,7 @@ def api_admin_giveaway():
             "auto_join_carry": "0",
             "organic_joined": 0,
             "total_joined": seed_auto_joined,
-            "winner_pool": "real_entries_only",
+            "winner_pool": GIVEAWAY_WINNER_POOL_REAL_ENTRIES_ONLY,
         }
         state["active"] = giveaway
         _ensure_giveaway_entries(state, giveaway_id)

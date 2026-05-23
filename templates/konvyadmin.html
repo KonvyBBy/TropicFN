@@ -921,6 +921,15 @@
     return new Date(ts * 1000).toLocaleString();
   }
 
+  function giveawaySourceLabel(source) {
+    const labels = {
+      organic: 'User',
+      admin_manual: 'Admin',
+      legacy: 'Legacy',
+    };
+    return labels[source] || 'Other';
+  }
+
   function renderGiveawayEntries(rows) {
     const tbody = document.getElementById('ga-entries');
     const list = Array.isArray(rows) ? rows : [];
@@ -931,9 +940,7 @@
     tbody.innerHTML = '';
     list.forEach(r => {
       const tr = document.createElement('tr');
-      const source = r.source === 'organic'
-        ? 'User'
-        : (r.source === 'admin_manual' ? 'Admin' : (r.source === 'legacy_migrated' ? 'Legacy' : 'Other'));
+      const source = giveawaySourceLabel(r.source);
       tr.innerHTML = `
         <td>#${r.rank || '—'}</td>
         <td style="color:var(--text);font-weight:600;"></td>
