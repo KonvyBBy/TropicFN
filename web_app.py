@@ -2777,7 +2777,7 @@ def user_has_purchases(username):
 
 
 def _default_giveaway_state() -> dict:
-    return {"active": None, "leaderboards": {}}
+    return {"active": None, "entries": {}}
 
 
 def _load_giveaway_state() -> dict:
@@ -2788,8 +2788,30 @@ def _load_giveaway_state() -> dict:
             data = json.load(f) or {}
         if not isinstance(data, dict):
             return _default_giveaway_state()
-        if not isinstance(data.get("leaderboards"), dict):
-            data["leaderboards"] = {}
+        if not isinstance(data.get("entries"), dict):
+            data["entries"] = {}
+        # Backward compatibility with old score-based giveaway schema.
+        if isinstance(data.get("leaderboards"), dict):
+            for giveaway_id, board in data["leaderboards"].items():
+                if not isinstance(board, dict):
+                    continue
+                target = data["entries"].setdefault(str(giveaway_id), {})
+                if not isinstance(target, dict):
+                    target = {}
+                    data["entries"][str(giveaway_id)] = target
+                for username, entry in board.items():
+                    if not isinstance(username, str) or not username:
+                        continue
+                    if username in target:
+                        continue
+                    try:
+                        joined_at = int((entry or {}).get("updated_at") or 0)
+                    except (TypeError, ValueError):
+                        joined_at = 0
+                    target[username] = {
+                        "joined_at": joined_at if joined_at > 0 else int(time.time()),
+                        "source": "organic",
+                    }
         if "active" not in data:
             data["active"] = None
         return data
@@ -2822,46 +2844,103 @@ def _user_can_join_giveaway(username: str, audience: str) -> bool:
     return True
 
 
-def _sorted_leaderboard_entries(state: dict, giveaway_id: str) -> list:
-    leaderboards = state.get("leaderboards")
-    if not isinstance(leaderboards, dict):
-        return []
-    board = leaderboards.get(giveaway_id) or {}
+def _ensure_giveaway_entries(state: dict, giveaway_id: str) -> dict:
+    entries = state.get("entries")
+    if not isinstance(entries, dict):
+        entries = {}
+        state["entries"] = entries
+    board = entries.get(giveaway_id)
     if not isinstance(board, dict):
-        return []
+        board = {}
+        entries[giveaway_id] = board
+    return board
 
-    entries = []
+
+def _list_giveaway_entries(state: dict, giveaway_id: str) -> list:
+    board = _ensure_giveaway_entries(state, giveaway_id)
+    rows = []
     for username, entry in board.items():
-        if not isinstance(entry, dict):
+        if not isinstance(username, str) or not username:
             continue
         try:
-            score = int(entry.get("score") or 0)
+            joined_at = int((entry or {}).get("joined_at") or 0)
         except (TypeError, ValueError):
-            score = 0
-        try:
-            updated_at = int(entry.get("updated_at") or 0)
-        except (TypeError, ValueError):
-            updated_at = 0
-        entries.append(
+            joined_at = 0
+        rows.append(
             {
                 "username": str(username),
-                "score": max(0, score),
-                "updated_at": updated_at,
-                "source": str(entry.get("source") or "player"),
+                "joined_at": joined_at,
+                "source": str((entry or {}).get("source") or "organic"),
             }
         )
+    rows.sort(key=lambda e: (e["joined_at"] or 0, e["username"].lower()))
+    for idx, row in enumerate(rows, start=1):
+        row["rank"] = idx
+    return rows
 
-    entries.sort(key=lambda e: (-e["score"], e["updated_at"]))
-    for idx, entry in enumerate(entries, start=1):
-        entry["rank"] = idx
-    return entries
+
+def _update_auto_join_progress(giveaway: dict, now_ts: Optional[int] = None) -> bool:
+    if not isinstance(giveaway, dict):
+        return False
+    try:
+        starts_at = int(giveaway.get("starts_at") or 0)
+        ends_at = int(giveaway.get("ends_at") or 0)
+    except (TypeError, ValueError):
+        return False
+    if starts_at <= 0 or ends_at <= 0:
+        return False
+
+    try:
+        per_minute = float(giveaway.get("auto_join_per_minute") or 0)
+    except (TypeError, ValueError):
+        per_minute = 0.0
+    per_minute = max(0.0, per_minute)
+
+    now = int(now_ts or time.time())
+    target_ts = min(max(now, starts_at), ends_at)
+    try:
+        last_update_ts = int(giveaway.get("auto_join_last_update_ts") or starts_at)
+    except (TypeError, ValueError):
+        last_update_ts = starts_at
+    if target_ts <= last_update_ts:
+        return False
+
+    changed = False
+    if per_minute > 0:
+        elapsed = target_ts - last_update_ts
+        try:
+            carry = float(giveaway.get("auto_join_carry") or 0.0)
+        except (TypeError, ValueError):
+            carry = 0.0
+        carry = max(0.0, carry)
+        generated = (elapsed * (per_minute / 60.0)) + carry
+        auto_add = int(generated)
+        giveaway["auto_join_carry"] = max(0.0, generated - auto_add)
+        if auto_add > 0:
+            try:
+                auto_joined_count = int(giveaway.get("auto_joined_count") or 0)
+            except (TypeError, ValueError):
+                auto_joined_count = 0
+            giveaway["auto_joined_count"] = max(0, auto_joined_count) + auto_add
+            changed = True
+
+    giveaway["auto_join_last_update_ts"] = target_ts
+    return True
 
 
-def _get_user_leaderboard_position(entries: list, username: str) -> Optional[dict]:
-    for entry in entries:
-        if entry.get("username") == username:
-            return {"rank": entry.get("rank"), "score": entry.get("score", 0)}
-    return None
+def _get_giveaway_join_stats(state: dict, giveaway: dict) -> dict:
+    giveaway_id = str((giveaway or {}).get("id") or "")
+    organic = len(_ensure_giveaway_entries(state, giveaway_id))
+    try:
+        auto_joined = int((giveaway or {}).get("auto_joined_count") or 0)
+    except (TypeError, ValueError):
+        auto_joined = 0
+    auto_joined = max(0, auto_joined)
+    return {
+        "organic_joined": organic,
+        "auto_joined": auto_joined,
+        "total_joined": organic + auto_joined,
+    }
 
 
 def _settle_giveaway_if_due(state: dict) -> bool:
@@ -2872,16 +2951,20 @@ def _settle_giveaway_if_due(state: dict) -> bool:
         return False
 
     now = int(time.time())
+    changed_auto = _update_auto_join_progress(giveaway, now)
     try:
         ends_at = int(giveaway.get("ends_at") or 0)
     except (TypeError, ValueError):
         ends_at = 0
     if ends_at <= 0 or now <= ends_at:
+        if changed_auto:
+            state["active"] = giveaway
+            _save_giveaway_state(state)
         return False
 
     giveaway_id = str(giveaway.get("id") or "")
-    entries = _sorted_leaderboard_entries(state, giveaway_id)
-    winner = next(iter(entries), None)
+    entries = _list_giveaway_entries(state, giveaway_id)
+    winner = random.choice(entries) if entries else None
 
     if winner:
         reward_cents = max(0, int(giveaway.get("reward_cents") or 0))
@@ -2889,8 +2972,7 @@ def _settle_giveaway_if_due(state: dict) -> bool:
             add_balance(winner["username"], reward_cents)
         giveaway["winner"] = {
             "username": winner["username"],
-            "score": winner["score"],
-            "rank": 1,
+            "joined_at": winner.get("joined_at"),
             "awarded_cents": max(0, reward_cents),
             "awarded_at": now,
         }
@@ -2900,6 +2982,7 @@ def _settle_giveaway_if_due(state: dict) -> bool:
     giveaway["ended"] = True
     giveaway["settled"] = True
     giveaway["settled_at"] = now
+    giveaway.update(_get_giveaway_join_stats(state, giveaway))
     state["active"] = giveaway
     _save_giveaway_state(state)
     return True
@@ -2908,20 +2991,19 @@ def _settle_giveaway_if_due(state: dict) -> bool:
 def _serialize_giveaway_state_for_user(state: dict, username: str) -> dict:
     giveaway = state.get("active")
     if not isinstance(giveaway, dict):
-        return {"active": None, "leaderboard": [], "my_position": None}
+        return {"active": None, "entries_preview": []}
 
     giveaway_id = str(giveaway.get("id") or "")
-    entries = _sorted_leaderboard_entries(state, giveaway_id)
+    entries = _list_giveaway_entries(state, giveaway_id)
     audience = str(giveaway.get("audience") or GIVEAWAY_AUDIENCE_EVERYONE)
     now = int(time.time())
     active_now = _giveaway_is_active(giveaway, now)
-    my_position = _get_user_leaderboard_position(entries, username)
+    joined = username in _ensure_giveaway_entries(state, giveaway_id)
+    stats = _get_giveaway_join_stats(state, giveaway)
 
     return {
         "active": {
             "id": giveaway_id,
-            "game": str(giveaway.get("game") or ""),
-            "game_label": GIVEAWAY_GAMES.get(str(giveaway.get("game") or ""), "Unknown"),
             "audience": audience,
             "reward_cents": int(giveaway.get("reward_cents") or 0),
             "starts_at": int(giveaway.get("starts_at") or 0),
@@ -2931,9 +3013,14 @@ def _serialize_giveaway_state_for_user(state: dict, username: str) -> dict:
             "winner": giveaway.get("winner"),
             "active_now": active_now,
             "eligible": _user_can_join_giveaway(username, audience),
+            "has_entered": joined,
+            "auto_join_per_minute": float(giveaway.get("auto_join_per_minute") or 0),
+            "seed_auto_joined": int(giveaway.get("seed_auto_joined") or 0),
+            "organic_joined": stats["organic_joined"],
+            "auto_joined": stats["auto_joined"],
+            "total_joined": stats["total_joined"],
         },
-        "leaderboard": entries[:10],
-        "my_position": my_position,
+        "entries_preview": entries[:25],
         "server_time": now,
     }
 
@@ -5540,15 +5627,17 @@ def api_admin_giveaway():
 
     if request.method == "GET":
         active = state.get("active")
-        leaderboard = []
+        entries = []
         if isinstance(active, dict):
-            leaderboard = _sorted_leaderboard_entries(state, str(active.get("id") or ""))[:10]
+            _update_auto_join_progress(active)
+            active.update(_get_giveaway_join_stats(state, active))
+            state["active"] = active
+            _save_giveaway_state(state)
+            entries = _list_giveaway_entries(state, str(active.get("id") or ""))[:200]
         return jsonify(
             {
                 "active": active,
-                "leaderboard": leaderboard,
-                "games": GIVEAWAY_GAMES,
-                "audiences": list(sorted(GIVEAWAY_ALLOWED_AUDIENCES)),
+                "entries": entries,
             }
         )
 
@@ -5559,10 +5648,6 @@ def api_admin_giveaway():
         existing = state.get("active")
         if _giveaway_is_active(existing):
             return jsonify({"error": "An active giveaway is already running."}), 400
-
-        game = str(data.get("game") or "").strip()
-        if game not in GIVEAWAY_GAMES:
-            return jsonify({"error": "Invalid game."}), 400
 
         audience = str(data.get("audience") or GIVEAWAY_AUDIENCE_EVERYONE).strip()
         if audience not in GIVEAWAY_ALLOWED_AUDIENCES:
@@ -5582,12 +5667,25 @@ def api_admin_giveaway():
         if reward_dollars < 0:
             return jsonify({"error": "Reward must be 0 or greater."}), 400
 
+        try:
+            seed_auto_joined = int(data.get("seed_auto_joined") or 0)
+        except (TypeError, ValueError):
+            seed_auto_joined = -1
+        if seed_auto_joined < 0:
+            return jsonify({"error": "Starting other joins must be 0 or greater."}), 400
+
+        try:
+            auto_join_per_minute = float(data.get("auto_join_per_minute") or 0)
+        except (TypeError, ValueError):
+            auto_join_per_minute = -1
+        if auto_join_per_minute < 0:
+            return jsonify({"error": "Auto joins per minute must be 0 or greater."}), 400
+
         now = int(time.time())
         giveaway_id = f"gw_{now}_{secrets.token_hex(4)}"
         reward_cents = int(round(reward_dollars * 100))
         giveaway = {
             "id": giveaway_id,
-            "game": game,
             "audience": audience,
             "reward_cents": reward_cents,
             "starts_at": now,
@@ -5596,13 +5694,16 @@ def api_admin_giveaway():
             "ended": False,
             "settled": False,
             "winner": None,
+            "seed_auto_joined": seed_auto_joined,
+            "auto_joined_count": seed_auto_joined,
+            "auto_join_per_minute": auto_join_per_minute,
+            "auto_join_last_update_ts": now,
+            "auto_join_carry": 0.0,
+            "organic_joined": 0,
+            "total_joined": seed_auto_joined,
         }
         state["active"] = giveaway
-        leaderboards = state.get("leaderboards")
-        if not isinstance(leaderboards, dict):
-            leaderboards = {}
-            state["leaderboards"] = leaderboards
-        leaderboards[giveaway_id] = {}
+        _ensure_giveaway_entries(state, giveaway_id)
         _save_giveaway_state(state)
         return jsonify({"ok": True, "active": giveaway})
 
@@ -5616,12 +5717,15 @@ def api_admin_giveaway():
         _save_giveaway_state(state)
         _settle_giveaway_if_due(state)
         active = state.get("active")
-        leaderboard = []
+        entries = []
         if isinstance(active, dict):
-            leaderboard = _sorted_leaderboard_entries(state, str(active.get("id") or ""))[:10]
-        return jsonify({"ok": True, "active": active, "leaderboard": leaderboard})
+            active.update(_get_giveaway_join_stats(state, active))
+            state["active"] = active
+            _save_giveaway_state(state)
+            entries = _list_giveaway_entries(state, str(active.get("id") or ""))[:200]
+        return jsonify({"ok": True, "active": active, "entries": entries})
 
-    if action == "manual_score":
+    if action == "manual_join":
         giveaway = state.get("active")
         if not isinstance(giveaway, dict):
             return jsonify({"error": "No giveaway found."}), 404
@@ -5634,31 +5738,16 @@ def api_admin_giveaway():
         if username not in users:
             return jsonify({"error": "User not found."}), 404
 
-        try:
-            score = int(data.get("score") or 0)
-        except (TypeError, ValueError):
-            score = -1
-        if score < 0:
-            return jsonify({"error": "Score must be >= 0."}), 400
-
         giveaway_id = str(giveaway.get("id") or "")
-        leaderboards = state.get("leaderboards")
-        if not isinstance(leaderboards, dict):
-            leaderboards = {}
-            state["leaderboards"] = leaderboards
-        board = leaderboards.get(giveaway_id)
-        if not isinstance(board, dict):
-            board = {}
-            leaderboards[giveaway_id] = board
-
-        board[username] = {
-            "score": score,
-            "updated_at": int(time.time()),
-            "source": "admin_manual",
-        }
+        board = _ensure_giveaway_entries(state, giveaway_id)
+        if username in board:
+            return jsonify({"error": "User already entered."}), 400
+        board[username] = {"joined_at": int(time.time()), "source": "admin_manual"}
+        giveaway.update(_get_giveaway_join_stats(state, giveaway))
+        state["active"] = giveaway
         _save_giveaway_state(state)
-        leaderboard = _sorted_leaderboard_entries(state, giveaway_id)[:10]
-        return jsonify({"ok": True, "leaderboard": leaderboard})
+        entries = _list_giveaway_entries(state, giveaway_id)[:200]
+        return jsonify({"ok": True, "entries": entries, "active": giveaway})
 
     return jsonify({"error": "Unknown action."}), 400
 
@@ -5672,19 +5761,8 @@ def api_giveaway_status():
     return jsonify(_serialize_giveaway_state_for_user(state, username))
 
 
-@app.route("/api/giveaway/submit-score", methods=["POST"])
-@login_required_api
-def api_giveaway_submit_score():
+def _api_giveaway_enter_impl():
     username = session["username"]
-    data = request.json or {}
-    try:
-        score = int(data.get("score") or 0)
-    except (TypeError, ValueError):
-        score = -1
-    if score < 0:
-        return jsonify({"error": "Score must be >= 0."}), 400
-    if score > MAX_GIVEAWAY_ABSOLUTE_SCORE:
-        return jsonify({"error": "Score is too large."}), 400
 
     state = _load_giveaway_state()
     _settle_giveaway_if_due(state)
@@ -5698,42 +5776,36 @@ def api_giveaway_submit_score():
     if not _user_can_join_giveaway(username, audience):
         return jsonify({"error": "This giveaway is for customers only."}), 403
 
-    game = str(giveaway.get("game") or "")
-    score_limit = int(GIVEAWAY_SCORE_LIMITS.get(game, DEFAULT_GIVEAWAY_SCORE_LIMIT))
-    if score > score_limit:
-        return jsonify({"error": "Submitted score exceeds the allowed range for this game."}), 400
-
-    now = int(time.time())
-    last_submit_at = int(session.get("giveaway_last_submit_ts") or 0)
-    if (now - last_submit_at) < GIVEAWAY_SUBMIT_COOLDOWN_SECONDS:
-        return jsonify({"error": "Please wait before submitting again."}), 429
-    session["giveaway_last_submit_ts"] = now
-
     giveaway_id = str(giveaway.get("id") or "")
-    leaderboards = state.get("leaderboards")
-    if not isinstance(leaderboards, dict):
-        leaderboards = {}
-        state["leaderboards"] = leaderboards
-    board = leaderboards.get(giveaway_id)
-    if not isinstance(board, dict):
-        board = {}
-        leaderboards[giveaway_id] = board
-
-    existing = board.get(username) if isinstance(board.get(username), dict) else {}
-    current_best = int(existing.get("score") or 0) if existing else 0
-    if score > current_best:
+    board = _ensure_giveaway_entries(state, giveaway_id)
+    already_entered = username in board
+    if not already_entered:
         board[username] = {
-            "score": score,
-            "updated_at": int(time.time()),
-            "source": "player",
+            "joined_at": int(time.time()),
+            "source": "organic",
         }
+        giveaway.update(_get_giveaway_join_stats(state, giveaway))
+        state["active"] = giveaway
         _save_giveaway_state(state)
 
     payload = _serialize_giveaway_state_for_user(state, username)
     payload["ok"] = True
-    payload["submitted_score"] = score
-    payload["accepted"] = score > current_best
+    payload["entered"] = not already_entered
+    payload["already_entered"] = already_entered
     return jsonify(payload)
+
+
+@app.route("/api/giveaway/enter", methods=["POST"])
+@login_required_api
+def api_giveaway_enter():
+    return _api_giveaway_enter_impl()
+
+
+@app.route("/api/giveaway/submit-score", methods=["POST"])
+@login_required_api
+def api_giveaway_submit_score():
+    # Backward-compatible alias from previous score-based giveaway UI.
+    return _api_giveaway_enter_impl()
 
 
 @app.route("/api/fortnite/name-account", methods=["POST"])

@@ -419,16 +419,6 @@
 
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0.75rem;margin-bottom:0.85rem;">
         <div>
-          <label>Game</label>
-          <select id="ga-game">
-            <option value="click_frenzy">Click Frenzy</option>
-            <option value="reaction_tap">Reaction Tap</option>
-            <option value="math_rush">Math Rush</option>
-            <option value="memory_digits">Memory Digits</option>
-            <option value="typing_sprint">Typing Sprint</option>
-          </select>
-        </div>
-        <div>
           <label>Audience</label>
           <select id="ga-audience">
             <option value="everyone">Everyone</option>
@@ -443,32 +433,27 @@
           <label>Reward ($)</label>
           <input id="ga-reward" type="number" step="0.01" min="0" value="10.00" />
         </div>
+        <div>
+          <label>Starting Other Joins</label>
+          <input id="ga-seed-auto" type="number" min="0" value="0" />
+        </div>
+        <div>
+          <label>Auto Joins Per Minute</label>
+          <input id="ga-auto-rate" type="number" min="0" step="0.1" value="0" />
+        </div>
       </div>
       <div style="display:flex;gap:0.6rem;flex-wrap:wrap;margin-bottom:1.3rem;">
         <button class="btn btn-primary" onclick="createGiveaway()">Create Giveaway</button>
         <button class="btn btn-danger" onclick="endGiveawayNow()">End & Settle Now</button>
       </div>
 
-      <h3 style="margin-bottom:0.7rem;">Manual Leaderboard Entry</h3>
-      <div style="display:flex;gap:0.65rem;flex-wrap:wrap;align-items:flex-end;margin-bottom:1rem;">
-        <div style="min-width:220px;flex:1;">
-          <label>Username</label>
-          <input id="ga-manual-username" type="text" placeholder="username" />
-        </div>
-        <div style="width:160px;">
-          <label>High Score</label>
-          <input id="ga-manual-score" type="number" min="0" value="0" />
-        </div>
-        <button class="btn btn-secondary" onclick="manualGiveawayScore()">Save Score</button>
-      </div>
-
       <div style="overflow-x:auto;">
         <table>
           <thead>
-            <tr><th>Rank</th><th>User</th><th>Score</th><th>Updated</th></tr>
+            <tr><th>Rank</th><th>User</th><th>Source</th><th>Joined</th></tr>
           </thead>
-          <tbody id="ga-leaderboard">
-            <tr class="empty-row"><td colspan="4">No leaderboard data</td></tr>
+          <tbody id="ga-entries">
+            <tr class="empty-row"><td colspan="4">No entry data</td></tr>
           </tbody>
         </table>
       </div>
@@ -936,25 +921,26 @@
     return new Date(ts * 1000).toLocaleString();
   }
 
-  function renderGiveawayLeaderboard(rows) {
-    const tbody = document.getElementById('ga-leaderboard');
+  function renderGiveawayEntries(rows) {
+    const tbody = document.getElementById('ga-entries');
     const list = Array.isArray(rows) ? rows : [];
     if (!list.length) {
-      tbody.innerHTML = '<tr class="empty-row"><td colspan="4">No leaderboard data</td></tr>';
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="4">No entry data</td></tr>';
       return;
     }
     tbody.innerHTML = '';
     list.forEach(r => {
       const tr = document.createElement('tr');
+      const source = r.source === 'organic' ? 'User' : (r.source === 'admin_manual' ? 'Admin' : 'Other');
       tr.innerHTML = `
         <td>#${r.rank || '—'}</td>
         <td style="color:var(--text);font-weight:600;"></td>
-        <td style="color:#00e676;font-weight:700;"></td>
+        <td></td>
         <td></td>
       `;
       tr.cells[1].textContent = r.username || '—';
-      tr.cells[2].textContent = String(r.score ?? 0);
-      tr.cells[3].textContent = gaFmtDate(r.updated_at);
+      tr.cells[2].textContent = source;
+      tr.cells[3].textContent = gaFmtDate(r.joined_at);
       tbody.appendChild(tr);
     });
   }
@@ -974,23 +960,25 @@
     } else {
       const reward = '$' + ((active.reward_cents || 0) / 100).toFixed(2);
       const audience = active.audience === 'customers_only' ? 'Customers only' : 'Everyone';
-      const winner = active.winner ? ` | Winner: ${active.winner.username} (${active.winner.score})` : '';
-      summary.textContent = `Game: ${active.game} | Reward: ${reward} | Audience: ${audience} | Starts: ${gaFmtDate(active.starts_at)} | Ends: ${gaFmtDate(active.ends_at)}${winner}`;
+      const winner = active.winner ? ` | Winner: ${active.winner.username}` : '';
+      summary.textContent = `Reward: ${reward} | Audience: ${audience} | Starts: ${gaFmtDate(active.starts_at)} | Ends: ${gaFmtDate(active.ends_at)} | Total: ${active.total_joined || 0} | User joins: ${active.organic_joined || 0} | Other joins: ${active.auto_joined || 0} | Auto/min: ${active.auto_join_per_minute || 0}${winner}`;
     }
-    renderGiveawayLeaderboard(data.leaderboard || []);
+    renderGiveawayEntries(data.entries || []);
   }
 
   async function createGiveaway() {
-    const game = document.getElementById('ga-game').value;
     const audience = document.getElementById('ga-audience').value;
     const duration = parseInt(document.getElementById('ga-duration').value || '0', 10);
     const reward = parseFloat(document.getElementById('ga-reward').value || '0');
+    const seedAutoJoined = parseInt(document.getElementById('ga-seed-auto').value || '0', 10);
+    const autoRate = parseFloat(document.getElementById('ga-auto-rate').value || '0');
     const res = await apiPost('/api/admin/giveaway', {
       action: 'create',
-      game,
       audience,
       duration_minutes: duration,
       reward_dollars: reward,
+      seed_auto_joined: seedAutoJoined,
+      auto_join_per_minute: autoRate,
     });
     if (res.ok) {
       showMsg('Giveaway created', false);
@@ -1005,27 +993,10 @@
     const res = await apiPost('/api/admin/giveaway', { action: 'end_now' });
     if (res.ok) {
       showMsg('Giveaway ended and settled', false);
-      renderGiveawayLeaderboard(res.leaderboard || []);
+      renderGiveawayEntries(res.entries || []);
       loadGiveawayAdmin();
     } else {
       showMsg(res.error || 'Failed to end giveaway', true);
-    }
-  }
-
-  async function manualGiveawayScore() {
-    const username = document.getElementById('ga-manual-username').value.trim();
-    const score = parseInt(document.getElementById('ga-manual-score').value || '0', 10);
-    if (!username) {
-      showMsg('Username required', true);
-      return;
-    }
-    const res = await apiPost('/api/admin/giveaway', { action: 'manual_score', username, score });
-    if (res.ok) {
-      showMsg('Manual score saved', false);
-      renderGiveawayLeaderboard(res.leaderboard || []);
-      document.getElementById('ga-manual-score').value = '0';
-    } else {
-      showMsg(res.error || 'Failed to save score', true);
     }
   }
 
