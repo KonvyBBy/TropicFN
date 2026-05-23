@@ -2810,7 +2810,7 @@ def _load_giveaway_state() -> dict:
                         joined_at = 0
                     target[username] = {
                         "joined_at": joined_at if joined_at > 0 else int(time.time()),
-                        "source": "organic",
+                        "source": "legacy_migrated",
                     }
         if "active" not in data:
             data["active"] = None

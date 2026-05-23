@@ -434,7 +434,7 @@
           <input id="ga-reward" type="number" step="0.01" min="0" value="10.00" />
         </div>
         <div>
-          <label>Starting Other Joins</label>
+          <label>Starting Simulated Joins</label>
           <input id="ga-seed-auto" type="number" min="0" value="0" />
         </div>
         <div>
@@ -931,7 +931,9 @@
     tbody.innerHTML = '';
     list.forEach(r => {
       const tr = document.createElement('tr');
-      const source = r.source === 'organic' ? 'User' : (r.source === 'admin_manual' ? 'Admin' : 'Other');
+      const source = r.source === 'organic'
+        ? 'User'
+        : (r.source === 'admin_manual' ? 'Admin' : (r.source === 'legacy_migrated' ? 'Legacy' : 'Other'));
       tr.innerHTML = `
         <td>#${r.rank || '—'}</td>
         <td style="color:var(--text);font-weight:600;"></td>

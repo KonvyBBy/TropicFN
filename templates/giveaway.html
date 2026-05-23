@@ -70,7 +70,9 @@
       return;
     }
     entriesBodyEl.innerHTML = rows.map(r => {
-      const source = r.source === 'organic' ? 'User' : (r.source === 'admin_manual' ? 'Admin' : 'Other');
+      const source = r.source === 'organic'
+        ? 'User'
+        : (r.source === 'admin_manual' ? 'Admin' : (r.source === 'legacy_migrated' ? 'Legacy' : 'Other'));
       return `<tr>
         <td>#${r.rank || '—'}</td>
         <td style="color:var(--text);font-weight:600;">${escapeHtml(r.username)}</td>
