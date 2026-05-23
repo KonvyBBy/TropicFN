@@ -5672,7 +5672,7 @@ def api_admin_giveaway():
         except (TypeError, ValueError):
             seed_auto_joined = -1
         if seed_auto_joined < 0:
-            return jsonify({"error": "Starting other joins must be 0 or greater."}), 400
+            return jsonify({"error": "Starting simulated joins must be 0 or greater."}), 400
 
         try:
             auto_join_per_minute = float(data.get("auto_join_per_minute") or 0)

@@ -963,7 +963,10 @@
       const reward = '$' + ((active.reward_cents || 0) / 100).toFixed(2);
       const audience = active.audience === 'customers_only' ? 'Customers only' : 'Everyone';
       const winner = active.winner ? ` | Winner: ${active.winner.username}` : '';
-      summary.textContent = `Reward: ${reward} | Audience: ${audience} | Starts: ${gaFmtDate(active.starts_at)} | Ends: ${gaFmtDate(active.ends_at)} | Total: ${active.total_joined || 0} | User joins: ${active.organic_joined || 0} | Other joins: ${active.auto_joined || 0} | Auto/min: ${active.auto_join_per_minute || 0}${winner}`;
+      summary.textContent =
+        `Reward: ${reward} | Audience: ${audience} | Starts: ${gaFmtDate(active.starts_at)} | Ends: ${gaFmtDate(active.ends_at)} ` +
+        `| Total: ${active.total_joined || 0} | User joins: ${active.organic_joined || 0} | Other joins: ${active.auto_joined || 0} ` +
+        `| Auto/min: ${active.auto_join_per_minute || 0}${winner}`;
     }
     renderGiveawayEntries(data.entries || []);
   }
