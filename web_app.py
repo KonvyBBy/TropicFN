@@ -1302,6 +1302,77 @@ def _send_new_ticket_webhook(ticket: dict) -> None:
         app.logger.warning("Failed to send new-ticket Discord webhook: %s", exc)
 
 
+def _send_ticket_reply_notification_email(username: str, ticket: dict, reply_message: str, site_url: str) -> None:
+    """Send an email to the ticket owner notifying them of an admin reply."""
+    if not _is_email_configured():
+        return
+    recipient = get_user_email(username)
+    if not recipient:
+        return
+    ticket_id = ticket.get("id") or ""
+    subject_text = ticket.get("subject") or "your support ticket"
+    reply_url = f"{site_url.rstrip('/')}?ticket={ticket_id}"
+    preview = (reply_message or "").strip()[:300]
+    if len((reply_message or "")) > 300:
+        preview += "…"
+    subject = f"[ItemZ Support] Admin replied to: {subject_text[:80]}"
+    body = (
+        f"Hi {username},\n\n"
+        f"An admin has replied to your support ticket \"{subject_text}\".\n\n"
+        f"Reply:\n{preview}\n\n"
+        f"Visit your support page to reply back:\n{reply_url}\n\n"
+        "— ItemZ Support Team"
+    )
+    # Build a branded HTML version
+    safe_username = username.replace("<", "&lt;").replace(">", "&gt;")
+    safe_subject = subject_text.replace("<", "&lt;").replace(">", "&gt;")
+    safe_preview = preview.replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br>")
+    html_body = f"""<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Admin replied to your ticket</title></head>
+<body style="margin:0;padding:0;background:#0d0d0d;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#0d0d0d;min-height:100vh;">
+<tr><td align="center" style="padding:40px 16px;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;">
+    <tr><td align="center" style="padding-bottom:28px;">
+      <span style="font-family:'Segoe UI',Arial,sans-serif;font-size:26px;font-weight:900;letter-spacing:-0.5px;">
+        <span style="color:#0EF475;">Item</span><span style="color:#ffffff;">Z</span>
+      </span>
+    </td></tr>
+    <tr><td style="background:#161616;border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:36px 32px;">
+      <p style="margin:0 0 6px;font-size:22px;font-weight:700;color:#ffffff;">Admin Replied to Your Ticket</p>
+      <p style="margin:0 0 20px;font-size:14px;color:#a1a1aa;line-height:1.55;">Hi <strong style="color:#e4e4e7;">{safe_username}</strong>, an admin has responded to your support ticket <strong style="color:#e4e4e7;">"{safe_subject}"</strong>.</p>
+      <div style="background:#0d0d0d;border:1px solid rgba(14,244,117,0.2);border-radius:12px;padding:18px 20px;margin-bottom:24px;">
+        <p style="margin:0;font-size:14px;color:#d4d4d8;line-height:1.65;">{safe_preview}</p>
+      </div>
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr><td align="center">
+          <a href="{reply_url}" style="display:inline-block;padding:13px 32px;background:#0EF475;color:#0d0d0d;font-weight:700;font-size:15px;border-radius:10px;text-decoration:none;letter-spacing:0.3px;">View &amp; Reply</a>
+        </td></tr>
+      </table>
+      <p style="margin:20px 0 0;font-size:13px;color:#71717a;text-align:center;line-height:1.55;">
+        If the button doesn't work, copy this link:<br>
+        <a href="{reply_url}" style="color:#0EF475;text-decoration:none;word-break:break-all;">{reply_url}</a>
+      </p>
+    </td></tr>
+    <tr><td align="center" style="padding-top:24px;">
+      <p style="margin:0;font-size:12px;color:#3f3f46;">
+        &copy; 2026 ItemZ &nbsp;&bull;&nbsp;
+        <a href="mailto:support@itemz.gg" style="color:#0EF475;text-decoration:none;">support@itemz.gg</a>
+      </p>
+    </td></tr>
+  </table>
+</td></tr>
+</table>
+</body>
+</html>"""
+    try:
+        _send_email_message(recipient, subject, body, html_body)
+    except Exception as exc:
+        app.logger.warning("Failed to send ticket reply notification email: %s", exc)
+
+
 def create_support_ticket(username: str, subject: str, message: str, attachments: Optional[list] = None) -> Tuple[bool, str, Optional[dict]]:
     clean_subject = _format_ticket_text(subject, SUPPORT_TICKET_SUBJECT_MAX_LENGTH)
     clean_message = _format_ticket_text(message, SUPPORT_TICKET_MESSAGE_MAX_LENGTH)
@@ -5207,6 +5278,14 @@ def api_admin_support_ticket_reply(ticket_id: str):
     if not ok:
         return jsonify({"error": msg}), 400
     _save_support_tickets(_sort_support_tickets(tickets))
+    ticket_owner = str(ticket.get("username") or "")
+    clean_message = (message or "").strip()
+    site_url = request.url_root.rstrip("/") + "/support"
+    threading.Thread(
+        target=_send_ticket_reply_notification_email,
+        args=(ticket_owner, ticket, clean_message, site_url),
+        daemon=True,
+    ).start()
     return jsonify({"ok": True, "message": msg, "ticket": _serialize_ticket_for_admin(ticket)})
 
 
