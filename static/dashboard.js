@@ -558,8 +558,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <span class="sx-meta-item"><i class="ri-mail-line"></i></span>
           </div>
           <div class="sx-card-platforms">
-            <span class="sx-plat sx-plat-xb"><i class="ri-xbox-line"></i> XB</span>
-            <span class="sx-plat sx-plat-ps"><i class="ri-playstation-line"></i> PS</span>
+            <span class="sx-plat sx-plat-xb"><i class="ri-shield-check-line"></i> Full Access Account</span>
           </div>
         </div>
       `;
