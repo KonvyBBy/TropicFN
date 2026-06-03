@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Marketplace — ItemZ{% endblock %}
+{% block title %}Marketplace — Konvy{% endblock %}
 
 {% block extra_styles %}
 <style>
@@ -10,12 +10,12 @@
   .project-card { background: #141414; border: 1px solid rgba(255,255,255,0.07); }
   .project-input { background: #1e1e1e; border: 1px solid rgba(255,255,255,0.1); color: #eaeef8; }
   .project-input::placeholder { color: #555; }
-  .project-input:focus { border-color: rgba(0,255,135,.5) !important; }
-  .project-pill { background: rgba(0,255,135,0.12); border: 1px solid rgba(0,255,135,0.24); color: #8affcc; }
+  .project-input:focus { border-color: rgba(22,214,122,.5) !important; }
+  .project-pill { background: rgba(22,214,122,0.12); border: 1px solid rgba(22,214,122,0.24); color: #8affcc; }
   .project-btn { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,0.1); color: #888; }
   .project-btn:hover { color: #eaeef8; border-color: rgba(255,255,255,.2); }
-  .project-btn-primary { background: #0EF475; color: #041208; font-weight: 700; border: none; }
-  .project-btn-primary:hover { background: #0BC95E; }
+  .project-btn-primary { background: #1FB7FF; color: #041208; font-weight: 700; border: none; }
+  .project-btn-primary:hover { background: #1FE0D6; }
   .project-muted { color: #666; }
   .filters-scroll { max-height: calc(100vh - var(--filters-offset)); overflow-y: auto; }
   .filter-section { border: 1px solid rgba(255,255,255,0.07); border-radius: .65rem; background: #161616; }
@@ -43,8 +43,8 @@
     font-size: 10px;
     font-weight: 600;
     color: #b8fdd7;
-    background: rgba(14, 244, 117, 0.12);
-    border: 1px solid rgba(14, 244, 117, 0.35);
+    background: rgba(31, 183, 255, 0.12);
+    border: 1px solid rgba(31, 183, 255, 0.35);
   }
   .selected-cosmetic-chip-label {
     white-space: nowrap;
@@ -75,7 +75,7 @@
     background: transparent; border: 1px solid rgba(255,255,255,0.1); color: #888;
   }
   .toolbar-tab:hover { color: #ddd; border-color: rgba(255,255,255,.2); }
-  .toolbar-tab.active { background: #0EF475; color: #000; border-color: #0EF475; }
+  .toolbar-tab.active { background: #1FB7FF; color: #000; border-color: #1FB7FF; }
 
   /* Button toggle groups (No matter / Yes / No) */
   .sx-btn-group { display: flex; gap: 4px; }
@@ -84,7 +84,7 @@
     border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,.04);
     color: #666; cursor: pointer; transition: all .15s; text-align: center;
   }
-  .sx-toggle-btn.active { background: #0EF475; border-color: #0EF475; color: #000; }
+  .sx-toggle-btn.active { background: #1FB7FF; border-color: #1FB7FF; color: #000; }
   .sx-toggle-btn:not(.active):hover { background: rgba(255,255,255,.08); color: #ddd; }
 
   /* Account cards - Skinex style */
@@ -95,7 +95,7 @@
     display: flex; flex-direction: column;
   }
   .market-account-card:hover { transform: translateY(-3px); box-shadow: 0 8px 28px rgba(0,0,0,0.55); border-color: rgba(255,255,255,0.14); }
-  .market-account-card:focus-visible { outline: 2px solid #0EF475; outline-offset: 2px; }
+  .market-account-card:focus-visible { outline: 2px solid #1FB7FF; outline-offset: 2px; }
 
   /* Card image section */
   .sx-card-imgs { position: relative; background: #111; }
@@ -110,7 +110,7 @@
   .market-preview-tile img { width: 100%; height: 100%; object-fit: cover; }
   .sx-price-badge {
     position: absolute; top: 7px; right: 7px;
-    background: rgba(0,0,0,0.82); color: #0EF475;
+    background: rgba(0,0,0,0.82); color: #1FB7FF;
     font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 5px;
     font-family: 'Space Grotesk', sans-serif;
   }
@@ -148,16 +148,16 @@
     .desktop-filters { display: none; }
     .filters-scroll { max-height: none; overflow-y: visible; }
     #mobile-filter-toggle.mobile-filter-toggle {
-      border-color: rgba(14, 244, 117, 0.9);
+      border-color: rgba(31, 183, 255, 0.9);
       color: #dcfce7;
-      background: rgba(14, 244, 117, 0.12);
+      background: rgba(31, 183, 255, 0.12);
       box-shadow:
-        0 0 0 1px rgba(14, 244, 117, 0.45),
-        0 0 18px rgba(14, 244, 117, 0.42);
+        0 0 0 1px rgba(31, 183, 255, 0.45),
+        0 0 18px rgba(31, 183, 255, 0.42);
       animation: mobileFilterPulse 1.35s ease-in-out infinite;
     }
     #mobile-filter-toggle.mobile-filter-toggle:hover {
-      border-color: rgba(14, 244, 117, 1);
+      border-color: rgba(31, 183, 255, 1);
       color: #f0fdf4;
     }
   }
@@ -167,14 +167,14 @@
   @keyframes mobileFilterPulse {
     0%, 100% {
       box-shadow:
-        0 0 0 1px rgba(14, 244, 117, 0.45),
-        0 0 16px rgba(14, 244, 117, 0.35);
+        0 0 0 1px rgba(31, 183, 255, 0.45),
+        0 0 16px rgba(31, 183, 255, 0.35);
       transform: translateY(0);
     }
     50% {
       box-shadow:
-        0 0 0 2px rgba(14, 244, 117, 0.8),
-        0 0 28px rgba(14, 244, 117, 0.62);
+        0 0 0 2px rgba(31, 183, 255, 0.8),
+        0 0 28px rgba(31, 183, 255, 0.62);
       transform: translateY(-1px);
     }
   }
@@ -188,7 +188,7 @@
   <div id="mobile-filter-overlay"></div>
   <aside id="mobile-filters-wrap" class="mobile-filters-wrap p-3">
     <div class="mb-2 flex items-center justify-between">
-      <h2 class="text-xs font-bold uppercase tracking-[.16em]" style="color:#0EF475;">Filters</h2>
+      <h2 class="text-xs font-bold uppercase tracking-[.16em]" style="color:#1FB7FF;">Filters</h2>
       <button id="mobile-filter-close" class="project-btn h-8 w-8 rounded-lg text-xs">✕</button>
     </div>
     <div id="mobile-filters-slot"></div>
@@ -198,8 +198,8 @@
     <aside class="desktop-filters w-full shrink-0 lg:w-64 xl:w-72">
       <div class="project-card rounded-xl">
         <div class="flex items-center justify-between border-b px-4 py-2.5" style="border-color:rgba(255,255,255,.07);">
-          <h2 class="text-xs font-bold uppercase tracking-[0.14em]" style="color:#0EF475;">Filters</h2>
-          <button type="reset" form="search-form" class="project-btn rounded-md px-2 py-1 text-[10px] font-semibold uppercase tracking-wide" style="color:#0EF475;border-color:transparent;background:transparent;">Reset</button>
+          <h2 class="text-xs font-bold uppercase tracking-[0.14em]" style="color:#1FB7FF;">Filters</h2>
+          <button type="reset" form="search-form" class="project-btn rounded-md px-2 py-1 text-[10px] font-semibold uppercase tracking-wide" style="color:#1FB7FF;border-color:transparent;background:transparent;">Reset</button>
         </div>
         <form id="search-form" class="filters-scroll space-y-2 p-2.5">
           <div class="filter-section" data-open="true">
