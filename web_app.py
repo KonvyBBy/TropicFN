@@ -798,7 +798,7 @@ def _itemz_email_html(title: str, subtitle: str, code: str, expire_minutes: int,
     <!-- Footer -->
     <tr><td align="center" style="padding-top:24px;">
       <p style="margin:0;font-size:12px;color:#3f3f46;">
-        &copy; 2026 Konvy &nbsp;&bull;&nbsp; Konvy Support
+        &copy; 2026 Konvy &nbsp;&bull;&nbsp; Konvy Support Team
       </p>
     </td></tr>
 
@@ -1351,7 +1351,7 @@ def _send_ticket_reply_notification_email(username: str, ticket: dict, reply_mes
     </td></tr>
     <tr><td align="center" style="padding-top:24px;">
       <p style="margin:0;font-size:12px;color:#3f3f46;">
-        &copy; 2026 Konvy &nbsp;&bull;&nbsp; Konvy Support
+        &copy; 2026 Konvy &nbsp;&bull;&nbsp; Konvy Support Team
       </p>
     </td></tr>
   </table>
