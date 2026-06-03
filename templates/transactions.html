@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Transaction History — Konvy{% endblock %}
+{% block title %}Transaction History — ItemZ{% endblock %}
 
 {% block content %}
 
@@ -24,7 +24,7 @@
         {% for t in topups %}
         <tr class="border-b border-white/5 hover:bg-white/[0.02] transition">
           <td class="px-5 py-4 text-sm text-zinc-300">{{ t.date_str }}</td>
-          <td class="px-5 py-4 text-sm font-semibold text-sky-400">${{ "%.2f" | format(t.amount_cents / 100) }}</td>
+          <td class="px-5 py-4 text-sm font-semibold text-emerald-400">${{ "%.2f" | format(t.amount_cents / 100) }}</td>
           <td class="px-5 py-4 text-xs font-mono text-zinc-500">{{ t.order_id or '—' }}</td>
           <td class="px-5 py-4">
             {% if t.status == 'pending' %}
@@ -36,7 +36,7 @@
               <i class="ri-close-line"></i>Denied
             </span>
             {% else %}
-            <span class="inline-flex items-center gap-1.5 rounded-full border border-sky-500/30 bg-sky-500/10 px-2.5 py-1 text-[11px] font-semibold text-sky-400">
+            <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-400">
               <i class="ri-check-line"></i>Completed
             </span>
             {% endif %}
@@ -55,7 +55,7 @@
   <h3 class="font-space text-base font-semibold text-white">No transactions yet</h3>
   <p class="mt-2 text-sm text-zinc-500">Your top-up history will appear here.</p>
   <a href="/balance">
-    <button class="mt-5 inline-flex h-10 items-center justify-center rounded-xl bg-sky-500 text-black px-5 text-sm font-medium hover:bg-cyan-400 transition cursor-pointer">
+    <button class="mt-5 inline-flex h-10 items-center justify-center rounded-xl bg-emerald-500 text-black px-5 text-sm font-medium hover:bg-emerald-400 transition cursor-pointer">
       <i class="ri-add-line mr-2"></i>Add Funds
     </button>
   </a>
