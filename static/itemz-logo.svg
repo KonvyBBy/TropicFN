@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 200" fill="none">
+  <!-- Crown -->
+  <defs>
+    <linearGradient id="crownGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0EF475"/>
+      <stop offset="100%" stop-color="#05B850"/>
+    </linearGradient>
+  </defs>
+  <!-- Crown shape (3 peaks) -->
+  <path d="M60 130 L60 90 L85 115 L110 55 L135 115 L160 90 L160 130 Z"
+        fill="none" stroke="url(#crownGrad)" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"/>
+
+  <!-- ITEM text (white/silver) -->
+  <text x="14" y="175" font-family="Arial Black, Impact, sans-serif" font-size="52" font-style="italic" font-weight="900" fill="white" opacity="0.9">ITEM</text>
+  <!-- Z text (green) -->
+  <text x="148" y="175" font-family="Arial Black, Impact, sans-serif" font-size="52" font-style="italic" font-weight="900" fill="#0EF475">Z</text>
+
+  <!-- Underline swoosh -->
+  <path d="M14 182 Q110 190 200 178" stroke="#0EF475" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+</svg>

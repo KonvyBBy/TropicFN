@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Konvy Admin</title>
+  <title>ItemZ Admin</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -13,9 +13,9 @@
       --border: rgba(255,255,255,0.08);
       --text: #f0f0f2;
       --muted: #8a8a9a;
-      --accent-green: #16D67A;
-      --accent-blue: #1FB7FF;
-      --gradient: linear-gradient(135deg, #1FB7FF 0%, #1FE0D6 60%, #16D67A 100%);
+      --accent-green: #00e676;
+      --accent-blue: #2979ff;
+      --gradient: linear-gradient(135deg, #00e676 0%, #2979ff 100%);
       --shadow: 0 16px 44px rgba(0,0,0,0.7);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -43,8 +43,8 @@
     }
     .page-header .badge {
       padding: 0.25rem 0.75rem;
-      background: rgba(31,183,255,0.10);
-      border: 1px solid rgba(31,183,255,0.32);
+      background: rgba(0,230,118,0.1);
+      border: 1px solid rgba(0,230,118,0.3);
       border-radius: 999px;
       color: var(--accent-green);
       font-size: 0.75rem;
@@ -124,7 +124,7 @@
       transition: border-color 0.2s;
       font-family: inherit;
     }
-    input:focus, select:focus { border-color: rgba(31,183,255,0.5); }
+    input:focus, select:focus { border-color: rgba(0,230,118,0.5); }
     select option { background: #1a1a1f; }
 
     .btn {
@@ -172,8 +172,8 @@
       font-weight: 700;
     }
     .s-unverified { background: rgba(255,176,64,0.1); border: 1px solid rgba(255,176,64,0.3); color: #ffb040; }
-    .s-verified { background: rgba(31,183,255,0.10); border: 1px solid rgba(31,183,255,0.32); color: var(--accent-green); }
-    .s-verify_each { background: rgba(31,224,214,0.12); border: 1px solid rgba(31,224,214,0.32); color: var(--accent-blue); }
+    .s-verified { background: rgba(0,230,118,0.1); border: 1px solid rgba(0,230,118,0.3); color: var(--accent-green); }
+    .s-verify_each { background: rgba(41,121,255,0.1); border: 1px solid rgba(41,121,255,0.3); color: var(--accent-blue); }
     .s-blacklisted { background: rgba(255,80,80,0.1); border: 1px solid rgba(255,80,80,0.3); color: #ff6b6b; }
 
     .notice { color: var(--accent-green); font-size: 0.875rem; font-weight: 600; padding: 0.5rem 0; }
@@ -205,7 +205,7 @@
 <body>
 <div class="container">
   <div class="page-header">
-    <h1>Konvy Admin</h1>
+    <h1>ItemZ Admin</h1>
     {% if is_admin %}<span class="badge">✅ Authenticated</span>{% endif %}
   </div>
 
@@ -812,8 +812,8 @@
     const btn = document.getElementById('fo-toggle-btn');
     if (enabled) {
       badge.textContent = '🟢 ENABLED';
-      badge.style.background = 'rgba(31,183,255,0.10)';
-      badge.style.border = '1px solid rgba(31,183,255,0.32)';
+      badge.style.background = 'rgba(0,230,118,0.1)';
+      badge.style.border = '1px solid rgba(0,230,118,0.3)';
       badge.style.color = '#00e676';
       btn.textContent = '⏹ Disable';
       btn.className = 'btn btn-sm btn-danger';

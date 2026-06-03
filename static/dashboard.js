@@ -17,8 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!res.ok) throw new Error(json.message || json.error || "Request failed");
     return json;
   }
-
-
+
   const qs = (id) => document.getElementById(id);
   const MIN_COSMETIC_SEARCH_LENGTH = 2;
   const MAX_COSMETIC_RESULTS = 10;
@@ -602,7 +601,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const requestId = ++searchRequestId;
     searchResults.innerHTML = `
       <div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;gap:14px;">
-        <div style="width:36px;height:36px;border:3px solid rgba(255,255,255,0.08);border-top-color:#1FB7FF;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+        <div style="width:36px;height:36px;border:3px solid rgba(255,255,255,0.08);border-top-color:#0EF475;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
         <div style="font-size:0.9rem;font-weight:500;color:#a1a1aa;">Searching for accounts...</div>
       </div>
     `;
@@ -687,8 +686,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const style = document.createElement('style');
       style.id = 'dashboard-tutorial-style';
       style.textContent = `
-        .dashboard-tutorial-highlight { position: relative; z-index: 1203 !important; border-radius: 10px; box-shadow: 0 0 0 3px rgba(31,183,255,.9), 0 0 28px rgba(31,183,255,.45); animation: tutorialPulse 1.2s ease-in-out infinite; }
-        @keyframes tutorialPulse { 0%,100% { box-shadow: 0 0 0 3px rgba(31,183,255,.9), 0 0 18px rgba(31,183,255,.35); } 50% { box-shadow: 0 0 0 5px rgba(31,183,255,1), 0 0 32px rgba(31,183,255,.65); } }
+        .dashboard-tutorial-highlight { position: relative; z-index: 1203 !important; border-radius: 10px; box-shadow: 0 0 0 3px rgba(14,244,117,.9), 0 0 28px rgba(14,244,117,.45); animation: tutorialPulse 1.2s ease-in-out infinite; }
+        @keyframes tutorialPulse { 0%,100% { box-shadow: 0 0 0 3px rgba(14,244,117,.9), 0 0 18px rgba(14,244,117,.35); } 50% { box-shadow: 0 0 0 5px rgba(14,244,117,1), 0 0 32px rgba(14,244,117,.65); } }
       `;
       document.head.appendChild(style);
     }
@@ -698,10 +697,10 @@ document.addEventListener("DOMContentLoaded", () => {
     overlay.style.cssText = 'position:fixed;inset:0;z-index:1200;background:rgba(2,8,20,.75);';
 
     const card = document.createElement('div');
-    card.style.cssText = 'position:fixed;left:50%;bottom:20px;transform:translateX(-50%);width:min(92vw,440px);z-index:1204;background:#0f172a;border:1px solid rgba(31,183,255,.4);border-radius:14px;padding:14px;color:#eafef3;box-shadow:0 20px 45px rgba(0,0,0,.6);';
+    card.style.cssText = 'position:fixed;left:50%;bottom:20px;transform:translateX(-50%);width:min(92vw,440px);z-index:1204;background:#0f172a;border:1px solid rgba(14,244,117,.4);border-radius:14px;padding:14px;color:#eafef3;box-shadow:0 20px 45px rgba(0,0,0,.6);';
 
     const titleEl = document.createElement('div');
-    titleEl.style.cssText = 'font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#1FB7FF;';
+    titleEl.style.cssText = 'font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#0EF475;';
     const textEl = document.createElement('p');
     textEl.style.cssText = 'margin:8px 0 0;font-size:13px;line-height:1.45;color:#d1fae5;';
     const controls = document.createElement('div');
@@ -715,7 +714,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const nextBtn = document.createElement('button');
     nextBtn.type = 'button';
     nextBtn.textContent = 'Next';
-    nextBtn.style.cssText = 'border:none;background:#1FB7FF;color:#03140b;border-radius:9px;padding:7px 14px;font-size:12px;font-weight:800;';
+    nextBtn.style.cssText = 'border:none;background:#0EF475;color:#03140b;border-radius:9px;padding:7px 14px;font-size:12px;font-weight:800;';
 
     controls.appendChild(skipBtn);
     controls.appendChild(nextBtn);
@@ -777,12 +776,12 @@ document.addEventListener("DOMContentLoaded", () => {
     prompt.id = 'dashboard-tutorial-prompt';
     prompt.style.cssText = 'position:fixed;inset:0;z-index:1190;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:16px;';
     prompt.innerHTML = `
-      <div style="width:min(94vw,420px);background:#0b1222;border:1px solid rgba(31,183,255,.35);border-radius:14px;padding:16px;color:#e5f8ee;">
-        <div style="font-size:14px;font-weight:800;color:#1FB7FF;letter-spacing:.08em;text-transform:uppercase;">Need a quick tutorial?</div>
+      <div style="width:min(94vw,420px);background:#0b1222;border:1px solid rgba(14,244,117,.35);border-radius:14px;padding:16px;color:#e5f8ee;">
+        <div style="font-size:14px;font-weight:800;color:#0EF475;letter-spacing:.08em;text-transform:uppercase;">Need a quick tutorial?</div>
         <p style="margin-top:9px;font-size:13px;line-height:1.45;color:#d1fae5;">We can guide you through filters and results with an animated step-by-step tour.</p>
         <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px;">
           <button type="button" data-action="no" style="border:1px solid rgba(255,255,255,.24);background:transparent;color:#cbd5e1;border-radius:9px;padding:7px 12px;font-size:12px;font-weight:700;">No thanks</button>
-          <button type="button" data-action="yes" style="border:none;background:#1FB7FF;color:#03140b;border-radius:9px;padding:7px 12px;font-size:12px;font-weight:800;">Start tutorial</button>
+          <button type="button" data-action="yes" style="border:none;background:#0EF475;color:#03140b;border-radius:9px;padding:7px 12px;font-size:12px;font-weight:800;">Start tutorial</button>
         </div>
       </div>
     `;
