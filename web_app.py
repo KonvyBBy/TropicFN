@@ -576,14 +576,8 @@ DISCORD_PURCHASE_WEBHOOK_URL = (
     or "https://discord.com/api/webhooks/1505767232528191711/ymt9MXOVGKX2Eaz-h9oT8FxyCWesF9LW9WKFqmPggXciqvhx1Fht3Sp_fgKKcD8vGRFd"
 ).strip()
 DISCORD_PURCHASE_WEBHOOK_TIMEOUT = int(os.environ.get("DISCORD_PURCHASE_WEBHOOK_TIMEOUT", "10"))
-DISCORD_PURCHASE_BANNER_URL = (
-    "https://cdn.discordapp.com/attachments/1505680543633772775/1505767457875296356/"
-    "ChatGPT_Image_May_17_2026_09_59_53_PM.png"
-)
-DISCORD_PURCHASE_THUMBNAIL_URL = (
-    "https://media.discordapp.net/attachments/1505680543633772775/1505767517589868545/"
-    "itemztrans.png?format=webp&quality=lossless&width=648&height=648"
-)
+DISCORD_PURCHASE_BANNER_URL = os.environ.get("DISCORD_PURCHASE_BANNER_URL", "").strip()
+DISCORD_PURCHASE_THUMBNAIL_URL = os.environ.get("DISCORD_PURCHASE_THUMBNAIL_URL", "").strip()
 
 # --- Fortnite browse limits ---
 MAX_ACCOUNTS = 50
@@ -763,7 +757,7 @@ def _send_email_message(recipient: str, subject: str, body: str, html_body: str 
 
 
 def _itemz_email_html(title: str, subtitle: str, code: str, expire_minutes: int, footer_note: str) -> str:
-    """Render a branded ItemZ HTML email."""
+    """Render a branded Konvy HTML email."""
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -776,7 +770,7 @@ def _itemz_email_html(title: str, subtitle: str, code: str, expire_minutes: int,
     <!-- Logo / Brand -->
     <tr><td align="center" style="padding-bottom:28px;">
       <span style="font-family:'Segoe UI',Arial,sans-serif;font-size:26px;font-weight:900;letter-spacing:-0.5px;">
-        <span style="color:#0EF475;">Item</span><span style="color:#ffffff;">Z</span>
+        <span style="color:#1FB7FF;">Kon</span><span style="color:#1FE0D6;">vy</span>
       </span>
     </td></tr>
 
@@ -789,8 +783,8 @@ def _itemz_email_html(title: str, subtitle: str, code: str, expire_minutes: int,
 
       <!-- Code box -->
       <table width="100%" cellpadding="0" cellspacing="0">
-        <tr><td align="center" style="padding:22px 0;background:#0d0d0d;border:1px solid rgba(14,244,117,0.25);border-radius:14px;">
-          <span style="font-size:38px;font-weight:900;letter-spacing:10px;color:#0EF475;font-family:'Courier New',monospace;">{code}</span>
+        <tr><td align="center" style="padding:22px 0;background:#0d0d0d;border:1px solid rgba(31,183,255,0.25);border-radius:14px;">
+          <span style="font-size:38px;font-weight:900;letter-spacing:10px;color:#1FB7FF;font-family:'Courier New',monospace;">{code}</span>
         </td></tr>
       </table>
 
@@ -804,8 +798,7 @@ def _itemz_email_html(title: str, subtitle: str, code: str, expire_minutes: int,
     <!-- Footer -->
     <tr><td align="center" style="padding-top:24px;">
       <p style="margin:0;font-size:12px;color:#3f3f46;">
-        &copy; 2026 ItemZ &nbsp;&bull;&nbsp;
-        <a href="mailto:support@itemz.gg" style="color:#0EF475;text-decoration:none;">support@itemz.gg</a>
+        &copy; 2026 Konvy &nbsp;&bull;&nbsp; Konvy Support
       </p>
     </td></tr>
 
@@ -897,19 +890,19 @@ def send_email_verification_code(username: str) -> Tuple[bool, str]:
         return False, "Could not prepare verification code."
 
     expire_minutes = EMAIL_CODE_TTL_SECONDS // 60
-    subject = "Your ItemZ verification code"
+    subject = "Your Konvy verification code"
     body = (
         f"Hi {username},\n\n"
-        f"Your ItemZ email verification code is: {code}\n\n"
+        f"Your Konvy email verification code is: {code}\n\n"
         f"This code expires in {expire_minutes} minutes.\n"
         "If you did not create this account, you can ignore this email.\n"
     )
     html_body = _itemz_email_html(
         title="Verify Your Email",
-        subtitle=f"Hi {username}, enter the code below to verify your ItemZ account.",
+        subtitle=f"Hi {username}, enter the code below to verify your Konvy account.",
         code=code,
         expire_minutes=expire_minutes,
-        footer_note="If you did not create an ItemZ account, you can safely ignore this email.",
+        footer_note="If you did not create a Konvy account, you can safely ignore this email.",
     )
     ok, msg = _send_email_message(recipient, subject, body, html_body)
     if not ok:
@@ -927,16 +920,16 @@ def send_password_reset_code(username: str) -> Tuple[bool, str]:
         return False, "Could not prepare reset code."
 
     expire_minutes = EMAIL_CODE_TTL_SECONDS // 60
-    subject = "Your ItemZ password reset code"
+    subject = "Your Konvy password reset code"
     body = (
         f"Hi {username},\n\n"
-        f"Your ItemZ password reset code is: {code}\n\n"
+        f"Your Konvy password reset code is: {code}\n\n"
         f"This code expires in {expire_minutes} minutes.\n"
         "If you did not request a password reset, you can ignore this email.\n"
     )
     html_body = _itemz_email_html(
         title="Reset Your Password",
-        subtitle=f"Hi {username}, use the code below to reset your ItemZ password.",
+        subtitle=f"Hi {username}, use the code below to reset your Konvy password.",
         code=code,
         expire_minutes=expire_minutes,
         footer_note="If you did not request a password reset, you can safely ignore this email.",
@@ -1315,13 +1308,13 @@ def _send_ticket_reply_notification_email(username: str, ticket: dict, reply_mes
     preview = (reply_message or "").strip()[:300]
     if len((reply_message or "")) > 300:
         preview += "…"
-    subject = f"[ItemZ Support] Admin replied to: {subject_text[:80]}"
+    subject = f"[Konvy Support] Admin replied to: {subject_text[:80]}"
     body = (
         f"Hi {username},\n\n"
         f"An admin has replied to your support ticket \"{subject_text}\".\n\n"
         f"Reply:\n{preview}\n\n"
         f"Visit your support page to reply back:\n{reply_url}\n\n"
-        "— ItemZ Support Team"
+        "— Konvy Support Team"
     )
     # Build a branded HTML version
     safe_username = username.replace("<", "&lt;").replace(">", "&gt;")
@@ -1337,29 +1330,28 @@ def _send_ticket_reply_notification_email(username: str, ticket: dict, reply_mes
   <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;">
     <tr><td align="center" style="padding-bottom:28px;">
       <span style="font-family:'Segoe UI',Arial,sans-serif;font-size:26px;font-weight:900;letter-spacing:-0.5px;">
-        <span style="color:#0EF475;">Item</span><span style="color:#ffffff;">Z</span>
+        <span style="color:#1FB7FF;">Kon</span><span style="color:#1FE0D6;">vy</span>
       </span>
     </td></tr>
     <tr><td style="background:#161616;border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:36px 32px;">
       <p style="margin:0 0 6px;font-size:22px;font-weight:700;color:#ffffff;">Admin Replied to Your Ticket</p>
       <p style="margin:0 0 20px;font-size:14px;color:#a1a1aa;line-height:1.55;">Hi <strong style="color:#e4e4e7;">{safe_username}</strong>, an admin has responded to your support ticket <strong style="color:#e4e4e7;">"{safe_subject}"</strong>.</p>
-      <div style="background:#0d0d0d;border:1px solid rgba(14,244,117,0.2);border-radius:12px;padding:18px 20px;margin-bottom:24px;">
+      <div style="background:#0d0d0d;border:1px solid rgba(31,183,255,0.2);border-radius:12px;padding:18px 20px;margin-bottom:24px;">
         <p style="margin:0;font-size:14px;color:#d4d4d8;line-height:1.65;">{safe_preview}</p>
       </div>
       <table width="100%" cellpadding="0" cellspacing="0">
         <tr><td align="center">
-          <a href="{reply_url}" style="display:inline-block;padding:13px 32px;background:#0EF475;color:#0d0d0d;font-weight:700;font-size:15px;border-radius:10px;text-decoration:none;letter-spacing:0.3px;">View &amp; Reply</a>
+          <a href="{reply_url}" style="display:inline-block;padding:13px 32px;background:#1FB7FF;color:#0d0d0d;font-weight:700;font-size:15px;border-radius:10px;text-decoration:none;letter-spacing:0.3px;">View &amp; Reply</a>
         </td></tr>
       </table>
       <p style="margin:20px 0 0;font-size:13px;color:#71717a;text-align:center;line-height:1.55;">
         If the button doesn't work, copy this link:<br>
-        <a href="{reply_url}" style="color:#0EF475;text-decoration:none;word-break:break-all;">{reply_url}</a>
+        <a href="{reply_url}" style="color:#1FB7FF;text-decoration:none;word-break:break-all;">{reply_url}</a>
       </p>
     </td></tr>
     <tr><td align="center" style="padding-top:24px;">
       <p style="margin:0;font-size:12px;color:#3f3f46;">
-        &copy; 2026 ItemZ &nbsp;&bull;&nbsp;
-        <a href="mailto:support@itemz.gg" style="color:#0EF475;text-decoration:none;">support@itemz.gg</a>
+        &copy; 2026 Konvy &nbsp;&bull;&nbsp; Konvy Support
       </p>
     </td></tr>
   </table>
@@ -1647,33 +1639,35 @@ def _build_purchase_webhook_payload(
             }
         )
 
-    return {
-        "username": "Itemz",
-        "avatar_url": DISCORD_PURCHASE_THUMBNAIL_URL,
-        "embeds": [
-            {
-                "title": "✅ Order Confirmed - Thank You!",
-                "description": "Your Itemz Fortnite purchase was completed successfully.",
-                "color": 0x0EF475,
-                "author": {
-                    "name": "Itemz Purchase Notification",
-                    "icon_url": DISCORD_PURCHASE_THUMBNAIL_URL,
-                },
-                "thumbnail": {
-                    "url": DISCORD_PURCHASE_THUMBNAIL_URL,
-                },
-                "image": {
-                    "url": DISCORD_PURCHASE_BANNER_URL,
-                },
-                "fields": fields,
-                "footer": {
-                    "text": "Powered by Itemz • discord.gg/itemz",
-                    "icon_url": DISCORD_PURCHASE_THUMBNAIL_URL,
-                },
-                "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-            }
-        ],
+    embed = {
+        "title": "✅ Order Confirmed - Thank You!",
+        "description": "Your Konvy Fortnite purchase was completed successfully.",
+        "color": 0x1FB7FF,
+        "author": {
+            "name": "Konvy Purchase Notification",
+        },
+        "fields": fields,
+        "footer": {
+            "text": "Powered by Konvy",
+        },
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
     }
+    if DISCORD_PURCHASE_THUMBNAIL_URL:
+        embed["author"]["icon_url"] = DISCORD_PURCHASE_THUMBNAIL_URL
+        embed["thumbnail"] = {"url": DISCORD_PURCHASE_THUMBNAIL_URL}
+        embed["footer"]["icon_url"] = DISCORD_PURCHASE_THUMBNAIL_URL
+
+    if DISCORD_PURCHASE_BANNER_URL:
+        embed["image"] = {"url": DISCORD_PURCHASE_BANNER_URL}
+
+    payload = {
+        "username": "Konvy",
+        "embeds": [embed],
+    }
+    if DISCORD_PURCHASE_THUMBNAIL_URL:
+        payload["avatar_url"] = DISCORD_PURCHASE_THUMBNAIL_URL
+
+    return payload
 
 
 def send_purchase_discord_webhook(
@@ -2829,7 +2823,7 @@ LOGIN_HTML = """
 <!doctype html>
 <html>
   <head>
-    <title>ItemZ â€“ Login</title>
+    <title>Konvy â€“ Login</title>
     <style>
       * {
         box-sizing: border-box;
@@ -2999,7 +2993,7 @@ LOGIN_HTML = """
     <canvas id="snow-canvas"></canvas>
 
     <div class="auth-shell">
-      <div class="auth-title">ItemZ</div>
+      <div class="auth-title">Konvy</div>
       <div class="auth-heading">Sign in</div>
       <div class="auth-sub">Access your Fortnite account panel.</div>
 
@@ -3478,7 +3472,7 @@ INDEX_HTML = """
 <!doctype html>
 <html>
   <head>
-    <title>ItemZ – Web Panel</title>
+    <title>Konvy – Web Panel</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
       * {
@@ -3841,7 +3835,7 @@ INDEX_HTML = """
 
     <div class="app-shell">
       <div class="topbar">
-        <div class="topbar-title">ItemZ â€“ Web Panel</div>
+        <div class="topbar-title">Konvy â€“ Web Panel</div>
         <div class="topbar-user">
           {% if logged_in %}
             Logged in as <strong>{{ username }}</strong> |
@@ -3875,15 +3869,15 @@ INDEX_HTML = """
       <!-- TAB: TUTORIAL -->
       <div id="tab-tutorial" class="tab-panel">
         <div class="card">
-          <h2>How ItemZ Works</h2>
+          <h2>How Konvy Works</h2>
           <p class="small">
-            Watch this quick tutorial, then follow the steps below to use ItemZ.
+            Watch this quick tutorial, then follow the steps below to use Konvy.
           </p>
 
           <div class="yt-wrap">
             <iframe
               src="https://www.youtube.com/embed/uhL9-_EyKvM"
-              title="ItemZ Tutorial"
+              title="Konvy Tutorial"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowfullscreen>
             </iframe>
@@ -4407,7 +4401,7 @@ REGISTER_HTML = """
 <!doctype html>
 <html>
   <head>
-    <title>ItemZ â€“ Register</title>
+    <title>Konvy â€“ Register</title>
     <style>
       * {
         box-sizing: border-box;
@@ -4577,7 +4571,7 @@ REGISTER_HTML = """
     <canvas id="snow-canvas"></canvas>
 
     <div class="auth-shell">
-      <div class="auth-title">ItemZ</div>
+      <div class="auth-title">Konvy</div>
       <div class="auth-heading">Create account</div>
       <div class="auth-sub">Register to start buying Fortnite accounts.</div>
 
@@ -4665,7 +4659,7 @@ TUTORIAL_HTML = """
 <!doctype html>
 <html>
   <head>
-    <title>ItemZ â€“ Tutorial</title>
+    <title>Konvy â€“ Tutorial</title>
     <style>
       body {
         margin:0;
@@ -4732,7 +4726,7 @@ TUTORIAL_HTML = """
     <canvas id="snow-canvas"></canvas>
 
     <div class="tutorial-shell">
-      <h1>ItemZ â€“ Tutorial</h1>
+      <h1>Konvy â€“ Tutorial</h1>
       <p>Welcome! Watch this quick tutorial before using the site.</p>
 
       <div class="yt-wrap">

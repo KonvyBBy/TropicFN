@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ account_detail.title }} — ItemZ{% endblock %}
+{% block title %}{{ account_detail.title }} — Konvy{% endblock %}
 
 {% block extra_styles %}
 <style>
@@ -110,14 +110,14 @@
       <div id="instant-buy-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 p-4">
         <div class="w-full max-w-md rounded-2xl border border-white/10 bg-[#0b1220] p-5 shadow-2xl">
           <h3 class="font-space text-lg font-semibold text-white">Confirm Purchase</h3>
-          <p class="mt-2 text-sm text-zinc-300">Before continuing, confirm that by purchasing this account you agree to our <a href="/terms" target="_blank" rel="noopener noreferrer" class="text-emerald-400 hover:text-emerald-300">Terms of Service</a>.</p>
+          <p class="mt-2 text-sm text-zinc-300">Before continuing, confirm that by purchasing this account you agree to our <a href="/terms" target="_blank" rel="noopener noreferrer" class="text-sky-400 hover:text-cyan-300">Terms of Service</a>.</p>
           <label class="mt-4 flex cursor-pointer items-start gap-2 text-sm text-zinc-200">
-            <input id="instant-buy-tos-check" type="checkbox" class="mt-0.5 h-4 w-4 rounded border-zinc-600 bg-zinc-900 text-emerald-500 focus:ring-emerald-500">
+            <input id="instant-buy-tos-check" type="checkbox" class="mt-0.5 h-4 w-4 rounded border-zinc-600 bg-zinc-900 text-sky-500 focus:ring-sky-500">
             <span>By purchasing this, I agree with the Terms of Service.</span>
           </label>
           <div class="mt-5 flex gap-2">
             <button id="instant-buy-cancel-btn" type="button" class="inline-flex flex-1 items-center justify-center rounded-xl border border-white/15 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-white/5">Cancel</button>
-            <button id="instant-buy-confirm-btn" type="button" disabled class="inline-flex flex-1 items-center justify-center rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60">Confirm Purchase</button>
+            <button id="instant-buy-confirm-btn" type="button" disabled class="inline-flex flex-1 items-center justify-center rounded-xl bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60">Confirm Purchase</button>
           </div>
         </div>
       </div>
@@ -132,8 +132,8 @@
     <section class="detail-panel rounded-xl overflow-hidden">
       <p class="stat-card-head px-5 py-3"><i class="ri-shield-check-line mr-1"></i>RELIABLE INFORMATION</p>
       <div class="p-5">
-        <div class="info-row"><span class="text-zinc-400">Level</span><strong class="text-emerald-400">{{ account_detail.level }}</strong></div>
-        <div class="info-row"><span class="text-zinc-400">V-Bucks</span><strong class="text-emerald-400">{{ account_detail.vbucks }}</strong></div>
+        <div class="info-row"><span class="text-zinc-400">Level</span><strong class="text-sky-400">{{ account_detail.level }}</strong></div>
+        <div class="info-row"><span class="text-zinc-400">V-Bucks</span><strong class="text-sky-400">{{ account_detail.vbucks }}</strong></div>
         <div class="info-row"><span class="text-zinc-400">Last Activity</span><strong class="text-zinc-200">{{ account_detail.last_activity }}</strong></div>
         <div class="info-row"><span class="text-zinc-400">Country</span><strong class="text-zinc-200">{{ account_detail.country }}</strong></div>
         <div class="info-row"><span class="text-zinc-400">Skins</span><strong class="text-zinc-200">{{ account_detail.skins|length }}</strong></div>
@@ -158,7 +158,7 @@
         {% set v = s.get(key) %}
         <div class="info-row">
           <span class="text-zinc-400 flex items-center gap-2"><i class="{{ icon }} text-zinc-500"></i>{{ label }}</span>
-          <strong class="{% if v is sameas true %}text-emerald-400{% elif v is sameas false %}text-red-400{% else %}text-zinc-500{% endif %}">
+          <strong class="{% if v is sameas true %}text-sky-400{% elif v is sameas false %}text-red-400{% else %}text-zinc-500{% endif %}">
             {% if v is sameas true %}✓{% elif v is sameas false %}✕{% else %}—{% endif %}
           </strong>
         </div>
