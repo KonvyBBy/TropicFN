@@ -756,7 +756,7 @@ def _send_email_message(recipient: str, subject: str, body: str, html_body: str 
     return True, "Email sent."
 
 
-def _itemz_email_html(title: str, subtitle: str, code: str, expire_minutes: int, footer_note: str) -> str:
+def _konvy_email_html(title: str, subtitle: str, code: str, expire_minutes: int, footer_note: str) -> str:
     """Render a branded Konvy HTML email."""
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -897,7 +897,7 @@ def send_email_verification_code(username: str) -> Tuple[bool, str]:
         f"This code expires in {expire_minutes} minutes.\n"
         "If you did not create this account, you can ignore this email.\n"
     )
-    html_body = _itemz_email_html(
+    html_body = _konvy_email_html(
         title="Verify Your Email",
         subtitle=f"Hi {username}, enter the code below to verify your Konvy account.",
         code=code,
@@ -927,7 +927,7 @@ def send_password_reset_code(username: str) -> Tuple[bool, str]:
         f"This code expires in {expire_minutes} minutes.\n"
         "If you did not request a password reset, you can ignore this email.\n"
     )
-    html_body = _itemz_email_html(
+    html_body = _konvy_email_html(
         title="Reset Your Password",
         subtitle=f"Hi {username}, use the code below to reset your Konvy password.",
         code=code,
