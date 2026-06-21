@@ -87,51 +87,72 @@
   .sx-toggle-btn.active { background: #0EF475; border-color: #0EF475; color: #000; }
   .sx-toggle-btn:not(.active):hover { background: rgba(255,255,255,.08); color: #ddd; }
 
-  /* Account cards - Skinex style */
+  /* Account listing rows - Kinguin style */
+  #search-results { display: flex; flex-direction: column; gap: 6px; }
   .market-account-card {
-    border-radius: 8px; overflow: hidden; cursor: pointer;
-    background: #1a1a1a; border: 1px solid rgba(255,255,255,0.07);
-    transition: transform .15s ease, box-shadow .15s ease;
-    display: flex; flex-direction: column;
+    border-radius: 8px; cursor: pointer;
+    background: #131920; border: 1px solid rgba(255,255,255,0.07);
+    border-left: 3px solid #0EF475;
+    transition: box-shadow .15s ease, border-color .15s ease;
+    display: flex; align-items: stretch;
+    padding: 12px 14px; gap: 12px;
   }
-  .market-account-card:hover { transform: translateY(-3px); box-shadow: 0 8px 28px rgba(0,0,0,0.55); border-color: rgba(255,255,255,0.14); }
+  .market-account-card:hover { box-shadow: 0 4px 20px rgba(0,255,135,0.12); border-color: rgba(14,244,117,0.4); }
   .market-account-card:focus-visible { outline: 2px solid #0EF475; outline-offset: 2px; }
 
-  /* Card image section */
-  .sx-card-imgs { position: relative; background: #111; }
-  .sx-imgs-grid {
-    display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(2, 1fr);
-    gap: 1px; background: #0d0d0d;
+  /* Row: left info block */
+  .kn-row-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+  .kn-row-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .kn-game-badge {
+    font-size: 10px; font-weight: 800; letter-spacing: .08em; padding: 2px 8px; border-radius: 4px;
+    background: #0EF475; color: #041208; flex-shrink: 0;
   }
-  .market-preview-tile {
-    width: 100%; aspect-ratio: 1; background: #1e1e1e;
-    overflow: hidden; display: flex; align-items: center; justify-content: center;
+  .kn-row-title {
+    font-size: .85rem; font-weight: 700; color: #eaeef8;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  .market-preview-tile img { width: 100%; height: 100%; object-fit: cover; }
-  .sx-price-badge {
-    position: absolute; top: 7px; right: 7px;
-    background: rgba(0,0,0,0.82); color: #0EF475;
-    font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 5px;
-    font-family: 'Space Grotesk', sans-serif;
+  .kn-row-stats {
+    display: flex; flex-wrap: wrap; gap: 18px; font-size: .72rem; color: #888;
   }
-  .sx-img-bar { height: 3px; background: linear-gradient(90deg,#ff6b35 0%,#a855f7 50%,#3b82f6 100%); }
+  .kn-stat { display: flex; flex-direction: column; gap: 1px; }
+  .kn-stat-value { font-size: .78rem; font-weight: 600; color: #cdd0d8; }
+  .kn-stat-label { font-size: .63rem; color: #555; text-transform: uppercase; letter-spacing: .06em; }
+  .kn-row-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+  .kn-tag {
+    font-size: 10px; font-weight: 700; padding: 2px 9px; border-radius: 4px;
+    letter-spacing: .02em;
+  }
+  .kn-tag-fa { background: rgba(14,244,117,0.18); color: #0EF475; border: 1px solid rgba(14,244,117,0.35); }
+  .kn-tag-nomail { background: rgba(239,68,68,0.18); color: #f87171; border: 1px solid rgba(239,68,68,0.35); }
+  .kn-tag-seen { background: rgba(251,146,60,0.18); color: #fb923c; border: 1px solid rgba(251,146,60,0.35); }
 
-  /* Card body */
-  .sx-card-body { padding: 9px 11px 11px; }
-  .sx-card-title {
-    font-size: .78rem; font-weight: 600; color: #f0f0f0;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 7px;
+  /* Row: right price + actions */
+  .kn-row-right {
+    display: flex; flex-direction: column; align-items: flex-end; justify-content: space-between;
+    flex-shrink: 0; gap: 8px;
   }
-  .sx-card-meta { display: flex; align-items: center; gap: 9px; font-size: .72rem; color: #777; margin-bottom: 7px; }
-  .sx-meta-item { display: inline-flex; align-items: center; gap: 3px; }
-  .sx-meta-item i { font-size: .8rem; color: #555; }
-  .sx-card-platforms { display: flex; gap: 5px; }
-  .sx-plat {
-    font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 4px;
-    letter-spacing: .04em; display: inline-flex; align-items: center; gap: 3px;
+  .kn-price-badge {
+    background: #0EF475; color: #041208;
+    font-size: 13px; font-weight: 800; padding: 4px 14px; border-radius: 6px;
+    font-family: 'Space Grotesk', monospace; white-space: nowrap;
   }
-  .sx-plat-xb { background: rgba(255,255,255,.08); color: #999; }
-  .sx-plat-ps { background: rgba(220,38,38,.15); color: #f87171; }
+  .kn-actions { display: flex; align-items: center; gap: 6px; }
+  .kn-btn {
+    font-size: 11px; font-weight: 700; padding: 5px 13px; border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,.05);
+    color: #aaa; cursor: pointer; transition: all .15s; white-space: nowrap;
+    text-decoration: none; display: inline-flex; align-items: center;
+  }
+  .kn-btn:hover { background: rgba(255,255,255,.10); color: #eaeef8; border-color: rgba(255,255,255,.25); }
+  .kn-btn-buy {
+    background: #0EF475; border-color: #0EF475; color: #041208;
+  }
+  .kn-btn-buy:hover { background: #0BC95E; border-color: #0BC95E; color: #041208; }
+  .kn-btn-star { padding: 5px 9px; font-size: 13px; }
+
+  /* preview tiles hidden in row mode – kept for cosmetics modal compat */
+  .market-preview-tile { display: none; }
+  .sx-card-imgs, .sx-card-body { display: none; }
 
   .mobile-filters-wrap {
     position: fixed; top: 0; left: 0; z-index: 60; width: min(20rem, 100%); height: 100%;
@@ -325,11 +346,11 @@
         </div>
       </div>
 
-      <div id="search-results" class="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-        <div class="col-span-full py-16 text-center">
-          <div class="mb-2 text-2xl">🎮</div>
-          <p class="text-sm font-semibold text-white">Use filters to find accounts</p>
-          <p class="mt-1 text-xs" style="color:#555;">Your results will appear here</p>
+      <div id="search-results">
+        <div style="padding:64px 24px;text-align:center;">
+          <div style="font-size:2rem;margin-bottom:8px;">🎮</div>
+          <p style="font-size:.9rem;font-weight:600;color:#eaeef8;">Use filters to find accounts</p>
+          <p style="margin-top:4px;font-size:.75rem;color:#555;">Your results will appear here</p>
         </div>
       </div>
     </main>

@@ -5900,6 +5900,43 @@ def api_fortnite_search():
                 if len(preview_cosmetics) >= MAX_PREVIEW_COSMETICS:
                     break
 
+            # Email info
+            email_domain = (acc.get("item_domain") or "").strip()
+            has_email_access = _to_status_bool(acc.get("email_login_data") or acc.get("email_access")) is True
+            email_changeable = _to_status_bool(acc.get("change_email") or acc.get("email_changeable")) is True
+
+            # Platform
+            item_origin = str(acc.get("item_origin") or "").strip()
+            has_psn = bool(acc.get("psn_linkable") or acc.get("psnLinkable"))
+            has_xbox = bool(acc.get("xbox_linkable") or acc.get("xboxLinkable") or acc.get("xbl_linkable"))
+            if has_psn:
+                platform_str = "PSN"
+            elif has_xbox:
+                platform_str = "Xbox"
+            elif item_origin:
+                platform_str = item_origin
+            else:
+                platform_str = "EpicPC"
+
+            # Dates
+            reg_ts = acc.get("fortnite_reg_date") or acc.get("item_reg_date") or 0
+            try:
+                register_date = (
+                    datetime.datetime.utcfromtimestamp(int(reg_ts)).strftime("%b %d, %Y")
+                    if reg_ts else ""
+                )
+            except Exception:
+                register_date = ""
+
+            last_ts_val = acc.get("fortnite_last_activity") or acc.get("account_last_activity") or 0
+            try:
+                last_activity_date = (
+                    datetime.datetime.utcfromtimestamp(int(last_ts_val)).strftime("%b %d, %Y")
+                    if last_ts_val else ""
+                )
+            except Exception:
+                last_activity_date = ""
+
             result_accounts.append(
                 {
                     "item_id": acc.get("item_id"),
@@ -5915,6 +5952,12 @@ def api_fortnite_search():
                     "last_played": last_played,
                     "days_ago": days_ago,
                     "preview_cosmetics": preview_cosmetics,
+                    "email_domain": email_domain,
+                    "platform": platform_str,
+                    "register_date": register_date,
+                    "last_activity_date": last_activity_date,
+                    "has_email_access": has_email_access,
+                    "email_changeable": email_changeable,
                 }
             )
 
