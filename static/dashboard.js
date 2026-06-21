@@ -597,16 +597,15 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
       `;
 
-      card.querySelector('.kn-btn-buy')?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (!Number.isFinite(itemId) || itemId <= 0) return;
-        window.location.href = `/account/${itemId}`;
-      });
-
       const openDetail = () => {
         if (!Number.isFinite(itemId) || itemId <= 0) return;
         window.location.href = `/account/${itemId}`;
       };
+
+      card.querySelector('.kn-btn-buy')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openDetail();
+      });
 
       card.setAttribute("role", "button");
       card.setAttribute("tabindex", "0");

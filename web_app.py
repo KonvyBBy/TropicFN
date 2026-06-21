@@ -5922,7 +5922,7 @@ def api_fortnite_search():
             reg_ts = acc.get("fortnite_reg_date") or acc.get("item_reg_date") or 0
             try:
                 register_date = (
-                    datetime.datetime.utcfromtimestamp(int(reg_ts)).strftime("%b %d, %Y")
+                    datetime.datetime.fromtimestamp(int(reg_ts), tz=datetime.timezone.utc).strftime("%b %d, %Y")
                     if reg_ts else ""
                 )
             except Exception:
@@ -5931,7 +5931,7 @@ def api_fortnite_search():
             last_ts_val = acc.get("fortnite_last_activity") or acc.get("account_last_activity") or 0
             try:
                 last_activity_date = (
-                    datetime.datetime.utcfromtimestamp(int(last_ts_val)).strftime("%b %d, %Y")
+                    datetime.datetime.fromtimestamp(int(last_ts_val), tz=datetime.timezone.utc).strftime("%b %d, %Y")
                     if last_ts_val else ""
                 )
             except Exception:
