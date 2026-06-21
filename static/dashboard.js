@@ -512,18 +512,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderEmptyState() {
     searchResults.innerHTML = `
-      <div style="text-align:center;padding:48px 24px;">
+      <div style="grid-column:1/-1;text-align:center;padding:48px 24px;">
         <div style="font-size:2.5rem;margin-bottom:12px;opacity:0.5;">😕</div>
         <div style="font-size:0.95rem;font-weight:600;color:#e4e4e7;margin-bottom:6px;">No accounts found</div>
         <div style="font-size:0.82rem;color:#71717a;">Try different items or adjust your filters</div>
       </div>
     `;
-  }
-
-  function buildLastSeenTag(daysAgo) {
-    if (daysAgo === null || daysAgo === undefined) return '';
-    if (daysAgo === 0) return '<span class="kn-tag kn-tag-seen">Last seen today</span>';
-    return `<span class="kn-tag kn-tag-seen">Last seen ${daysAgo}d ago</span>`;
   }
 
   function renderAccounts(accounts) {
@@ -542,79 +536,43 @@ document.addEventListener("DOMContentLoaded", () => {
       const hasPrice = Number.isFinite(numericPrice);
       const formattedPrice = hasPrice ? numericPrice.toFixed(2) : 'N/A';
       const cardTitle = escapeHtml(acc.title || `${acc.skins || 0} Skins | Fortnite Account`);
-      const itemId = Number(acc.item_id);
 
-      // Tags
-      const faBadge = acc.has_email_access
-        ? '<span class="kn-tag kn-tag-fa">FA Access to email</span>' : '';
-      const noMailTag = !acc.email_changeable
-        ? '<span class="kn-tag kn-tag-nomail">No changeable mail</span>' : '';
-      const lastSeenTag = buildLastSeenTag(acc.days_ago);
-
-      // Stats row
-      const emailDomain = escapeHtml(acc.email_domain || '—');
-      const platform = escapeHtml(acc.platform || 'EpicPC');
-      const registerDate = escapeHtml(acc.register_date || '—');
-      const lastActivityDate = escapeHtml(acc.last_activity_date || '—');
+      // 8 preview image tiles (2 rows × 4 cols)
+      const previews = Array.isArray(acc.preview_cosmetics) ? acc.preview_cosmetics : [];
+      const tiles = Array.from({length: PREVIEW_TILE_COUNT}, (_, i) => {
+        const name = previews[i] || '';
+        return `<div class="market-preview-tile"${name ? ` data-cosmetic-name="${escapeHtml(name)}"` : ''}></div>`;
+      }).join('');
 
       card.innerHTML = `
-        <div class="kn-row-body">
-          <div class="kn-row-top">
-            <span class="kn-game-badge">FORTNITE</span>
-            <span class="kn-row-title">${cardTitle}</span>
-          </div>
-          <div class="kn-row-stats">
-            <div class="kn-stat">
-              <span class="kn-stat-value">${acc.skins || 0}</span>
-              <span class="kn-stat-label">Skins</span>
-            </div>
-            <div class="kn-stat">
-              <span class="kn-stat-value">${emailDomain}</span>
-              <span class="kn-stat-label">Email domain</span>
-            </div>
-            <div class="kn-stat">
-              <span class="kn-stat-value">${platform}</span>
-              <span class="kn-stat-label">Platform</span>
-            </div>
-            <div class="kn-stat">
-              <span class="kn-stat-value">${registerDate}</span>
-              <span class="kn-stat-label">Register date</span>
-            </div>
-            <div class="kn-stat">
-              <span class="kn-stat-value">${lastActivityDate}</span>
-              <span class="kn-stat-label">Last Activity</span>
-            </div>
-          </div>
-          <div class="kn-row-tags">${faBadge}${noMailTag}${lastSeenTag}</div>
+        <div class="sx-card-imgs">
+          <div class="sx-imgs-grid">${tiles}</div>
+          <span class="sx-price-badge">$${formattedPrice}</span>
+          <div class="sx-img-bar"></div>
         </div>
-        <div class="kn-row-right">
-          <span class="kn-price-badge">$${formattedPrice}</span>
-          <div class="kn-actions">
-            <button class="kn-btn kn-btn-star" title="Save" aria-label="Save account">☆</button>
-            <a class="kn-btn" href="/account/${itemId}" onclick="event.stopPropagation()">View</a>
-            <button class="kn-btn kn-btn-buy" data-item-id="${itemId}">Buy</button>
+        <div class="sx-card-body">
+          <div class="sx-card-title">${cardTitle}</div>
+          <div class="sx-card-meta">
+            <span class="sx-meta-item"><i class="ri-t-shirt-2-line"></i> ${acc.skins || 0}</span>
+            <span class="sx-meta-item"><i class="ri-copper-diamond-line"></i> ${acc.vbucks || 0}</span>
+            <span class="sx-meta-item"><i class="ri-mail-line"></i></span>
+          </div>
+          <div class="sx-card-platforms">
+            <span class="sx-plat sx-plat-xb"><i class="ri-shield-check-line"></i> Full Access Account</span>
           </div>
         </div>
       `;
 
       const openDetail = () => {
+        const itemId = Number(acc.item_id);
         if (!Number.isFinite(itemId) || itemId <= 0) return;
         window.location.href = `/account/${itemId}`;
       };
 
-      card.querySelector('.kn-btn-buy')?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        openDetail();
-      });
-
       card.setAttribute("role", "button");
       card.setAttribute("tabindex", "0");
       card.setAttribute("aria-label", `Open ${cardTitle}`);
-      card.addEventListener("click", (e) => {
-        // Don't trigger card click when clicking action buttons/links
-        if (e.target.closest('.kn-actions')) return;
-        openDetail();
-      });
+      card.addEventListener("click", openDetail);
       card.addEventListener("keydown", (event) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
@@ -624,6 +582,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
       searchResults.appendChild(card);
     });
+
+    // Lazy-load cosmetic images after all cards are in the DOM
+    hydratePreviewIcons();
   }
 
   async function executeSearch({ showEmptyAlert = false } = {}) {
@@ -639,7 +600,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const requestId = ++searchRequestId;
     searchResults.innerHTML = `
-      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;gap:14px;">
+      <div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;gap:14px;">
         <div style="width:36px;height:36px;border:3px solid rgba(255,255,255,0.08);border-top-color:#0EF475;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
         <div style="font-size:0.9rem;font-weight:500;color:#a1a1aa;">Searching for accounts...</div>
       </div>
@@ -653,7 +614,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (err) {
       if (requestId !== searchRequestId) return;
       searchResults.innerHTML = `
-        <div style="text-align:center;padding:48px 24px;">
+        <div style="grid-column:1/-1;text-align:center;padding:48px 24px;">
           <div style="font-size:2.5rem;margin-bottom:12px;opacity:0.5;">❌</div>
           <div style="font-size:0.95rem;font-weight:600;color:#e4e4e7;margin-bottom:6px;">Search Error</div>
           <div style="font-size:0.82rem;color:#71717a;">${err.message}</div>
