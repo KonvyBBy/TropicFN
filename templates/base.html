@@ -58,7 +58,7 @@
       }
     }
   </script>
-  <script>window.KONVY_LOGGED_IN = {{ 'true' if logged_in else 'false' }};</script>
+  <script>window.KONVY_LOGGED_IN = {{ 'true' if logged_in else 'false' }};window.KONVY_ADMIN = {{ 'true' if is_konvy_admin else 'false' }};</script>
   <style>
     :root {
       --neon-cyan: #00E5FF;
@@ -168,6 +168,79 @@
     /* ── Card Hover 3D ── */
     .card-3d { transition: transform .3s ease; transform-style: preserve-3d; perspective: 1000px; }
     .card-3d:hover { transform: perspective(1000px) rotateX(2deg) rotateY(2deg); }
+
+  /* ── Admin Quick Panel ── */
+  (function(){
+    if (typeof window.KONVY_ADMIN === 'undefined' || !window.KONVY_ADMIN) return;
+    let panelOpen = false;
+    window.toggleAdminPanel = function() {
+      panelOpen = !panelOpen;
+      const bar = document.getElementById('admin-alert-bar');
+      if (!bar) return;
+      bar.style.display = panelOpen ? 'flex' : 'none';
+    };
+    function esc(v){return String(v||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');}
+    async function loadAdminPanel(){
+      try{
+        const [tr, rr, pr] = await Promise.all([
+          fetch('/api/support/tickets').then(r=>r.json()),
+          fetch('/api/reviews').then(r=>r.json()),
+          fetch('/api/admin/pending-topups').then(r=>r.json())
+        ]);
+        const tickets=Array.isArray(tr.tickets)?tr.tickets:[];
+        const tNeeds=tickets.filter(t=>t.status!=='closed'&&t.needs_admin_response);
+        const reviews=Array.isArray(rr.reviews)?rr.reviews:[];
+        const rPending=reviews.filter(r=>r.status==='pending');
+        const topups=Array.isArray(pr.pending)?pr.pending:[];
+        const total=tNeeds.length+rPending.length+topups.length;
+        // Show/hide floating button
+        const btn=document.getElementById('admin-alert-toggle');
+        if(btn){btn.style.display=total?'flex':'none';btn.textContent=total>9?'9+':total}
+        const bar=document.getElementById('admin-alert-bar');
+        if(!bar)return;
+        if(!panelOpen)return;
+        let html='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><span style="font-size:13px;font-weight:700;color:#fff;">Quick Actions</span><button onclick="toggleAdminPanel()" style="background:none;border:none;color:#6b7280;font-size:16px;cursor:pointer;">✕</button></div>';
+        // Topups
+        if(topups.length){
+          html+='<div style="font-size:11px;font-weight:700;color:#fbbf24;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em;">⏳ Topups ('+topups.length+')</div>';
+          topups.slice(0,3).forEach(t=>{
+            html+='<div style="display:flex;align-items:center;gap:6px;padding:4px 0;font-size:11px;border-bottom:1px solid rgba(255,255,255,0.03);">'+
+              '<span style="flex:1;color:#e4e4e7;">'+esc(t.username||'')+' <span style="color:#4ade80;">$'+(t.amount_cents/100).toFixed(2)+'</span></span>'+
+              '<button onclick="quickAction(\'/api/admin/pending-topups\',{action:\'approve\',id:\''+t.id+'\'})" style="padding:2px 8px;border-radius:4px;border:none;background:rgba(34,197,94,0.1);color:#4ade80;font-size:9px;cursor:pointer;">✓</button>'+
+              '<button onclick="quickAction(\'/api/admin/pending-topups\',{action:\'deny\',id:\''+t.id+'\'})" style="padding:2px 8px;border-radius:4px;border:none;background:rgba(239,68,68,0.1);color:#f87171;font-size:9px;cursor:pointer;">✕</button></div>';
+          });
+        }
+        // Tickets
+        if(tNeeds.length){
+          html+='<div style="font-size:11px;font-weight:700;color:#f87171;margin:6px 0 4px;text-transform:uppercase;letter-spacing:.04em;">🎫 Tickets ('+tNeeds.length+')</div>';
+          tNeeds.slice(0,3).forEach(t=>{
+            html+='<div style="display:flex;align-items:center;gap:6px;padding:4px 0;font-size:11px;border-bottom:1px solid rgba(255,255,255,0.03);">'+
+              '<span style="flex:1;color:#e4e4e7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(t.subject||'')+'</span>'+
+              '<a href="/admin123" style="padding:2px 8px;border-radius:4px;background:rgba(0,229,255,0.1);color:var(--cyan);font-size:9px;text-decoration:none;">Reply</a></div>';
+          });
+        }
+        // Reviews
+        if(rPending.length){
+          html+='<div style="font-size:11px;font-weight:700;color:#fbbf24;margin:6px 0 4px;text-transform:uppercase;letter-spacing:.04em;">⭐ Reviews ('+rPending.length+')</div>';
+          rPending.slice(0,3).forEach(r=>{
+            html+='<div style="display:flex;align-items:center;gap:6px;padding:4px 0;font-size:11px;border-bottom:1px solid rgba(255,255,255,0.03);">'+
+              '<span style="flex:1;color:#e4e4e7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(r.username||'')+' <span style="color:#fbbf24;">'+'⭐'.repeat(r.rating)+'</span></span>'+
+              '<button onclick="quickAction(\'/api/admin/reviews/manage\',{id:\''+r.id+'\',action:\'approve\'})" style="padding:2px 8px;border-radius:4px;border:none;background:rgba(34,197,94,0.1);color:#4ade80;font-size:9px;cursor:pointer;">✓</button>'+
+              '<button onclick="quickAction(\'/api/admin/reviews/manage\',{id:\''+r.id+'\',action:\'deny\'})" style="padding:2px 8px;border-radius:4px;border:none;background:rgba(239,68,68,0.1);color:#f87171;font-size:9px;cursor:pointer;">✕</button></div>';
+          });
+        }
+        if(total)html+='<div style="margin-top:6px;text-align:center;"><a href="/admin123" style="font-size:11px;color:#6b7280;text-decoration:none;">Open Admin Panel →</a></div>';
+        bar.innerHTML=html;
+      }catch(e){}
+    }
+    window.quickAction = async function(url, body) {
+      const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+      const d = await r.json();
+      if (d.ok) loadAdminPanel();
+    };
+    loadAdminPanel();
+    setInterval(loadAdminPanel,15000);
+  })();
 
   /* ── Activity Toasts ── */
   (function(){
@@ -460,6 +533,11 @@
 </div>
 <div class="particle-container" id="particles"></div>
 <div id="mouse-glow"></div>
+
+  <!-- Admin quick actions -->
+  <div id="admin-alert-bar" style="display:none;position:fixed;top:60px;right:16px;z-index:999;background:rgba(17,19,30,0.98);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:14px;min-width:280px;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.5);backdrop-filter:blur(12px);flex-direction:column;gap:0;"></div>
+
+  <div id="admin-alert-toggle" style="display:none;position:fixed;bottom:20px;right:20px;z-index:998;width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#f87171,#fbbf24);color:#fff;font-size:20px;border:none;cursor:pointer;box-shadow:0 4px 20px rgba(239,68,68,0.3);align-items:center;justify-content:center;" onclick="toggleAdminPanel()">⚡</div>
 
   <!-- Activity toasts -->
   <div id="act-toast-container" style="position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column-reverse;gap:8px;pointer-events:none;"></div>
