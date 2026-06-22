@@ -3158,11 +3158,14 @@ def _censor_username(name: str) -> str:
 def _inject_globals():
     username = session.get("username", "")
     nav_profile_pic = ""
+    has_admin = bool(session.get("is_konvy_admin"))
     if username:
         users = _load_users()
         udata = users.get(username, {})
         nav_profile_pic = udata.get("profile_pic", "") or ""
-    return dict(is_konvy_admin=is_admin_user(username) if username else False, nav_profile_pic=nav_profile_pic)
+        if not has_admin:
+            has_admin = is_admin_user(username)
+    return dict(is_konvy_admin=has_admin, nav_profile_pic=nav_profile_pic)
 
 
 @app.before_request
