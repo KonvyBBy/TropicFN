@@ -8086,6 +8086,20 @@ def api_admin_wipe_all():
         ("admins.json", "Admins"),
         ("chat_bans.json", "Chat bans"),
     ]
+    # Wipe all users except the owner
+    owner_username = username
+    owner_email = user_data.get("email", "")
+    try:
+        all_users = _load_users()
+        keep = {owner_username: all_users.get(owner_username, {})}
+        # Also keep any user whose email matches the owner
+        for uname, udata in all_users.items():
+            if udata.get("email", "").lower() == owner_email.lower() and uname != owner_username:
+                keep[uname] = udata
+        _save_users(keep)
+        cleared.append("Users (kept owner)")
+    except Exception:
+        pass
     cleared = []
     for fname, label in files_to_clear:
         fpath = os.path.join(DATA_DIR, fname)
