@@ -8092,11 +8092,12 @@ def api_admin_wipe_all():
         try:
             if os.path.exists(fpath):
                 with open(fpath, "w", encoding="utf-8") as f:
-                    if fname.endswith(".json"):
-                        if fname in ("balances.json", "account_views.json", "admins.json", "chat_bans.json"):
-                            json.dump({} if fname == "balances.json" else [] if fname in ("admins.json", "chat_bans.json") else {}, f)
-                        else:
-                            json.dump([], f)
+                    if fname in ("balances.json", "purchased_accounts.json", "account_views.json", "messages.json"):
+                        json.dump({}, f)
+                    elif fname in ("admins.json", "chat_bans.json"):
+                        json.dump({"banned_ips": [], "timed_out_users": {}} if fname == "chat_bans.json" else [], f)
+                    else:
+                        json.dump([], f)
                 cleared.append(label)
         except Exception:
             pass
