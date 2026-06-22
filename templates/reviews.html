@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% block title %}Reviews — Konvy Accounts{% endblock %}
+{% block extra_styles %}
+.rev-card { background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:18px;margin-bottom:10px; }
+.rev-card .rh { display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px; }
+.rev-card .rl { display:flex;align-items:center;gap:8px; }
+.rev-card .ru { font-size:13px;font-weight:600;color:#e4e4e7; }
+.rev-card .rs { font-size:16px; }
+.rev-card .rt { font-size:14px;color:#d4d4d8;line-height:1.55; }
+.rev-card .rd { display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:11px;color:#52525b; }
+.rev-card .rd img { max-height:200px;max-width:100%;border-radius:10px;border:1px solid rgba(255,255,255,0.06);margin-top:6px; }
+.rev-form { background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:18px;margin-bottom:16px; }
+.rev-btn { padding:6px 14px;border-radius:8px;border:none;font-size:11px;font-weight:600;cursor:pointer;transition:opacity .15s; }
+.rev-btn:hover { opacity:.8; }
+.tpl-row { display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);margin-bottom:4px;cursor:pointer;transition:background .1s;font-size:12px;color:#d4d4d8; }
+.tpl-row:hover { background:rgba(255,255,255,0.03); }
+.tpl-row.selected { outline:2px solid var(--neon-cyan); }
+@keyframes popIn { from{opacity:0;transform:scale(0.9)} to{opacity:1;transform:scale(1)} }
+@keyframes fadeInPop { from{opacity:0} to{opacity:1} }
+{% endblock %}
+{% block content %}
+<div style="max-width:700px;margin:0 auto;padding:0 8px;">
+  <h1 style="font-size:22px;font-weight:800;color:#fff;margin:0 0 4px;">Reviews</h1>
+  <p style="font-size:14px;color:#6b7280;margin:0 0 20px;">What our customers are saying</p>
+
+  {% if is_konvy_vip %}
+  <div id="pr-section" style="margin-bottom:16px;background:rgba(234,179,8,0.03);border:1px solid rgba(234,179,8,0.1);border-radius:14px;padding:14px 16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <h3 style="font-size:14px;font-weight:700;color:#fbbf24;margin:0;">⏳ Pending Reviews</h3>
+      <span id="pr-count" style="font-size:12px;color:#6b7280;">0</span>
+    </div>
+    <div id="pr-list" style="font-size:13px;color:#6b7280;">Loading...</div>
+  </div>
+  {% endif %}
+
+  <div id="rev-form-area"></div>
+
+  <div id="rev-list">
+    {% for r in reviews %}
+    <div class="rev-card" id="rc-{{ r.id }}">
+      <div class="rh">
+        <div class="rl">
+          <img src="{{ (all_users.get(r.username, {})).get('profile_pic', '/static/default-avatar.svg') }}" alt="" style="width:28px;height:28px;border-radius:50%;object-fit:cover;" onerror="this.src='/static/default-avatar.svg'">
+          <span class="ru">{{ r.username | censor_username }}</span>
+        </div>
+        <span class="rs">{{ '⭐' * r.rating }}{{ '☆' * (5 - r.rating) }}</span>
+      </div>
+      {% if r.text %}<div class="rt">{{ r.text }}</div>{% endif %}
+      {% if r.image %}<img src="{{ r.image }}" alt="" style="max-height:200px;max-width:100%;border-radius:10px;margin-top:6px;" loading="lazy">{% endif %}
+      <div class="rd">
+        <span>{{ r.created_at | int | timestamp_to_date }}</span>
+        {% if is_konvy_vip %}<button class="rev-btn" style="background:rgba(239,68,68,0.1);color:#f87171;" onclick="delRev('{{ r.id }}','rc-{{ r.id }}')">🗑 Delete</button>{% endif %}
+      </div>
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:40px 0;color:#6b7280;font-size:14px;">No reviews yet. Be the first!</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const IMG_X=new Set(['jpg','jpeg','png','gif','webp']);
+function esc(v){return String(v||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;')}
+function fd(ts){if(!ts)return'';return new Date(ts*1000).toLocaleDateString()}
+
+let selRating=0, selText='', imgUrl='';
+
+// ---- Build review form ----
+async function buildForm(){
+  const area=document.getElementById('rev-form-area');
+  if(!area)return;
+  try{
+    const r=await fetch('/api/fortnite/my-accounts',{method:'POST',headers:{'Content-Type':'application/json'}});
+    const d=await r.json();
+    const accts=Array.isArray(d.accounts)?d.accounts:[];
+    accts.sort((a,b)=>(b.timestamp||0)-(a.timestamp||0));
+    const opts=accts.map((a,i)=>{const p=a.purchase_result||{};return'<option value="'+i+'">'+esc(p.title||p.title_en||'Account #'+(p.item_id||(i+1)))+' — '+fd(a.timestamp)+'</option>'}).join('');
+    const pos=['Really good account, had everything I was looking for.','Account was exactly as listed. Happy with the purchase.','Solid account for the price. Would buy again.'];
+    const neg=['The account was okay, just didn\'t have as much value as I expected.','Not a bad account, but it wasn\'t really what I was looking for.','Wasn\'t satisfied with the account overall. Expected something better.'];
+    const allTxt = pos.concat(neg);
+    const stars = [5,5,5]; // positive all 5
+    const negStars = [3,4,3]; // 3, 4, 3 star for negatives
+    area.innerHTML='<div class="rev-form"><h3 style="font-size:15px;font-weight:700;color:#e4e4e7;margin:0 0 8px;">Leave a Review</h3>'+
+      '<div style="margin-bottom:12px;"><label style="font-size:12px;color:#6b7280;display:block;margin-bottom:4px;">Reviewing</label>'+
+      '<select id="rev-acc" style="width:100%;padding:9px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:#fff;font-size:12px;outline:none;">'+(opts||'<option>No accounts</option>')+'</select></div>'+
+      '<div style="margin-bottom:6px;font-size:12px;font-weight:600;color:#e4e4e7;">Positive Reviews</div>'+
+      '<div class="tpl-row" onclick="pickRev(3,0)"><span style="font-size:16px;">⭐⭐⭐☆☆</span> '+esc(pos[2])+'</div>'+
+      '<div class="tpl-row" onclick="pickRev(4,1)"><span style="font-size:16px;">⭐⭐⭐⭐☆</span> '+esc(pos[1])+'</div>'+
+      '<div class="tpl-row" onclick="pickRev(5,2)"><span style="font-size:16px;">⭐⭐⭐⭐⭐</span> '+esc(pos[0])+'</div>'+
+      '<div style="margin:10px 0 6px;font-size:12px;font-weight:600;color:#e4e4e7;">Negative Reviews</div>'+
+      '<div class="tpl-row" onclick="pickRev(3,3)"><span style="font-size:16px;">⭐⭐⭐☆☆</span> '+esc(neg[0])+'</div>'+
+      '<div class="tpl-row" onclick="pickRev(4,4)"><span style="font-size:16px;">⭐⭐⭐⭐☆</span> '+esc(neg[1])+'</div>'+
+      '<div class="tpl-row" onclick="pickRev(3,5)"><span style="font-size:16px;">⭐⭐⭐☆☆</span> '+esc(neg[2])+'</div>'+
+      '<div style="margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">'+
+      '<button class="rev-btn" style="background:rgba(255,255,255,0.06);color:#9ca3af;" onclick="document.getElementById(\'rev-img\').click()">📷 Add Image</button>'+
+      '<input type="file" id="rev-img" accept="image/*" style="display:none" onchange="uploadImg(this)">'+
+      '<span id="rev-img-status" style="font-size:11px;color:#6b7280;"></span>'+
+      '<button class="rev-btn" style="background:linear-gradient(135deg,#00E5FF,#7C5CFF);color:#fff;margin-left:auto;" onclick="submitRev()">Submit Review</button></div>'+
+      '<div id="rev-msg" style="font-size:12px;color:#6b7280;margin-top:6px;clear:both;"></div></div>';
+  }catch(e){area.innerHTML='<div class="rev-form" style="text-align:center;padding:20px;color:#6b7280;font-size:13px;">Could not load your accounts.</div>'}
+}
+
+const revTemplates=['Really good account, had everything I was looking for.','Account was exactly as listed. Happy with the purchase.','Solid account for the price. Would buy again.','The account was okay, just didn\'t have as much value as I expected.','Not a bad account, but it wasn\'t really what I was looking for.','Wasn\'t satisfied with the account overall. Expected something better.'];
+function pickRev(rating,idx){
+  selRating=rating; selText=revTemplates[idx]||'';
+  document.querySelectorAll('.tpl-row').forEach(e=>e.classList.remove('selected'));
+  const rows=document.querySelectorAll('.tpl-row');
+  if(rows[idx])rows[idx].classList.add('selected');
+}
+
+async function uploadImg(input){
+  if(!input.files[0])return;
+  const fd=new FormData();fd.append('file',input.files[0]);
+  const r=await fetch('/api/reviews/upload-image',{method:'POST',body:fd});
+  const d=await r.json();
+  if(d.ok){imgUrl=d.url;document.getElementById('rev-img-status').textContent='✅ Image attached'}
+}
+
+async function submitRev(){
+  try{
+    const r=await fetch('/api/fortnite/my-accounts',{method:'POST',headers:{'Content-Type':'application/json'}});
+    const d=await r.json();
+    const accts=Array.isArray(d.accounts)?d.accounts:[];
+    if(!accts.length){
+      const ov=document.createElement('div');
+      ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);animation:fadeInPop .3s;';
+      ov.innerHTML='<div style="background:rgba(17,19,30,0.98);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:36px;max-width:360px;width:90%;text-align:center;animation:popIn .4s cubic-bezier(.15,.75,.4,1);">'+
+        '<div style="font-size:48px;margin-bottom:12px;">🔒</div>'+
+        '<h3 style="font-size:18px;font-weight:800;color:#fff;margin:0 0 6px;">Purchase Required</h3>'+
+        '<p style="font-size:13px;color:#6b7280;margin:0 0 20px;">You need to purchase an account before leaving a review.</p>'+
+        '<div style="display:flex;gap:8px;justify-content:center;">'+
+        '<a href="/dashboard" style="padding:10px 24px;border-radius:10px;background:linear-gradient(135deg,#00E5FF,#7C5CFF);color:#fff;font-weight:700;font-size:13px;text-decoration:none;">Browse</a>'+
+        '<button onclick="this.closest(\'div[style*=\\"position:fixed\\"]\').remove()" style="padding:10px 20px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:#9ca3af;font-size:13px;cursor:pointer;">Close</button></div></div>';
+      document.body.appendChild(ov);
+      ov.addEventListener('click',e=>{if(e.target===ov)ov.remove()});
+      return;
+    }
+  }catch(e){}
+  if(!selRating||!selText){document.getElementById('rev-msg').textContent='Please select a review template.';return}
+  const acc=document.getElementById('rev-acc');
+  const body={rating:selRating,text:selText,account_index:acc?parseInt(acc.value):0};
+  if(imgUrl)body.image=imgUrl;
+  document.getElementById('rev-msg').textContent='Submitting...';
+  const res=await fetch('/api/reviews',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const data=await res.json();
+  if(data.ok){
+    document.getElementById('rev-msg').textContent='✅ Review submitted! Awaiting approval.';
+    document.getElementById('rev-img-status').textContent='';
+    selRating=0;selText='';imgUrl='';
+    document.querySelectorAll('.tpl-row').forEach(e=>e.classList.remove('selected'));
+  }else{
+    document.getElementById('rev-msg').textContent='Error: '+(data.error||'Unknown');
+  }
+}
+
+// ---- Owner: delete review ----
+async function delRev(id,elId){
+  if(!confirm('Delete this review?'))return;
+  const r=await fetch('/api/admin/reviews/manage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,action:'delete'})});
+  const d=await r.json();
+  if(d.ok){document.getElementById(elId)?.remove();loadPending()}
+}
+
+// ---- Owner: pending reviews ----
+{% if is_konvy_vip %}
+async function loadPending(){
+  try{
+    const r=await fetch('/api/reviews');const d=await r.json();
+    const all=Array.isArray(d.reviews)?d.reviews:[];
+    const p=all.filter(x=>x.status==='pending');
+    document.getElementById('pr-count').textContent=p.length;
+    const el=document.getElementById('pr-list');
+    if(!p.length){el.innerHTML='<div style="color:#6b7280;font-size:12px;">No pending reviews</div>';return}
+    el.innerHTML=p.map(x=>'<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.03);">'+
+      '<div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:600;color:#e4e4e7;">'+esc(x.username)+' <span style="color:#fbbf24;">'+'⭐'.repeat(x.rating)+'</span></div>'+
+      '<div style="font-size:11px;color:#6b7280;margin-top:2px;">'+esc((x.text||'').substring(0,80))+'</div></div>'+
+      '<button class="rev-btn" style="background:rgba(34,197,94,0.1);color:#4ade80;" onclick="reviewAct(\''+x.id+'\',\'approve\')">Approve</button>'+
+      '<button class="rev-btn" style="background:rgba(239,68,68,0.1);color:#f87171;" onclick="reviewAct(\''+x.id+'\',\'deny\')">Deny</button></div>').join('');
+  }catch(e){}
+}
+async function reviewAct(id,action){
+  const r=await fetch('/api/admin/reviews/manage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,action})});
+  const d=await r.json();
+  if(d.ok){loadPending();location.reload()}
+}
+loadPending();
+{% endif %}
+
+buildForm();
+</script>
+{% endblock %}

@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+{% block title %}Customer Section — Konvy Accounts{% endblock %}
+{% block extra_styles %}
+.news-card { background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:0;margin-bottom:12px;overflow:hidden; }
+.news-card .news-accent { height:4px;background:linear-gradient(90deg,var(--neon-cyan),var(--neon-purple)); }
+.news-card .news-body { padding:16px 18px; }
+.news-card .news-tag { display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:10px;font-weight:700;background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.2);color:#fbbf24;margin-bottom:8px; }
+.news-card .news-content { font-size:14px;color:#d4d4d8;line-height:1.65;white-space:pre-wrap; }
+.news-card .news-footer { display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.04);font-size:11px;color:#52525b; }
+.news-card .news-footer .author { display:flex;align-items:center;gap:5px; }
+.owner-post-box { background:rgba(0,229,255,0.03);border:1px solid rgba(0,229,255,0.12);border-radius:14px;padding:18px;margin-bottom:16px; }
+.owner-post-box textarea { width:100%;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:rgba(0,0,0,0.2);color:#fff;font-size:14px;outline:none;resize:vertical;min-height:80px;font-family:inherit;box-sizing:border-box; }
+.owner-post-box textarea:focus { border-color:rgba(0,229,255,0.4); }
+.owner-post-box button { margin-top:8px;padding:8px 20px;border-radius:10px;background:var(--neon-cyan);color:#000;font-weight:700;border:none;cursor:pointer;font-size:13px; }
+.section-tabs { display:flex;gap:8px;margin-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.06);padding-bottom:0; }
+.section-tab { padding:10px 20px;border-radius:0;border:none;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.15s;background:none;color:#6b7280;border-bottom:2px solid transparent;margin-bottom:-1px; }
+.section-tab.active { color:var(--neon-cyan);border-bottom-color:var(--neon-cyan);background:none; }
+.section-tab:not(.active):hover { color:#d4d4d8; }
+.order-table { width:100%;border-collapse:collapse;font-size:13px; }
+.order-table th { padding:10px 14px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6b7280;background:rgba(255,255,255,0.02);border-bottom:1px solid rgba(255,255,255,0.06); }
+.order-table td { padding:12px 14px;border-bottom:1px solid rgba(255,255,255,0.03);color:#d4d4d8;vertical-align:middle; }
+.order-table tr:hover td { background:rgba(255,255,255,0.01); }
+.order-table .price-cell { font-weight:700;color:var(--neon-cyan);white-space:nowrap; }
+.status-badge { display:inline-flex;padding:2px 10px;border-radius:99px;font-size:10px;font-weight:700; }
+.status-delivered { background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);color:#4ade80; }
+.order-creds { margin-top:4px;background:rgba(0,0,0,0.15);border:1px solid rgba(255,255,255,0.04);border-radius:8px;padding:10px 12px;font-size:12px;color:#9ca3af;display:none; }
+.order-creds.show { display:block; }
+.order-creds .cred-label { font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#6b7280;margin-bottom:4px; }
+.order-creds .cred-row { display:flex;gap:6px;margin-bottom:3px;flex-wrap:wrap; }
+.order-creds .cred-row .cred-key { color:#6b7280;min-width:70px; }
+.order-creds .cred-row .cred-val { color:#e4e4e7;word-break:break-all; }
+.order-creds .cred-row a { color:var(--neon-cyan);text-decoration:none; }
+.cred-toggle { font-size:11px;color:var(--neon-cyan);cursor:pointer;background:none;border:none;padding:3px 0; }
+{% endblock %}
+
+{% block content %}
+<div style="max-width:800px;margin:0 auto;padding:0 8px;">
+{% if no_purchases %}
+<div style="text-align:center;padding:60px 20px;">
+  <div style="font-size:48px;margin-bottom:16px;opacity:0.3;">🔒</div>
+  <h1 style="font-size:22px;font-weight:800;color:#fff;margin:0 0 6px;">Customer Section</h1>
+  <p style="font-size:14px;color:#6b7280;margin:0 0 4px;line-height:1.5;">You need to purchase an account to access this section.</p>
+  <p style="font-size:13px;color:#52525b;margin:0 0 20px;">News, updates, and order history will appear here after your first purchase.</p>
+  <a href="/dashboard" class="btn-primary" style="padding:12px 28px;border-radius:12px;font-size:14px;font-weight:700;text-decoration:none;display:inline-flex;">Browse Marketplace</a>
+</div>
+{% else %}
+  <h1 style="font-size:22px;font-weight:800;color:#fff;margin:0 0 4px;">Customer Section</h1>
+  <p style="font-size:14px;color:#6b7280;margin:0 0 20px;">News, updates, and your order history</p>
+
+  <div class="section-tabs">
+    <button class="section-tab active" onclick="switchSectionTab('news',this)">📢 News</button>
+    <button class="section-tab" onclick="switchSectionTab('orders',this)">📦 My Orders</button>
+  </div>
+
+  <div id="section-news">
+    {% if is_konvy_vip %}
+    <div class="owner-post-box">
+      <textarea id="news-input" placeholder="Write an announcement..." maxlength="2000"></textarea>
+      <button onclick="postNews()">Post Announcement</button>
+    </div>
+    {% endif %}
+    {% if news %}
+      {% for item in news %}
+      <div class="news-card">
+        <div class="news-accent"></div>
+        <div class="news-body">
+          <div class="news-tag">📢 Announcement</div>
+          <div class="news-content">{{ item.content }}</div>
+          <div class="news-footer">
+            <div class="author">
+              {% if is_konvy_vip %}
+              <button onclick="deleteNews({{ item.id }})" style="padding:2px 8px;border-radius:6px;border:1px solid rgba(239,68,68,0.2);background:rgba(239,68,68,0.08);color:#f87171;font-size:10px;cursor:pointer;margin-right:6px;">🗑 Delete</button>
+              {% endif %}
+              <img src="{{ (users.get(item.author, {})).get('profile_pic', '') or '/static/default-avatar.svg' }}" alt="" style="width:18px;height:18px;border-radius:50%;object-fit:cover;" onerror="this.src='/static/default-avatar.svg'">
+              <span style="color:#6b7280;font-weight:500;">{{ item.author }}</span>
+              {% if (users.get(item.author, {})).get('email', '').lower() == 'konvyvip@gmail.com' %}
+              <span style="font-size:9px;padding:1px 6px;border-radius:99px;background:rgba(234,179,8,0.12);border:1px solid rgba(234,179,8,0.25);color:#eab308;font-weight:700;">OWNER</span>
+              {% endif %}
+            </div>
+            <span>{{ item.created_at | int | timestamp_to_date }}</span>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+    <div style="text-align:center;padding:40px 0;color:#6b7280;font-size:14px;">No announcements yet</div>
+    {% endif %}
+  </div>
+
+  <div id="section-orders" style="display:none;">
+    <style>
+    @media (max-width:640px) {
+      .order-desktop { display:none; }
+      .order-card-mobile { background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:12px 14px;margin-bottom:8px; }
+      .order-card-mobile .oc-top { display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px; }
+      .order-card-mobile .oc-title { font-size:13px;font-weight:600;color:#e4e4e7; }
+      .order-card-mobile .oc-price { font-size:14px;font-weight:700;color:var(--neon-cyan);white-space:nowrap; }
+      .order-card-mobile .oc-meta { font-size:11px;color:#6b7280;margin-bottom:4px; }
+      .order-card-mobile .oc-creds-toggle { font-size:11px;color:var(--neon-cyan);cursor:pointer;background:none;border:none;padding:2px 0; }
+      .order-card-mobile .oc-creds { margin-top:4px;background:rgba(0,0,0,0.15);border:1px solid rgba(255,255,255,0.04);border-radius:8px;padding:8px 10px;font-size:11px;color:#9ca3af;display:none; }
+      .order-card-mobile .oc-creds.show { display:block; }
+      .order-card-mobile .oc-creds .ocl { font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#6b7280;margin-bottom:3px; }
+      .order-card-mobile .oc-creds .ocr { display:flex;gap:4px;margin-bottom:2px;flex-wrap:wrap; }
+      .order-card-mobile .oc-creds .ocr .ock { color:#6b7280;min-width:60px;font-size:11px; }
+      .order-card-mobile .oc-creds .ocr .ocv { color:#e4e4e7;word-break:break-all;font-size:11px; }
+      .order-card-mobile .oc-creds .ocr a { color:var(--neon-cyan);text-decoration:none; }
+    }
+    @media (min-width:641px) {
+      .order-card-mobile { display:none; }
+    }
+    </style>
+    {% if purchases %}
+    <!-- Desktop table -->
+    <div class="order-desktop" style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px;overflow:hidden;overflow-x:auto;">
+      <table class="order-table">
+        <thead><tr><th>Account</th><th>Price</th><th>Date</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+        {% for p in purchases %}
+        {% set result = p.get('purchase_result', {}) %}
+        {% set title = result.get('title') or result.get('title_en') or ('Account #' ~ loop.index) %}
+        {% set price = p.get('amount_cents', 0) / 100 %}
+        {% set ts = p.get('timestamp', 0) %}
+        {% set login_data = result.get('loginData') or result.get('login_data') or {} %}
+        {% set email_data = result.get('emailLoginData') or result.get('email_login_data') or {} %}
+        {% set game_login = login_data.get('login') or login_data.get('username') or '' %}
+        {% set game_pass = login_data.get('password') or '' %}
+        {% set email_login = email_data.get('login') or email_data.get('username') or '' %}
+        {% set email_pass = email_data.get('password') or '' %}
+        {% set has_creds = game_login or game_pass or email_login or email_pass %}
+        {% set email_url = email_login | email_login_url %}
+        <tr>
+          <td style="font-weight:600;color:#e4e4e7;">{{ title }}</td>
+          <td class="price-cell">${{ '%.2f'|format(price) }}</td>
+          <td style="color:#6b7280;">{{ ts | int | timestamp_to_date if ts > 0 else 'N/A' }}</td>
+          <td><span class="status-badge status-delivered">Delivered</span></td>
+          <td>
+            {% if has_creds %}
+            <button class="cred-toggle" onclick="toggleCreds(this)">Show Details ▸</button>
+            <div class="order-creds">
+              {% if game_login or game_pass %}
+              <div class="cred-label">🎮 Fortnite Login</div>
+              {% if game_login %}<div class="cred-row"><span class="cred-key">Login:</span><span class="cred-val">{{ game_login }}</span></div>{% endif %}
+              {% if game_pass %}<div class="cred-row"><span class="cred-key">Password:</span><span class="cred-val">{{ game_pass }}</span></div>{% endif %}
+              {% endif %}
+              {% if email_login or email_pass %}
+              <div class="cred-label" style="margin-top:8px;">📧 Email Access</div>
+              {% if email_url %}<div class="cred-row"><span class="cred-key">Website:</span><span class="cred-val"><a href="{{ email_url }}" target="_blank" rel="noopener">{{ email_url }}</a></span></div>{% endif %}
+              {% if email_login %}<div class="cred-row"><span class="cred-key">Login:</span><span class="cred-val">{{ email_login }}</span></div>{% endif %}
+              {% if email_pass %}<div class="cred-row"><span class="cred-key">Password:</span><span class="cred-val">{{ email_pass }}</span></div>{% endif %}
+              {% endif %}
+            </div>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Mobile cards -->
+    <div class="order-card-mobile-wrap">
+    {% for p in purchases %}
+    {% set result = p.get('purchase_result', {}) %}
+    {% set title = result.get('title') or result.get('title_en') or ('Account #' ~ loop.index) %}
+    {% set price = p.get('amount_cents', 0) / 100 %}
+    {% set ts = p.get('timestamp', 0) %}
+    {% set login_data = result.get('loginData') or result.get('login_data') or {} %}
+    {% set email_data = result.get('emailLoginData') or result.get('email_login_data') or {} %}
+    {% set game_login = login_data.get('login') or login_data.get('username') or '' %}
+    {% set game_pass = login_data.get('password') or '' %}
+    {% set email_login = email_data.get('login') or email_data.get('username') or '' %}
+    {% set email_pass = email_data.get('password') or '' %}
+    {% set has_creds = game_login or game_pass or email_login or email_pass %}
+    {% set email_url = email_login | email_login_url %}
+    <div class="order-card-mobile">
+      <div class="oc-top">
+        <div class="oc-title">{{ title }}</div>
+        <div class="oc-price">${{ '%.2f'|format(price) }}</div>
+      </div>
+      <div class="oc-meta">{{ ts | int | timestamp_to_date if ts > 0 else 'N/A' }} · <span class="status-badge status-delivered" style="font-size:10px;">Delivered</span></div>
+      {% if has_creds %}
+      <button class="oc-creds-toggle" onclick="toggleCredsMobile(this)">Show Details ▸</button>
+      <div class="oc-creds">
+        {% if game_login or game_pass %}
+        <div class="ocl">🎮 Fortnite Login</div>
+        {% if game_login %}<div class="ocr"><span class="ock">Login:</span><span class="ocv">{{ game_login }}</span></div>{% endif %}
+        {% if game_pass %}<div class="ocr"><span class="ock">Password:</span><span class="ocv">{{ game_pass }}</span></div>{% endif %}
+        {% endif %}
+        {% if email_login or email_pass %}
+        <div class="ocl" style="margin-top:6px;">📧 Email Access</div>
+        {% if email_url %}<div class="ocr"><span class="ock">Website:</span><span class="ocv"><a href="{{ email_url }}" target="_blank" rel="noopener">{{ email_url }}</a></span></div>{% endif %}
+        {% if email_login %}<div class="ocr"><span class="ock">Login:</span><span class="ocv">{{ email_login }}</span></div>{% endif %}
+        {% if email_pass %}<div class="ocr"><span class="ock">Password:</span><span class="ocv">{{ email_pass }}</span></div>{% endif %}
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:60px 20px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:14px;">
+      <div style="font-size:36px;margin-bottom:12px;opacity:0.3;">📦</div>
+      <p style="font-size:14px;color:#6b7280;margin:0;">No purchases yet</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<div id="toast" style="position:fixed;bottom:20px;right:20px;padding:10px 18px;border-radius:10px;font-size:12px;font-weight:600;z-index:9999;display:none;background:rgba(0,229,255,0.9);color:#000;"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function switchSectionTab(tab, btn) {
+  document.querySelectorAll('.section-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('section-news').style.display = tab === 'news' ? 'block' : 'none';
+  document.getElementById('section-orders').style.display = tab === 'orders' ? 'block' : 'none';
+}
+
+function toggleCreds(btn) {
+  const creds = btn.nextElementSibling;
+  const isShow = creds.classList.toggle('show');
+  btn.textContent = isShow ? 'Hide Details ▾' : 'Show Details ▸';
+}
+function toggleCredsMobile(btn) {
+  const creds = btn.nextElementSibling;
+  const isShow = creds.classList.toggle('show');
+  btn.textContent = isShow ? 'Hide Details ▾' : 'Show Details ▸';
+}
+
+async function deleteNews(id) {
+  if (!confirm('Delete this announcement?')) return;
+  const res = await fetch('/api/customer-news/delete', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id}) });
+  const data = await res.json();
+  if (data.ok) { location.reload(); }
+  else { showToast(data.error || 'Error', true); }
+}
+
+async function postNews() {
+  const input = document.getElementById('news-input');
+  const content = input.value.trim();
+  if (!content) return;
+  const res = await fetch('/api/customer-news', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({content}) });
+  const data = await res.json();
+  if (data.ok) {
+    input.value = '';
+    location.reload();
+  } else {
+    showToast(data.error || 'Error posting news', true);
+  }
+}
+
+function showToast(msg, isError) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.background = isError ? 'rgba(255,80,80,0.9)' : 'rgba(0,229,255,0.9)';
+  el.style.color = isError ? '#fff' : '#000';
+  el.style.display = 'block';
+  clearTimeout(el._timer);
+  el._timer = setTimeout(() => el.style.display = 'none', 3000);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}How It Works — Konvy Accounts{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+
+  <header class="text-center mb-12 reveal">
+    <h1 class="font-space text-3xl sm:text-4xl font-bold text-white mb-3 text-gradient-anim">How It Works</h1>
+    <p class="text-zinc-400 text-base max-w-xl mx-auto reveal reveal-delay-1">Buying a premium Fortnite account in three simple steps</p>
+  </header>
+
+  <div class="grid gap-6">
+    <div class="glass-panel rounded-2xl p-6 sm:p-8 flex items-start gap-5 reveal card-3d">
+      <div class="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20 border border-cyan-500/20 flex items-center justify-center font-space text-xl font-bold text-cyan-400 pulse-glow">1</div>
+      <div>
+        <h2 class="font-space text-lg font-semibold text-white mb-2">Browse &amp; Filter</h2>
+        <p class="text-zinc-400 text-sm leading-relaxed">Use the marketplace to browse available accounts. Filter by price, skins, pickaxes, emotes, gliders, V-Bucks, level, and more. Every account shows its full cosmetic inventory so you know exactly what you're getting.</p>
+      </div>
+    </div>
+
+    <div class="glass-panel rounded-2xl p-6 sm:p-8 flex items-start gap-5 reveal reveal-delay-1 card-3d">
+      <div class="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20 border border-cyan-500/20 flex items-center justify-center font-space text-xl font-bold text-cyan-400 pulse-glow">2</div>
+      <div>
+        <h2 class="font-space text-lg font-semibold text-white mb-2">Purchase &amp; Pay</h2>
+        <p class="text-zinc-400 text-sm leading-relaxed">Click on any account to view full details, then purchase securely. We accept payments via Shopify — your transaction is processed safely and your balance is credited instantly once confirmed.</p>
+      </div>
+    </div>
+
+    <div class="glass-panel rounded-2xl p-6 sm:p-8 flex items-start gap-5 reveal reveal-delay-2 card-3d">
+      <div class="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20 border border-cyan-500/20 flex items-center justify-center font-space text-xl font-bold text-cyan-400 pulse-glow">3</div>
+      <div>
+        <h2 class="font-space text-lg font-semibold text-white mb-2">Receive Credentials</h2>
+        <p class="text-zinc-400 text-sm leading-relaxed">After purchase, you'll receive the Fortnite login credentials and email access instantly in your account dashboard. Change the email and password right away — your account is yours to keep.</p>
+      </div>
+    </div>
+  </div>
+
+  <section class="mt-10 glass-panel rounded-2xl p-6 sm:p-8 reveal">
+    <h2 class="font-space text-lg font-semibold text-white mb-4">Frequently Asked Questions</h2>
+    <div class="space-y-4">
+      <details class="group">
+        <summary class="flex items-center justify-between text-sm font-medium text-zinc-300 cursor-pointer list-none py-2">Is it safe to buy accounts here?<span class="text-cyan-400 group-open:rotate-180 transition-transform">⌄</span></summary>
+        <p class="text-zinc-500 text-sm mt-2 leading-relaxed">Yes. All accounts are verified before listing. We use secure payment processing and provide instant delivery with full credentials including email access.</p>
+      </details>
+      <details class="group">
+        <summary class="flex items-center justify-between text-sm font-medium text-zinc-300 cursor-pointer list-none py-2">Can I change the email after purchase?<span class="text-cyan-400 group-open:rotate-180 transition-transform">⌄</span></summary>
+        <p class="text-zinc-500 text-sm mt-2 leading-relaxed">Most accounts come with email change capability. Check the listing to see if email change is available. We provide the email login so you can change it immediately.</p>
+      </details>
+      <details class="group">
+        <summary class="flex items-center justify-between text-sm font-medium text-zinc-300 cursor-pointer list-none py-2">What if the account credentials don't work?<span class="text-cyan-400 group-open:rotate-180 transition-transform">⌄</span></summary>
+        <p class="text-zinc-500 text-sm mt-2 leading-relaxed">We offer a warranty on every account sold. If you have any issues, contact our support team and we'll resolve it within 24 hours.</p>
+      </details>
+      <details class="group">
+        <summary class="flex items-center justify-between text-sm font-medium text-zinc-300 cursor-pointer list-none py-2">How is the account priced?<span class="text-cyan-400 group-open:rotate-180 transition-transform">⌄</span></summary>
+        <p class="text-zinc-500 text-sm mt-2 leading-relaxed">Pricing is based on the account's total value including rare skins, pickaxes, emotes, gliders, V-Bucks, and account level. Higher rarity items increase the value.</p>
+      </details>
+    </div>
+  </section>
+
+  <div class="text-center mt-10 reveal">
+    <a href="/dashboard" class="ripple-btn btn-primary inline-flex h-11 px-6 text-sm font-bold pulse-glow">Browse Marketplace</a>
+  </div>
+</div>
+{% endblock %}

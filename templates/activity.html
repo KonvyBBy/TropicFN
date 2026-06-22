@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Activity — Konvy Accounts{% endblock %}
+{% block extra_styles %}
+.act-item { display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.03); }
+.act-item .act-icon { width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;margin-top:2px; }
+.act-item .act-body { flex:1;min-width:0; }
+.act-item .act-text { font-size:13px;color:#d4d4d8;line-height:1.4; }
+.act-item .act-text strong { color:#e4e4e7; }
+.act-item .act-text a { color:var(--neon-cyan);text-decoration:none; }
+.act-item .act-time { font-size:11px;color:#52525b;margin-top:2px; }
+.act-icon.search { background:rgba(0,229,255,0.08);color:var(--neon-cyan); }
+.act-icon.view { background:rgba(124,92,255,0.08);color:var(--neon-purple); }
+.act-icon.purchase { background:rgba(34,197,94,0.08);color:#4ade80; }
+.act-icon.review { background:rgba(234,179,8,0.08);color:#fbbf24; }
+.act-icon.online { background:rgba(34,197,94,0.08);color:#4ade80; }
+.act-icon.offline { background:rgba(239,68,68,0.08);color:#f87171; }
+.act-icon.signup { background:rgba(99,102,241,0.08);color:#818cf8; }
+.act-icon.gift { background:rgba(236,72,153,0.08);color:#f472b6; }
+{% endblock %}
+{% block content %}
+<div style="max-width:600px;margin:0 auto;padding:0 8px;">
+  <h1 style="font-size:22px;font-weight:800;color:#fff;margin:0 0 4px;">Activity Feed</h1>
+  <p style="font-size:14px;color:#6b7280;margin:0 0 20px;">Live activity from across the marketplace</p>
+  <div id="act-list"><div style="text-align:center;padding:40px;color:#6b7280;font-size:13px;">Loading...</div></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const icons = { search:'🔍', view:'👁', purchase:'🛒', review:'⭐', online:'🟢', offline:'🔴', signup:'📝', gift:'🎁' };
+const labels = { search:'searched', view:'viewed', purchase:'purchased', review:'reviewed', online:'came online', offline:'went offline', signup:'signed up', gift:'gifted' };
+
+function ta(ts) {
+  if (!ts) return '';
+  const s = Math.floor(Date.now()/1000 - ts);
+  if (s < 60) return 'just now';
+  if (s < 3600) return Math.floor(s/60)+'m ago';
+  if (s < 86400) return Math.floor(s/3600)+'h ago';
+  return Math.floor(s/86400)+'d ago';
+}
+
+function esc(v) { return String(v||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;'); }
+
+function renderActivity(list) {
+  const el = document.getElementById('act-list');
+  if (!list.length) { el.innerHTML = '<div style="text-align:center;padding:40px;color:#6b7280;font-size:13px;">No activity yet</div>'; return; }
+  el.innerHTML = list.map(a => {
+    const d = a.details || {};
+    let text = '';
+    const user = '<strong>'+esc(a.username)+'</strong>';
+    if (a.type === 'search') text = user+' searched for "'+esc(d.query||'something')+'"';
+    else if (a.type === 'view') text = user+' viewed '+ (d.title ? '<a href="/account/'+d.item_id+'">'+esc(d.title)+'</a>' : 'an account');
+    else if (a.type === 'purchase') text = user+' purchased '+ (d.title ? esc(d.title) : 'an account') + ' for $' + (d.price||'?');
+    else if (a.type === 'review') text = user+' left a ' + d.rating + '-star review';
+    else if (a.type === 'online') text = user+' came online';
+    else if (a.type === 'offline') text = user+' went offline';
+    else if (a.type === 'signup') text = user+' joined Konvy Accounts';
+    else if (a.type === 'gift') text = user+' gifted an account to <strong>'+esc(d.to||'someone')+'</strong>';
+    else text = user+' did something';
+    return '<div class="act-item"><div class="act-icon '+a.type+'">'+(icons[a.type]||'❓')+'</div><div class="act-body"><div class="act-text">'+text+'</div><div class="act-time">'+ta(a.timestamp)+'</div></div></div>';
+  }).join('');
+}
+
+async function loadActivity() {
+  try {
+    const res = await fetch('/api/activity?limit=100');
+    const data = await res.json();
+    renderActivity(Array.isArray(data.activity) ? data.activity : []);
+  } catch(e) {}
+}
+loadActivity();
+setInterval(loadActivity, 10000);
+</script>
+{% endblock %}

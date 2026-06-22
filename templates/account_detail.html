@@ -1,0 +1,827 @@
+{% extends "base.html" %}
+{% block title %}{{ account_detail.title }} — Buy Fortnite Account | Konvy Accounts{% endblock %}
+{% block meta_desc %}Buy {{ account_detail.title }} — {{ account_detail.skin_count }} skins, {{ account_detail.vbucks }} V-Bucks, Level {{ account_detail.level }}, {{ account_detail.lifetime_wins }} wins. Instant delivery ✅ Warranty included.{% endblock %}
+{% block og_title %}{{ account_detail.title }} — {{ account_detail.skin_count }} Skins | Konvy Accounts{% endblock %}
+
+{% block extra_styles %}
+<style>
+  /* ── Hero Banner ── */
+  .ad-hero {
+    position: relative; height: 480px; overflow: visible; border-radius: 20px;
+    margin-top: 28px; background: #050814;
+  }
+  .ad-hero-bg-clip {
+    position: absolute; inset: 0; overflow: hidden; border-radius: 20px;
+    z-index: 0; pointer-events: none;
+  }
+  .ad-hero-bg {
+    position: absolute; inset: -60px;
+    background-size: cover; background-position: center;
+    filter: blur(50px) brightness(0.18) saturate(1.4);
+    transition: opacity .8s; opacity: 0;
+  }
+  .ad-hero-bg.loaded { opacity: 1; }
+  .ad-hero-rarity { position: absolute; inset: 0; transition: opacity .6s; pointer-events: none; }
+  .ad-hero-vignette {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at center, transparent 30%, rgba(5,8,20,0.75) 100%);
+    pointer-events: none; z-index: 1;
+  }
+  .ad-hero-glow {
+    position: absolute; inset: -20px; pointer-events: none; z-index: 1;
+  }
+  .ad-hero-particles {
+    position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 1;
+  }
+  .ad-hero-particles::before {
+    content: ''; position: absolute; width: 6px; height: 6px;
+    top: 30%; left: 20%; background: rgba(0,229,255,0.2); border-radius: 50%;
+    box-shadow: 120px 80px 0 -1px rgba(124,92,255,0.12), 280px 60px 0 -0.5px rgba(0,229,255,0.1), 420px 110px 0 -1px rgba(124,92,255,0.08), 200px -20px 0 -0.5px rgba(0,229,255,0.12), 500px 40px 0 -0.5px rgba(124,92,255,0.08);
+    animation: adParticleFloat 20s ease-in-out infinite;
+  }
+  @keyframes adParticleFloat {
+    0%, 100% { transform: translateY(0) scale(1); opacity: 0.2; }
+    50% { transform: translateY(-40px) scale(2); opacity: 0.6; }
+  }
+  .ad-hero-sc {
+    position: absolute; inset: 0; z-index: 2;
+  }
+
+  .ad-hero-si {
+    position: absolute; border-radius: 16px; overflow: hidden;
+    background: rgba(5,8,20,0.3); border: 2px solid rgba(255,255,255,0.1);
+    backdrop-filter: blur(3px);
+    animation: adSiFloat 7s ease-in-out infinite;
+  }
+  @keyframes adSiFloat {
+    0%, 100% { transform: var(--ad-t) translateY(0); }
+    50% { transform: var(--ad-t) translateY(-8px); }
+  }
+  .ad-hero-si img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .ad-hero-si .placeholder { display:flex; align-items:center; justify-content:center; width:100%; height:100%; font-size:40px; color:rgba(255,255,255,0.06); background:linear-gradient(135deg,#050814,#0B1020); }
+  .ad-hero-main {
+    width: 180px; height: 180px; border-radius: 20px;
+    left: 50%; top: 50%; z-index: 6;
+    --ad-t: translate(-50%, -50%);
+    border: 2px solid rgba(255,255,255,0.15);
+    box-shadow: 0 0 80px rgba(0,229,255,0.25), 0 0 160px rgba(0,229,255,0.08), 0 16px 60px rgba(0,0,0,0.6);
+  }
+  .ad-hero-main::after {
+    content: ''; position: absolute; inset: 0; border-radius: 18px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%);
+    pointer-events: none;
+  }
+  .ad-hero-side {
+    width: 100px; height: 100px; border-radius: 14px;
+    border: 1.5px solid rgba(255,255,255,0.08);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  }
+  .ad-hero-side::after {
+    content: ''; position: absolute; inset: 0; border-radius: 13px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.06) 0%, transparent 50%);
+    pointer-events: none;
+  }
+  .ad-hero-pl-1 { --ad-t: translate(-50%, -50%) rotate(-5deg); left: 25%; top: 52%; z-index: 4; animation-delay: -1.5s; }
+  .ad-hero-pl-2 { --ad-t: translate(-50%, -50%) rotate(5deg); left: 62%; top: 52%; z-index: 4; animation-delay: -3s; }
+  .ad-hero-pl-3 { --ad-t: translate(-50%, -50%) rotate(-12deg); left: 5%; top: 62%; z-index: 3; animation-delay: -0.5s; width: 80px; height: 80px; }
+  .ad-hero-pl-4 { --ad-t: translate(-50%, -50%) rotate(12deg); left: 75%; top: 62%; z-index: 3; animation-delay: -2s; width: 80px; height: 80px; }
+  .ad-hero-pl-5 { --ad-t: translate(-50%, -50%) rotate(-3deg); left: 50%; top: 20%; z-index: 2; animation-delay: -4s; width: 70px; height: 70px; }
+  .ad-hero-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 5%, rgba(5,8,20,0.4) 55%, rgba(5,8,20,0.85) 100%);
+    pointer-events: none; z-index: 3;
+  }
+
+  .ad-hero-content {
+    position: absolute; bottom: 0; left: 0; right: 0; z-index: 5;
+    padding: 24px 28px 28px;
+  }
+  .ad-hero-title {
+    font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 800; color: #fff;
+    text-shadow: 0 2px 20px rgba(0,0,0,0.9); line-height: 1.25;
+  }
+  .ad-hero-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .ad-hero-badge {
+    font-size: 10px; font-weight: 700; padding: 4px 12px; border-radius: 99px;
+    letter-spacing: .02em; backdrop-filter: blur(6px);
+  }
+  .ad-hero-badge.cyan { background: rgba(0,229,255,0.12); color: #67e8f9; border: 1px solid rgba(0,229,255,0.2); }
+  .ad-hero-badge.green { background: rgba(34,197,94,0.12); color: #4ade80; border: 1px solid rgba(34,197,94,0.2); }
+  .ad-hero-badge.purple { background: rgba(124,92,255,0.12); color: #a78bfa; border: 1px solid rgba(124,92,255,0.2); }
+  .ad-hero-badge.orange { background: rgba(251,146,60,0.12); color: #fb923c; border: 1px solid rgba(251,146,60,0.2); }
+  .ad-hero-badge.gray { background: rgba(255,255,255,0.06); color: #94a3b8; border: 1px solid rgba(255,255,255,0.1); }
+
+  /* ── Hero Stat Cards (left) ── */
+  .ad-hero-stats { display: flex; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
+  .ad-hero-stat {
+    background: rgba(5,8,20,0.5); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px; padding: 8px 16px; text-align: center;
+    backdrop-filter: blur(8px); min-width: 70px;
+  }
+  .ad-hero-stat .num {
+    font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 800;
+    color: #00E5FF; line-height: 1.1;
+  }
+  .ad-hero-stat .lbl {
+    font-size: 8px; text-transform: uppercase; letter-spacing: .08em;
+    color: rgba(255,255,255,0.4); margin-top: 2px; font-weight: 600;
+  }
+
+  /* ── Purchase Panel ── */
+  .ad-purchase-wrap { position: relative; }
+  @media (min-width: 1024px) {
+    .ad-purchase-sticky { position: sticky; top: 90px; }
+  }
+  .ad-purchase-card {
+    background: rgba(11,16,32,0.85); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 18px; padding: 24px; backdrop-filter: blur(16px);
+  }
+  .ad-purchase-price {
+    font-family: 'Space Grotesk', sans-serif; font-size: 38px; font-weight: 800;
+    color: #00E5FF; line-height: 1; text-shadow: 0 0 30px rgba(0,229,255,0.2);
+  }
+  .ad-purchase-orig { font-size: 14px; color: #64748b; text-decoration: line-through; }
+  .ad-purchase-features { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+  .ad-purchase-feat {
+    display: flex; align-items: center; gap: 8px; font-size: 13px; color: #94a3b8;
+  }
+  .ad-purchase-feat i { font-size: 14px; }
+  .ad-purchase-feat.cy { color: #67e8f9; }
+  .ad-purchase-feat.gr { color: #4ade80; }
+  .ad-purchase-btn {
+    width: 100%; margin-top: 20px;
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 16px 24px; font-size: 16px; font-weight: 800;
+    background: linear-gradient(135deg, #00E5FF, #7C5CFF);
+    color: #fff; border: none; border-radius: 14px; cursor: pointer;
+    transition: all .25s; text-transform: uppercase; letter-spacing: .04em;
+    box-shadow: 0 4px 30px rgba(0,229,255,0.25);
+  }
+  .ad-purchase-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 40px rgba(0,229,255,0.35); }
+  .ad-purchase-btn:active { transform: translateY(0); }
+  .ad-purchase-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+  /* ── Highlights ── */
+  .ad-section-title {
+    font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700; color: #f1f5f9;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .ad-section-title i { color: #00E5FF; font-size: 22px; }
+  .ad-highlights { display: grid; gap: 10px; margin-top: 16px; }
+  @media (min-width: 640px) { .ad-highlights { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1024px) { .ad-highlights { grid-template-columns: repeat(3, 1fr); } }
+  .ad-highlight-card {
+    background: rgba(11,16,32,0.6); border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px; padding: 12px 16px; display: flex; align-items: center; gap: 10px;
+    font-size: 13px; color: #e2e8f0; font-weight: 500;
+    transition: all .2s;
+  }
+  .ad-highlight-card:hover { border-color: rgba(0,229,255,0.15); background: rgba(11,16,32,0.8); }
+  .ad-highlight-card i { font-size: 16px; flex-shrink: 0; }
+
+  /* ── Featured Cosmetics ── */
+  .ad-featured { display: grid; gap: 12px; margin-top: 16px; }
+  @media (min-width: 480px) { .ad-featured { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 768px) { .ad-featured { grid-template-columns: repeat(3, 1fr); } }
+  @media (min-width: 1200px) { .ad-featured { grid-template-columns: repeat(4, 1fr); } }
+  .ad-feat-card {
+    background: rgba(11,16,32,0.7); border: 2px solid rgba(255,255,255,0.08);
+    border-radius: 14px; overflow: hidden; transition: all .3s;
+    cursor: default;
+  }
+  .ad-feat-card:hover { transform: translateY(-4px) scale(1.02); border-color: rgba(0,229,255,0.2); box-shadow: 0 12px 40px rgba(0,0,0,0.4); }
+  .ad-feat-card .img-wrap {
+    aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(145deg, #0d1428, #111827); padding: 12px;
+  }
+  .ad-feat-card .img-wrap img { width: 100%; height: 100%; object-fit: contain; display: block; transition: transform .3s; padding:8px; }
+  .ad-feat-card:hover .img-wrap img { transform: scale(1.1); }
+  .ad-feat-card .info { padding: 10px 12px; }
+  .ad-feat-card .info .name { font-size: 12px; font-weight: 700; color: #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ad-feat-card .info .rarity { font-size: 10px; font-weight: 600; text-transform: capitalize; margin-top: 2px; }
+  .ad-feat-card[data-rarity="legendary"] { border-color: #f0a831; }
+  .ad-feat-card[data-rarity="epic"] { border-color: #a855f7; }
+  .ad-feat-card[data-rarity="rare"] { border-color: #38bdf8; }
+  .ad-feat-card[data-rarity="uncommon"] { border-color: #22c55e; }
+  .ad-feat-card[data-rarity="marvel"] { border-color: #ef4444; }
+  .ad-feat-card[data-rarity="dc"] { border-color: #6366f1; }
+  .ad-feat-card[data-rarity="icon"] { border-color: #06b6d4; }
+  .ad-feat-card[data-rarity="gaming_legends"] { border-color: #7C5CFF; }
+
+  /* ── Cosmetic Tabs ── */
+  .ad-tabs { display: flex; gap: 4px; margin-bottom: 16px; flex-wrap: wrap; }
+  .ad-tab {
+    padding: 10px 20px; border-radius: 10px; font-size: 13px; font-weight: 700;
+    border: 1px solid rgba(255,255,255,0.06); background: rgba(5,8,20,0.4);
+    color: #475569; cursor: pointer; transition: all .2s; letter-spacing: .04em;
+  }
+  .ad-tab:hover { color: #94a3b8; border-color: rgba(255,255,255,0.1); }
+  .ad-tab.active { background: linear-gradient(135deg, rgba(0,229,255,0.15), rgba(124,92,255,0.1)); border-color: rgba(0,229,255,0.25); color: #67e8f9; box-shadow: 0 0 20px rgba(0,229,255,0.08); }
+  .ad-tab-count { font-size: 11px; opacity: 0.7; margin-left: 5px; }
+
+  /* ── Cosmetic Search ── */
+  .ad-cos-search {
+    background: rgba(5,8,20,0.7); border: 1px solid rgba(255,255,255,0.08);
+    color: #e2e8f0; border-radius: 10px; padding: 0 16px; height: 42px; font-size: 13px;
+    width: 100%; transition: border-color .2s, box-shadow .2s; margin-bottom: 16px;
+  }
+  .ad-cos-search::placeholder { color: rgba(255,255,255,0.2); }
+  .ad-cos-search:focus { border-color: rgba(0,229,255,0.4); box-shadow: 0 0 0 1px rgba(0,229,255,0.15); outline: none; }
+
+  /* ── Cosmetic Grid ── */
+  .ad-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px; min-height: 180px;
+  }
+  .ad-tile {
+    width: 100%; aspect-ratio: 1; border-radius: 12px;
+    border: 2px solid rgba(255,255,255,0.12); overflow: hidden;
+    background: linear-gradient(145deg, #0d1428, #111827);
+    display: flex; align-items: center; justify-content: center;
+    transition: transform .25s, border-color .25s, box-shadow .25s;
+    position: relative;
+  }
+  .ad-tile:hover { transform: scale(1.06); border-color: rgba(0,229,255,0.35); box-shadow: 0 0 20px rgba(0,229,255,0.06); }
+  .ad-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .ad-tile-fallback { font-size: 11px; font-weight: 700; color: #94a3b8; text-align: center; padding: 4px; word-break: break-all; }
+  .ad-tile .cos-name {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: linear-gradient(0deg, rgba(0,0,0,0.8) 0%, transparent 100%);
+    padding: 20px 6px 5px; font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.7);
+    text-align: center; opacity: 0; transition: opacity .2s; pointer-events: none;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .ad-tile:hover .cos-name { opacity: 1; }
+  .ad-tile[data-rarity="legendary"] { border-color: #f0a831; }
+  .ad-tile[data-rarity="epic"] { border-color: #a855f7; }
+  .ad-tile[data-rarity="rare"] { border-color: #38bdf8; }
+  .ad-tile[data-rarity="uncommon"] { border-color: #22c55e; }
+  .ad-tile[data-rarity="common"] { border-color: #475569; }
+  .ad-tile[data-rarity="marvel"] { border-color: #ef4444; }
+  .ad-tile[data-rarity="dc"] { border-color: #6366f1; }
+  .ad-tile[data-rarity="icon"] { border-color: #06b6d4; }
+  .ad-tile[data-rarity="gaming_legends"] { border-color: #7C5CFF; }
+
+  /* ── Section Divider ── */
+  .ad-divider { border: none; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent); margin: 32px 0; }
+
+  /* ── Stats Cards ── */
+  .ad-stat-grid { display: grid; gap: 12px; margin-top: 16px; }
+  @media (min-width: 480px) { .ad-stat-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 768px) { .ad-stat-grid { grid-template-columns: repeat(3, 1fr); } }
+  .ad-stat-card {
+    background: rgba(11,16,32,0.6); border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 14px; padding: 20px; text-align: center;
+    transition: all .2s;
+  }
+  .ad-stat-card:hover { border-color: rgba(0,229,255,0.12); box-shadow: 0 0 20px rgba(0,229,255,0.03); }
+  .ad-stat-card .num {
+    font-family: 'Space Grotesk', sans-serif; font-size: 28px; font-weight: 800;
+    color: #00E5FF; line-height: 1; text-shadow: 0 0 20px rgba(0,229,255,0.15);
+  }
+  .ad-stat-card .lbl {
+    font-size: 10px; text-transform: uppercase; letter-spacing: .1em;
+    color: #64748b; margin-top: 6px; font-weight: 600;
+  }
+
+  /* ── Feature Cards ── */
+  .ad-feat-grid { display: grid; gap: 10px; margin-top: 16px; }
+  @media (min-width: 480px) { .ad-feat-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 768px) { .ad-feat-grid { grid-template-columns: repeat(3, 1fr); } }
+  .ad-feat-card-sm {
+    background: rgba(11,16,32,0.6); border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px; padding: 14px 16px; display: flex; align-items: center; gap: 10px;
+    font-size: 13px; font-weight: 600; transition: all .2s;
+  }
+  .ad-feat-card-sm:hover { border-color: rgba(0,229,255,0.12); }
+  .ad-feat-card-sm i { font-size: 18px; }
+
+  /* ── Details section ── */
+  .ad-details { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 12px; }
+  .ad-details-item { font-size: 12px; color: #64748b; }
+  .ad-details-item strong { color: #94a3b8; font-weight: 600; }
+
+  /* ── Mobile responsive ── */
+  @media (max-width: 1023px) {
+    .ad-hero { height: 380px; border-radius: 14px; }
+    .ad-hero-main { width: 140px; height: 140px; }
+    .ad-hero-side { width: 78px; height: 78px; }
+    .ad-hero-pl-3, .ad-hero-pl-4, .ad-hero-pl-5 { width: 64px; height: 64px; }
+    .ad-hero-content { padding: 16px 18px 20px; }
+    .ad-hero-title { font-size: 20px; }
+    .ad-hero-stat .num { font-size: 16px; }
+    .ad-hero-stat { padding: 6px 12px; min-width: 58px; }
+    .ad-purchase-card { border-radius: 14px; padding: 18px; }
+    .ad-purchase-price { font-size: 30px; }
+    .ad-stat-card .num { font-size: 22px; }
+  }
+  @media (max-width: 480px) {
+    .ad-hero { height: 300px; }
+    .ad-hero-main { width: 110px; height: 110px; }
+    .ad-hero-side { width: 62px; height: 62px; }
+    .ad-hero-pl-3, .ad-hero-pl-4, .ad-hero-pl-5 { width: 50px; height: 50px; }
+    .ad-grid { grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 7px; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+{% set da = account_detail.days_ago %}
+{% set s = account_detail.status %}
+{% set pc = account_detail.preview_cosmetics %}
+
+<!-- ─── HERO SECTION ─── -->
+<div class="ad-hero reveal" id="ad-hero">
+  <div class="ad-hero-bg-clip">
+    <div class="ad-hero-bg" id="hero-bg"></div>
+    <div class="ad-hero-rarity" id="hero-rarity"></div>
+    <div class="ad-hero-glow" id="hero-glow"></div>
+  </div>
+  <div class="ad-hero-vignette"></div>
+  <div class="ad-hero-particles"></div>
+  <div class="ad-hero-sc" id="hero-cosmetics"></div>
+  <div class="ad-hero-overlay"></div>
+
+  <!-- Hero bottom content -->
+  <div class="ad-hero-content">
+    <div class="ad-hero-title">{{ account_detail.title }}</div>
+    <div class="ad-hero-badges">
+      {% if account_detail.is_sold %}
+      <span class="ad-hero-badge" style="background:rgba(239,68,68,0.15);color:#f87171;border-color:rgba(239,68,68,0.25);">✕ SOLD</span>
+      {% endif %}
+      <span class="ad-hero-badge cyan">✓ Full Access</span>
+      {% if s.get('email_changeable') %}<span class="ad-hero-badge green">✓ Email Changeable</span>{% endif %}
+      {% if da is not none %}
+      <span class="ad-hero-badge {% if da >= 21 %}green{% elif da >= 4 %}orange{% else %}gray{% endif %}">
+        {% if da == 0 %}Active Today{% elif da == 1 %}Active Yesterday{% else %}{{ da }}d ago{% endif %}
+      </span>
+      {% endif %}
+      {% if s.get('battle_pass') %}<span class="ad-hero-badge purple">✓ Battle Pass</span>{% endif %}
+      <span class="ad-hero-badge cyan">Instant Delivery</span>
+    </div>
+  </div>
+</div>
+
+<!-- ─── HERO SPACER ─── -->
+<div style="height:12px;"></div>
+
+<!-- ─── MAIN LAYOUT ─── -->
+<div class="flex flex-col lg:flex-row gap-6 mt-6">
+
+  <!-- Content -->
+  <div class="flex-1 min-w-0">
+
+    <!-- Mobile Purchase Panel -->
+    <div class="ad-purchase-card reveal lg:hidden mb-6">
+      <div class="ad-purchase-price">
+        ${{ '%.2f'|format(account_detail.price) }}
+        {% if account_detail.original_price %}
+        <span style="font-size:14px;color:#f87171;font-weight:700;background:rgba(239,68,68,0.1);padding:2px 10px;border-radius:99px;border:1px solid rgba(239,68,68,0.2);margin-left:8px;vertical-align:middle;">-{{ account_detail.discount_percent }}%</span>
+        {% endif %}
+      </div>
+      {% if account_detail.original_price %}
+      <div class="ad-purchase-orig" style="margin-top:2px;">${{ '%.2f'|format(account_detail.original_price) }}</div>
+      {% endif %}
+      <div class="ad-purchase-features">
+        <span class="ad-purchase-feat cy"><i class="ri-shield-check-line"></i> Full Access</span>
+        <span class="ad-purchase-feat {{ 'cy' if s.get('email_access') else '' }}"><i class="ri-mail-line"></i> {{ 'Email Access' if s.get('email_access') else 'No Email Access' }}</span>
+        <span class="ad-purchase-feat gr"><i class="ri-flashlight-line"></i> Instant Delivery</span>
+        <span class="ad-purchase-feat cy"><i class="ri-verified-badge-line"></i> Warranty Included</span>
+        {% if s.get('email_changeable') %}<span class="ad-purchase-feat gr"><i class="ri-mail-settings-line"></i> Email Changeable</span>{% endif %}
+      </div>
+      {% if account_detail.is_sold %}
+      <div style="margin-top:16px;padding:16px;border-radius:12px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.15);text-align:center;">
+        <div style="font-size:18px;font-weight:800;color:#f87171;">SOLD</div>
+        <div style="font-size:12px;color:#94a3b8;margin-top:4px;">This account has already been purchased.</div>
+      </div>
+      {% elif account_detail.is_og %}
+      <div style="margin-top:16px;padding:12px;border-radius:12px;background:rgba(124,92,255,0.1);border:1px solid rgba(124,92,255,0.2);text-align:center;font-size:13px;font-weight:600;color:#a78bfa;">
+        DM <strong class="text-cyan-400">Ec0nmics</strong> on Discord to purchase
+      </div>
+      {% elif logged_in %}
+      <div style="display:flex;gap:8px;margin-top:16px;">
+        <button id="instant-buy-btn-mobile" type="button" class="ad-purchase-btn" style="flex:1;">BUY ACCOUNT</button>
+        <a href="/support?item_id={{ account_detail.item_id }}" class="ad-purchase-btn" style="flex:0.4;font-size:12px;padding:12px 10px;background:rgba(255,255,255,0.04);color:#9ca3af;text-decoration:none;display:flex;justify-content:center;box-shadow:none;">Ask</a>
+      </div>
+      {% else %}
+      <a href="{{ url_for('register') }}" class="ad-purchase-btn" style="text-decoration:none;display:flex;">Sign Up to Buy</a>
+      {% endif %}
+      <div class="ad-purchase-status mt-2 text-center text-xs"></div>
+    </div>
+
+    {% if account_detail.skin_count > 0 or account_detail.pickaxe_count > 0 or account_detail.emote_count > 0 or account_detail.glider_count > 0 %}
+    <!-- All Cosmetics -->
+    <section class="reveal">
+      <h2 class="ad-section-title"><i class="ri-grid-line"></i> All Cosmetics</h2>
+      <div class="ad-tabs" id="ad-tabs">
+        <button class="ad-tab active" data-section="skins">Skins <span class="ad-tab-count">({{ account_detail.skin_count }})</span></button>
+        <button class="ad-tab" data-section="pickaxes">Pickaxes <span class="ad-tab-count">({{ account_detail.pickaxe_count }})</span></button>
+        <button class="ad-tab" data-section="emotes">Emotes <span class="ad-tab-count">({{ account_detail.emote_count }})</span></button>
+        <button class="ad-tab" data-section="gliders">Gliders <span class="ad-tab-count">({{ account_detail.glider_count }})</span></button>
+      </div>
+      <input type="text" class="ad-cos-search" id="cos-search" placeholder="Search cosmetics...">
+      <div id="ad-grid" class="ad-grid"></div>
+      <div id="ad-grid-empty" class="hidden text-sm text-zinc-500 py-10 text-center">No cosmetics match your search.</div>
+    </section>
+    {% endif %}
+
+    {% if not account_detail.is_sold or account_detail.skin_count > 0 %}
+    <!-- Account Highlights -->
+    <section class="reveal">
+      <h2 class="ad-section-title"><i class="ri-award-line"></i> Account Highlights</h2>
+      <div class="ad-highlights">
+        {% for name in pc[:6] %}
+        <div class="ad-highlight-card"><i class="ri-checkbox-circle-fill text-cyan-400"></i> Contains {{ name }}</div>
+        {% endfor %}
+        <div class="ad-highlight-card"><i class="ri-shirt-fill text-cyan-400"></i> {{ account_detail.skin_count }} Total Skins</div>
+        {% if account_detail.lifetime_wins and account_detail.lifetime_wins > 0 %}
+        <div class="ad-highlight-card"><i class="ri-trophy-fill text-amber-400"></i> {{ account_detail.lifetime_wins }} Wins</div>
+        {% endif %}
+        <div class="ad-highlight-card"><i class="ri-money-dollar-circle-fill text-green-400"></i> {{ account_detail.vbucks|int }} V-Bucks</div>
+        <div class="ad-highlight-card"><i class="ri-bar-chart-fill text-purple-400"></i> Level {{ account_detail.level }}</div>
+        {% if s.get('battle_pass') %}
+        <div class="ad-highlight-card"><i class="ri-vip-crown-fill text-amber-400"></i> Battle Pass Included</div>
+        {% endif %}
+        {% if s.get('stw_edition') %}
+        <div class="ad-highlight-card"><i class="ri-shield-fill text-green-400"></i> Save The World Included</div>
+        {% endif %}
+        {% if s.get('email_changeable') %}
+        <div class="ad-highlight-card"><i class="ri-mail-settings-fill text-cyan-400"></i> Email Changeable</div>
+        {% endif %}
+        {% if s.get('email_access') %}
+        <div class="ad-highlight-card"><i class="ri-mail-open-fill text-cyan-400"></i> Email Access</div>
+        {% endif %}
+        <div class="ad-highlight-card"><i class="ri-flashlight-fill text-cyan-400"></i> Instant Delivery</div>
+        <div class="ad-highlight-card"><i class="ri-shield-check-fill text-green-400"></i> Warranty Included</div>
+      </div>
+    </section>
+    {% endif %}
+
+    <hr class="ad-divider">
+
+    {% if not account_detail.is_sold or account_detail.skin_count > 0 or account_detail.level > 0 %}
+    <!-- Statistics -->
+    <section class="reveal">
+      <h2 class="ad-section-title"><i class="ri-bar-chart-2-line"></i> Statistics</h2>
+      <div class="ad-stat-grid">
+        <div class="ad-stat-card"><div class="num count-up" data-count="{{ account_detail.level }}">0</div><div class="lbl">Level</div></div>
+        <div class="ad-stat-card"><div class="num count-up" data-count="{{ account_detail.vbucks|int }}">0</div><div class="lbl">V-Bucks</div></div>
+        <div class="ad-stat-card"><div class="num count-up" data-count="{{ account_detail.skin_count }}">0</div><div class="lbl">Skins</div></div>
+        <div class="ad-stat-card"><div class="num count-up" data-count="{{ account_detail.pickaxe_count }}">0</div><div class="lbl">Pickaxes</div></div>
+        <div class="ad-stat-card"><div class="num count-up" data-count="{{ account_detail.emote_count }}">0</div><div class="lbl">Emotes</div></div>
+        <div class="ad-stat-card"><div class="num count-up" data-count="{{ account_detail.glider_count }}">0</div><div class="lbl">Gliders</div></div>
+        {% if account_detail.lifetime_wins and account_detail.lifetime_wins > 0 %}
+        <div class="ad-stat-card"><div class="num count-up" data-count="{{ account_detail.lifetime_wins|int }}">0</div><div class="lbl">Wins</div></div>
+        {% endif %}
+        {% if account_detail.bp_level and account_detail.bp_level > 0 %}
+        <div class="ad-stat-card"><div class="num count-up" data-count="{{ account_detail.bp_level|int }}">0</div><div class="lbl">BP Level</div></div>
+        {% endif %}
+      </div>
+    </section>
+
+    <hr class="ad-divider">
+
+    <!-- Features -->
+    <section class="reveal">
+      <h2 class="ad-section-title"><i class="ri-shield-check-line"></i> Features</h2>
+      <div class="ad-feat-grid">
+        {% for key, label, icon in [
+          ('email_changeable', 'Email Changeable', 'ri-mail-settings-line'),
+          ('email_access', 'Email Access', 'ri-mail-open-line'),
+          ('xbox_linkable', 'Xbox Linkable', 'ri-xbox-line'),
+          ('psn_linkable', 'PSN Linkable', 'ri-playstation-line'),
+          ('battle_pass', 'Battle Pass', 'ri-vip-crown-line'),
+          ('stw_edition', 'STW Edition', 'ri-shield-line'),
+        ] %}
+        {% set v = s.get(key) %}
+        <div class="ad-feat-card-sm">
+          <i class="{{ icon }} {{ 'text-green-400' if v is sameas true else 'text-zinc-600' }}"></i>
+          <span>{{ label }}</span>
+          <span style="margin-left:auto;font-size:12px;{{ 'color:#4ade80' if v is sameas true else 'color:#475569' }}">
+            {% if v is sameas true %}✓{% elif v is sameas false %}—{% else %}·{% endif %}
+          </span>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <hr class="ad-divider">
+
+    <!-- Details -->
+    <section class="reveal">
+      <h2 class="ad-section-title"><i class="ri-information-line"></i> Account Details</h2>
+      <div class="ad-details">
+        <span class="ad-details-item">ID: <strong>#{{ account_detail.item_id }}</strong></span>
+        {% if account_detail.country and account_detail.country != 'Unknown' %}
+        <span class="ad-details-item">Country: <strong>{{ account_detail.country }}</strong></span>
+        {% endif %}
+        {% if account_detail.season_num %}
+        <span class="ad-details-item">Season: <strong>{{ account_detail.season_num }}</strong></span>
+        {% endif %}
+        {% if account_detail.shop_skins and account_detail.shop_skins > 0 %}
+        <span class="ad-details-item">Shop Count: <strong>{{ account_detail.shop_skins }}</strong></span>
+        {% endif %}
+        {% if da is not none %}
+        <span class="ad-details-item">Last Active: <strong>{% if da == 0 %}Today{% elif da == 1 %}Yesterday{% else %}{{ da }}d ago{% endif %}</strong></span>
+        {% endif %}
+        <span class="ad-details-item">Skins: <strong>{{ account_detail.skin_count }}</strong></span>
+        <span class="ad-details-item">Pickaxes: <strong>{{ account_detail.pickaxe_count }}</strong></span>
+        <span class="ad-details-item">Emotes: <strong>{{ account_detail.emote_count }}</strong></span>
+        <span class="ad-details-item">Gliders: <strong>{{ account_detail.glider_count }}</strong></span>
+      </div>
+    </section>
+    {% endif %}
+
+  </div>
+
+  <!-- Purchase Panel (desktop sticky) -->
+  <div class="ad-purchase-wrap hidden lg:block lg:w-[340px] shrink-0">
+    <div class="ad-purchase-sticky">
+      <div class="ad-purchase-card reveal">
+        <div class="ad-purchase-price">
+          ${{ '%.2f'|format(account_detail.price) }}
+          {% if account_detail.original_price %}
+          <span style="font-size:14px;color:#f87171;font-weight:700;background:rgba(239,68,68,0.1);padding:2px 10px;border-radius:99px;border:1px solid rgba(239,68,68,0.2);margin-left:8px;vertical-align:middle;">-{{ account_detail.discount_percent }}%</span>
+          {% endif %}
+        </div>
+        {% if account_detail.original_price %}
+        <div class="ad-purchase-orig" style="margin-top:2px;">${{ '%.2f'|format(account_detail.original_price) }}</div>
+        {% endif %}
+
+        <div style="display:flex;gap:12px;margin-top:14px;font-size:12px;color:#6b7280;">
+          <span>👁 {{ account_detail.views }} views</span>
+          <span>❤️ {{ account_detail.favorites }} fav</span>
+        </div>
+
+        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.06);margin:14px 0;">
+
+        <div class="ad-purchase-features">
+          <span class="ad-purchase-feat cy"><i class="ri-shield-check-line"></i> Full Access</span>
+          <span class="ad-purchase-feat {{ 'cy' if s.get('email_access') else '' }}"><i class="ri-mail-line"></i> {{ 'Email Access' if s.get('email_access') else 'No Email Access' }}</span>
+          <span class="ad-purchase-feat gr"><i class="ri-flashlight-line"></i> Instant Delivery</span>
+          <span class="ad-purchase-feat cy"><i class="ri-verified-badge-line"></i> Warranty Included</span>
+          <span class="ad-purchase-feat gr"><i class="ri-shield-user-line"></i> Safe Purchase</span>
+          {% if s.get('email_changeable') %}<span class="ad-purchase-feat gr"><i class="ri-mail-settings-line"></i> Email Changeable</span>{% endif %}
+        </div>
+        {% if account_detail.is_sold %}
+        <div style="margin-top:16px;padding:16px;border-radius:12px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.15);text-align:center;">
+          <div style="font-size:18px;font-weight:800;color:#f87171;">SOLD</div>
+          <div style="font-size:12px;color:#94a3b8;margin-top:4px;">This account has already been purchased.</div>
+        </div>
+        {% elif account_detail.is_og %}
+        <div style="margin-top:16px;padding:12px;border-radius:12px;background:rgba(124,92,255,0.1);border:1px solid rgba(124,92,255,0.2);text-align:center;font-size:13px;font-weight:600;color:#a78bfa;">
+          DM <strong class="text-cyan-400">Ec0nmics</strong> on Discord to purchase
+        </div>
+        {% elif logged_in %}
+        <button id="instant-buy-btn-2" type="button" class="ad-purchase-btn">BUY ACCOUNT</button>
+        <a href="/support?item_id={{ account_detail.item_id }}" style="display:block;margin-top:8px;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:#9ca3af;font-size:12px;font-weight:500;text-align:center;text-decoration:none;transition:all .15s;" onmouseover="this.style.borderColor='rgba(0,229,255,0.15)';this.style.color='#d4d4d8';" onmouseout="this.style.borderColor='rgba(255,255,255,0.06)';this.style.color='#9ca3af';">Ask a question about this account</a>
+        {% else %}
+        <a href="{{ url_for('register') }}" class="ad-purchase-btn" style="text-decoration:none;display:flex;">Sign Up to Buy</a>
+        {% endif %}
+        <div class="ad-purchase-status mt-2 text-center text-xs"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Purchase Modal -->
+<div id="instant-buy-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 p-4">
+  <div class="w-full max-w-md rounded-2xl border border-white/10 bg-dark-800 p-5 shadow-2xl">
+    <h3 class="font-space text-lg font-semibold text-white">Confirm Purchase</h3>
+    <p class="mt-2 text-sm text-zinc-300">By purchasing this account you agree to our <a href="/terms" target="_blank" rel="noopener noreferrer" class="text-cyan-400 hover:text-cyan-300">Terms of Service</a>.</p>
+    <label class="mt-4 flex cursor-pointer items-start gap-2 text-sm text-zinc-200">
+      <input id="instant-buy-tos-check" type="checkbox" class="mt-0.5 h-4 w-4 rounded border-zinc-600 bg-zinc-900 text-cyan-500 focus:ring-cyan-500">
+      <span>I agree with the Terms of Service</span>
+    </label>
+    <div class="mt-5 flex gap-2">
+      <button id="instant-buy-cancel-btn" type="button" class="btn-ghost flex-1 h-11 text-sm">Cancel</button>
+      <button id="instant-buy-confirm-btn" type="button" disabled class="btn-primary flex-1 h-11 text-sm disabled:opacity-50 disabled:cursor-not-allowed">Confirm Purchase</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.ACCOUNT_DETAIL = {{ account_detail|tojson }};
+  const RARITY_SCORES = { legendary: 7, epic: 6, rare: 5, uncommon: 4, common: 3, marvel: 8, dc: 8, icon: 8, gaming_legends: 7 };
+  const RARITY_GRADIENTS = {
+    legendary: 'linear-gradient(135deg, rgba(255,175,0,0.2), rgba(200,100,0,0.08))',
+    epic: 'linear-gradient(135deg, rgba(124,92,255,0.25), rgba(88,28,200,0.08))',
+    dark: 'linear-gradient(135deg, rgba(124,92,255,0.25), rgba(88,28,200,0.08))',
+    shadow: 'linear-gradient(135deg, rgba(200,50,50,0.2), rgba(100,0,0,0.08))',
+    marvel: 'linear-gradient(135deg, rgba(0,229,255,0.18), rgba(124,92,255,0.12))',
+    dc: 'linear-gradient(135deg, rgba(0,229,255,0.18), rgba(124,92,255,0.12))',
+    icon: 'linear-gradient(135deg, rgba(255,215,0,0.18), rgba(255,175,0,0.1))',
+    rare: 'linear-gradient(135deg, rgba(59,130,246,0.18), rgba(37,99,235,0.08))',
+    gaming_legends: 'linear-gradient(135deg, rgba(124,92,255,0.2), rgba(88,28,200,0.08))',
+  };
+  const BG_COLORS = {
+    legendary: { bg: 'linear-gradient(135deg, #1a0f00, #2d1a00)', glow: 'radial-gradient(ellipse at 50% 45%, rgba(255,175,0,0.25), rgba(200,100,0,0.1) 40%, transparent 70%)' },
+    epic: { bg: 'linear-gradient(135deg, #0d0a2d, #1a0d40)', glow: 'radial-gradient(ellipse at 50% 45%, rgba(124,92,255,0.25), rgba(88,28,200,0.1) 40%, transparent 70%)' },
+    dark: { bg: 'linear-gradient(135deg, #0d0a2d, #1a0d40)', glow: 'radial-gradient(ellipse at 50% 45%, rgba(124,92,255,0.25), rgba(88,28,200,0.1) 40%, transparent 70%)' },
+    shadow: { bg: 'linear-gradient(135deg, #100808, #2a0a0a)', glow: 'radial-gradient(ellipse at 50% 45%, rgba(200,50,50,0.22), rgba(100,0,0,0.08) 40%, transparent 70%)' },
+    marvel: { bg: 'linear-gradient(135deg, #00101a, #002040)', glow: 'radial-gradient(ellipse at 50% 45%, rgba(0,229,255,0.22), rgba(124,92,255,0.1) 40%, transparent 70%)' },
+    dc: { bg: 'linear-gradient(135deg, #00101a, #002040)', glow: 'radial-gradient(ellipse at 50% 45%, rgba(0,229,255,0.22), rgba(124,92,255,0.1) 40%, transparent 70%)' },
+    icon: { bg: 'linear-gradient(135deg, #0d0a00, #2d1a00)', glow: 'radial-gradient(ellipse at 50% 45%, rgba(255,215,0,0.22), rgba(200,150,0,0.1) 40%, transparent 70%)' },
+    rare: { bg: 'linear-gradient(135deg, #000d1a, #001a3d)', glow: 'radial-gradient(ellipse at 50% 45%, rgba(59,130,246,0.22), rgba(37,99,235,0.08) 40%, transparent 70%)' },
+  };
+  const DEFAULT_BG = { bg: 'linear-gradient(135deg, #050814, #0B1020)', glow: 'radial-gradient(ellipse at 50% 45%, rgba(0,229,255,0.12), rgba(124,92,255,0.07) 40%, transparent 70%)' };
+  const DEFAULT_RARITY = 'linear-gradient(135deg, rgba(0,229,255,0.1), rgba(124,92,255,0.06))';
+
+  const detail = window.ACCOUNT_DETAIL || {};
+  let iconCache = {};
+  let rarityCache = {};
+
+  /* ── Build Hero Banner ── */
+  (function buildHero() {
+    const rawNames = Array.isArray(detail.preview_cosmetics) ? detail.preview_cosmetics.slice(0, 6) : [];
+    const scored = rawNames.map((name, idx) => {
+      const r = (rarityCache[name] || '').toLowerCase();
+      const score = RARITY_SCORES[r] || 2;
+      return { name, idx, score: (6 - idx) * 2 + score, rarity: r };
+    });
+    scored.sort((a, b) => b.score - a.score);
+    const highestRarity = scored.length > 0 ? (scored[0].rarity || '') : '';
+    const bgColors = BG_COLORS[highestRarity] || DEFAULT_BG;
+    const rarityGrad = RARITY_GRADIENTS[highestRarity] || DEFAULT_RARITY;
+
+    const rarityEl = document.getElementById('hero-rarity');
+    const glowEl = document.getElementById('hero-glow');
+    if (rarityEl) rarityEl.style.background = rarityGrad;
+    if (glowEl) glowEl.style.background = bgColors.glow;
+
+    const cosEl = document.getElementById('hero-cosmetics');
+    if (!cosEl) return;
+
+    if (scored.length > 0) {
+      const mainItem = scored[0];
+      const sideItems = scored.slice(1, 6);
+      let html = '';
+      html += `<div class="ad-hero-si ad-hero-main" data-name="${esc(mainItem.name)}"><img class="ad-si-img placeholder" data-name="${esc(mainItem.name)}" alt="" loading="lazy"></div>`;
+      sideItems.forEach((item, si) => {
+        const cls = `ad-hero-si ad-hero-side ad-hero-pl-${si + 1}`;
+        html += `<div class="${cls}" data-name="${esc(item.name)}"><img class="ad-si-img placeholder" data-name="${esc(item.name)}" alt="" loading="lazy"></div>`;
+      });
+      cosEl.innerHTML = html;
+
+      // Set up background after icons load
+      const bgEl = document.getElementById('hero-bg');
+      const mainName = mainItem.name;
+      const existing = iconCache[mainName];
+      if (existing) {
+        bgEl.style.backgroundImage = `url(${existing})`;
+        bgEl.classList.add('loaded');
+      }
+    } else {
+      cosEl.innerHTML = `<div class="ad-hero-si ad-hero-main" style="border-color:rgba(255,255,255,0.04)"><div class="placeholder">🎮</div></div>`;
+    }
+  })();
+
+  /* ── Hydrate hero icons ── */
+  function hydrateHeroIcons() {
+    document.querySelectorAll('.ad-si-img[data-name]').forEach(img => {
+      const url = iconCache[img.dataset.name || '']; if (!url) return;
+      img.src = url; img.classList.remove('placeholder'); img.parentElement.classList.remove('placeholder');
+    });
+    const bgEl = document.getElementById('hero-bg');
+    const firstImg = document.querySelector('.ad-hero-main[data-name]');
+    if (firstImg && !bgEl.classList.contains('loaded')) {
+      const url = iconCache[firstImg.dataset.name];
+      if (url) { bgEl.style.backgroundImage = `url(${url})`; bgEl.classList.add('loaded'); }
+    }
+  }
+
+  /* ── Cosmetic Grid ── */
+  const sectionMeta = {
+    skins: { apiType: 'outfit', label: 'Skins' },
+    pickaxes: { apiType: 'pickaxe', label: 'Pickaxes' },
+    emotes: { apiType: 'emote', label: 'Emotes' },
+    gliders: { apiType: 'glider', label: 'Gliders' },
+  };
+  let currentSection = 'skins';
+
+  function getActivityLabel(d) { if (d===null||d===undefined) return 'Unknown'; const n=Number(d); if (!Number.isFinite(n)) return 'Unknown'; if (n===0) return 'Today'; if (n===1) return 'Yesterday'; return n+'d ago'; }
+
+  function loadGrid(section, filter) {
+    const meta = sectionMeta[section]; if (!meta) return;
+    const names = Array.isArray(detail[section]) ? detail[section] : [];
+    const grid = document.getElementById('ad-grid');
+    const empty = document.getElementById('ad-grid-empty');
+    if (!grid) return;
+    const f = (filter || '').toLowerCase().trim();
+    const filtered = f ? names.filter(n => n.toLowerCase().includes(f)) : names;
+    if (!filtered.length) { grid.innerHTML = ''; if (empty) empty.classList.remove('hidden'); return; }
+    if (empty) empty.classList.add('hidden');
+    grid.innerHTML = filtered.map((name, idx) => {
+      const safe = esc(name); const icon = iconCache[name]; const rarity = rarityCache[name];
+      const rarityAttr = rarity ? ` data-rarity="${esc(rarity)}"` : '';
+      const rarityBadge = rarity ? `<span style="position:absolute;top:4px;left:4px;font-size:7px;font-weight:700;padding:1px 5px;border-radius:4px;background:rgba(0,0,0,0.5);color:${rarity === 'legendary' ? '#f0a831' : rarity === 'epic' ? '#a855f7' : rarity === 'rare' ? '#38bdf8' : '#22c55e'};text-transform:uppercase;">${rarity.slice(0,4)}</span>` : '';
+      const loadAttr = idx < 20 ? 'fetchpriority="high"' : 'loading="lazy"';
+      if (!icon) return `<div class="ad-tile"${rarityAttr} title="${safe}${rarity ? ' ('+rarity+')' : ''}"><span class="ad-tile-fallback">${esc(name.slice(0,2).toUpperCase() || '?')}</span>${rarityBadge}<div class="cos-name">${safe}</div></div>`;
+      return `<div class="ad-tile"${rarityAttr} title="${safe}${rarity ? ' ('+rarity+')' : ''}"><img src="${esc(icon)}" alt="${safe}" ${loadAttr} decoding="async">${rarityBadge}<div class="cos-name">${safe}</div></div>`;
+    }).join('');
+  }
+
+  function switchSection(section) {
+    currentSection = section;
+    document.querySelectorAll('.ad-tab').forEach(t => t.classList.toggle('active', t.dataset.section === section));
+    const input = document.getElementById('cos-search');
+    if (input) {
+      input.value = '';
+      const counts = { skins:{{ account_detail.skin_count }}, pickaxes:{{ account_detail.pickaxe_count }}, emotes:{{ account_detail.emote_count }}, gliders:{{ account_detail.glider_count }} };
+      input.placeholder = 'Search ' + counts[section] + ' ' + section + '...';
+    }
+    loadGrid(section);
+  }
+
+  function esc(v) { return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+  /* ── Init ── */
+  document.addEventListener('DOMContentLoaded', () => {
+    // Tabs
+    document.querySelectorAll('.ad-tab').forEach(tab => {
+      tab.addEventListener('click', () => switchSection(tab.dataset.section));
+    });
+    // Search
+    const searchInput = document.getElementById('cos-search');
+    if (searchInput) {
+      const counts = { skins:{{ account_detail.skin_count }}, pickaxes:{{ account_detail.pickaxe_count }}, emotes:{{ account_detail.emote_count }}, gliders:{{ account_detail.glider_count }} };
+      searchInput.placeholder = 'Search ' + counts['skins'] + ' skins...';
+      searchInput.addEventListener('input', () => { loadGrid(currentSection, searchInput.value); });
+    }
+    // Preload all
+    const allNames = [];
+    ['skins', 'pickaxes', 'emotes', 'gliders'].forEach(sec => {
+      (Array.isArray(detail[sec]) ? detail[sec] : []).forEach(n => { if (!allNames.includes(n)) allNames.push(n); });
+    });
+    if (allNames.length > 0) {
+      fetch('/api/skins/icons', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ names: allNames }) })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data && Array.isArray(data.icons)) {
+            data.icons.forEach(ic => { if (ic.name && ic.icon) iconCache[ic.name] = ic.icon; if (ic.name && ic.rarity) rarityCache[ic.name] = ic.rarity; });
+            loadGrid('skins');
+            hydrateHeroIcons();
+          }
+        })
+        .catch(() => { loadGrid('skins'); });
+    } else {
+      loadGrid('skins');
+    }
+
+    // Purchase flow
+    function setupBuyBtn(btnId) {
+      const buyBtn = document.getElementById(btnId);
+      if (!buyBtn) return;
+      const modal = document.getElementById('instant-buy-modal');
+      const tosCheck = document.getElementById('instant-buy-tos-check');
+      const cancelBtn = document.getElementById('instant-buy-cancel-btn');
+      const confirmBtn = document.getElementById('instant-buy-confirm-btn');
+      const statusEl = buyBtn.nextElementSibling;
+      let inFlight = false;
+      const userBalance = parseFloat('{{ balance|default("0") }}');
+      const itemPrice = parseFloat(detail.price || 0);
+
+      function startBuy() {
+        if (inFlight) return;
+        const itemId = Number(detail.item_id || 0);
+        if (!(Number.isInteger(itemId) && itemId > 0)) { if (statusEl) statusEl.textContent = 'Invalid item. Please refresh.'; return; }
+        inFlight = true; buyBtn.disabled = true; buyBtn.innerHTML = 'PROCESSING...';
+        const title = String(detail.title || '').trim();
+        const params = new URLSearchParams({ item_id: String(itemId) });
+        if (title) params.set('title', title);
+        window.location.href = `/purchase-processing?${params.toString()}`;
+      }
+
+      buyBtn.addEventListener('click', () => {
+        if (inFlight) return;
+        if (userBalance < itemPrice) {
+          if (statusEl) statusEl.innerHTML = '<span class="text-red-400 font-semibold text-sm mt-2 block">Not enough balance. <a href="/balance" class="text-cyan-400 hover:text-cyan-300 underline">Add funds</a></span>';
+          return;
+        }
+        if (modal && tosCheck && cancelBtn && confirmBtn) {
+          tosCheck.checked = false; confirmBtn.disabled = true;
+          modal.classList.remove('hidden'); modal.classList.add('flex');
+        } else { startBuy(); }
+      });
+
+      if (modal && tosCheck && cancelBtn && confirmBtn) {
+        const closeModal = () => { modal.classList.add('hidden'); modal.classList.remove('flex'); };
+        cancelBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+        tosCheck.addEventListener('change', () => { confirmBtn.disabled = !tosCheck.checked; });
+        confirmBtn.addEventListener('click', () => { if (!tosCheck.checked) return; closeModal(); startBuy(); });
+        document.addEventListener('keydown', e => { if (e.key === 'Escape' && !modal.classList.contains('hidden')) closeModal(); });
+      }
+    }
+    const isOg = {{ 'true' if account_detail.is_og else 'false' }};
+    const isSold = {{ 'true' if account_detail.is_sold else 'false' }};
+    if (!isOg && !isSold) {
+      setupBuyBtn('instant-buy-btn-mobile');
+      setupBuyBtn('instant-buy-btn-2');
+    }
+  });
+</script>
+{% endblock %}

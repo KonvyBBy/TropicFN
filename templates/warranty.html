@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Warranty Policy — Konvy Accounts{% endblock %}
+
+{% block content %}
+
+<header class="glass-panel rounded-3xl px-5 py-8 sm:px-8 sm:py-10 md:px-10 reveal">
+  <h1 class="text-glow font-space text-2xl font-bold text-white sm:text-3xl md:text-4xl text-gradient-anim">Warranty Policy</h1>
+  <p class="mt-2 text-sm text-zinc-400 reveal reveal-delay-1">Understanding your account protection and warranty coverage.</p>
+</header>
+
+<div class="glass-panel rounded-3xl p-5 sm:p-6 md:p-8 space-y-6 reveal">
+
+  <!-- Coverage highlight -->
+  <section class="rounded-2xl border border-cyan-500/20 bg-cyan-950/20 p-5">
+    <h2 class="flex items-center gap-2 font-space text-base font-semibold text-cyan-400 sm:text-lg">
+      <i class="ri-shield-check-line"></i>What Accounts Are Covered?
+    </h2>
+    <p class="mt-2 text-sm leading-relaxed text-zinc-400">
+      <strong class="text-white">All accounts inactive for 11 or more days qualify for warranty protection.</strong>
+      Look for the <span class="inline-flex items-center rounded-md border border-cyan-500/30 bg-cyan-500/10 px-2 py-0.5 text-[11px] font-semibold text-cyan-400">✓ Warranty</span> badge on eligible accounts when browsing.
+    </p>
+  </section>
+
+  <section>
+    <h2 class="mb-3 flex items-center gap-2 font-space text-base font-semibold text-white sm:text-lg">
+      <i class="ri-shield-line text-cyan-400"></i>Warranty Coverage
+    </h2>
+    <ul class="space-y-2 text-sm leading-relaxed text-zinc-400">
+      <li class="flex items-start gap-2"><i class="ri-check-line text-cyan-400 mt-0.5 shrink-0"></i><span><strong class="text-white">Email Access Issues</strong> — if you cannot access the email associated with the account</span></li>
+      <li class="flex items-start gap-2"><i class="ri-check-line text-cyan-400 mt-0.5 shrink-0"></i><span><strong class="text-white">Login Problems</strong> — if the provided credentials do not work</span></li>
+      <li class="flex items-start gap-2"><i class="ri-check-line text-cyan-400 mt-0.5 shrink-0"></i><span><strong class="text-white">Account Ownership Issues</strong> — if the previous owner reclaims the account</span></li>
+      <li class="flex items-start gap-2"><i class="ri-check-line text-cyan-400 mt-0.5 shrink-0"></i><span><strong class="text-white">Password Changes</strong> — if the password is changed by someone else</span></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2 class="mb-3 flex items-center gap-2 font-space text-base font-semibold text-white sm:text-lg">
+      <i class="ri-file-list-line text-cyan-400"></i>How to Make a Warranty Claim
+    </h2>
+    <ol class="space-y-2 text-sm leading-relaxed text-zinc-400 list-none">
+      <li class="flex items-start gap-3"><span class="shrink-0 flex h-5 w-5 items-center justify-center rounded-full border border-cyan-500/40 bg-cyan-500/10 text-[10px] font-bold text-cyan-400">1</span><span><strong class="text-white">Contact Support Immediately</strong> — reach out as soon as you encounter an issue</span></li>
+      <li class="flex items-start gap-3"><span class="shrink-0 flex h-5 w-5 items-center justify-center rounded-full border border-cyan-500/40 bg-cyan-500/10 text-[10px] font-bold text-cyan-400">2</span><span><strong class="text-white">Provide Your Order Number</strong> — include your purchase details</span></li>
+      <li class="flex items-start gap-3"><span class="shrink-0 flex h-5 w-5 items-center justify-center rounded-full border border-cyan-500/40 bg-cyan-500/10 text-[10px] font-bold text-cyan-400">3</span><span><strong class="text-white">Explain the Issue</strong> — describe what went wrong</span></li>
+      <li class="flex items-start gap-3"><span class="shrink-0 flex h-5 w-5 items-center justify-center rounded-full border border-cyan-500/40 bg-cyan-500/10 text-[10px] font-bold text-cyan-400">4</span><span><strong class="text-white">Submit Required Proof</strong> — provide screenshots if applicable</span></li>
+    </ol>
+    <div class="mt-4 rounded-xl border border-white/10 bg-white/[0.02] p-4 text-sm text-zinc-400">
+      <i class="ri-lightbulb-line text-amber-400 mr-1"></i>
+      <strong class="text-amber-300">Tip:</strong> If your claim is initially denied, don't give up! You can re-submit for up to 2 weeks after purchase.
+    </div>
+  </section>
+
+  <section>
+    <h2 class="mb-3 flex items-center gap-2 font-space text-base font-semibold text-white sm:text-lg">
+      <i class="ri-close-circle-line text-red-400"></i>What's NOT Covered
+    </h2>
+    <ul class="space-y-2 text-sm leading-relaxed text-zinc-400">
+      <li class="flex items-start gap-2"><i class="ri-close-line text-red-400 mt-0.5 shrink-0"></i><span><strong class="text-white">Tournament Play</strong> — accounts used in competitive play are disqualified</span></li>
+      <li class="flex items-start gap-2"><i class="ri-close-line text-red-400 mt-0.5 shrink-0"></i><span><strong class="text-white">Security Procedure Not Followed</strong> — if you didn't follow the security video guide</span></li>
+      <li class="flex items-start gap-2"><i class="ri-close-line text-red-400 mt-0.5 shrink-0"></i><span><strong class="text-white">Account Bans</strong> — if banned due to your own actions</span></li>
+      <li class="flex items-start gap-2"><i class="ri-close-line text-red-400 mt-0.5 shrink-0"></i><span><strong class="text-white">Claims After 2 Weeks</strong> — claims must be submitted within 14 days of purchase</span></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2 class="mb-3 flex items-center gap-2 font-space text-base font-semibold text-white sm:text-lg">
+      <i class="ri-video-line text-cyan-400"></i>Required: Security Video
+    </h2>
+    <p class="text-sm leading-relaxed text-zinc-400 mb-3">Before using your account, watch this required security tutorial:</p>
+    <a href="https://youtu.be/ykQsz5QrZkg" target="_blank" rel="noopener noreferrer"
+      class="inline-flex items-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-4 py-2.5 text-sm font-medium text-cyan-400 hover:bg-cyan-500/15 transition">
+      <i class="ri-play-circle-line"></i>Watch Security Tutorial
+    </a>
+  </section>
+
+  <div class="border-t border-white/8 pt-5 text-xs text-zinc-600">
+    Warranty coverage lasts 14 days from purchase. For questions, contact us at
+    <a href="/support" class="text-cyan-400 hover:text-cyan-300 transition">support</a>.
+  </div>
+
+</div>
+
+{% endblock %}

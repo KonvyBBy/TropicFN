@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% block title %}Account Security Guide — Konvy Accounts{% endblock %}
+
+{% block content %}
+
+<header class="glass-panel rounded-3xl px-5 py-8 sm:px-8 sm:py-10 md:px-10">
+  <h1 class="text-glow font-space text-2xl font-bold text-white sm:text-3xl md:text-4xl reveal text-gradient-anim">
+    <i class="ri-shield-keyhole-line mr-2 text-cyan-400"></i>Account Security Guide
+  </h1>
+  <p class="mt-2 text-sm text-zinc-400 reveal reveal-delay-1">Follow this recovery request process to keep your account secure.</p>
+</header>
+
+<div class="glass-panel rounded-3xl p-5 sm:p-6 md:p-8 space-y-6 reveal">
+
+  <!-- Important notice banner -->
+  <section class="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-5">
+    <h2 class="flex items-center gap-2 font-space text-base font-semibold text-amber-300 sm:text-lg">
+      <i class="ri-error-warning-line"></i>Important Security Notice
+    </h2>
+    <p class="mt-2 text-sm leading-relaxed text-zinc-400">
+      The goal is <strong class="text-white">NOT</strong> to change the email — this is simply a periodic security check.
+    </p>
+  </section>
+
+  <!-- Steps -->
+  <section>
+    <h2 class="mb-4 flex items-center gap-2 font-space text-base font-semibold text-white sm:text-lg">
+      <i class="ri-list-check-2 text-cyan-400"></i>Steps
+    </h2>
+    <ol class="space-y-4">
+
+      <!-- Step 1 -->
+      <li class="flex gap-4 rounded-2xl border border-white/8 bg-white/[0.02] p-4">
+        <span class="shrink-0 flex h-7 w-7 items-center justify-center rounded-full border border-cyan-500/40 bg-cyan-500/10 text-sm font-bold text-cyan-400">1</span>
+        <div class="space-y-1 text-sm text-zinc-400">
+          <p class="font-semibold text-cyan-400">✅ Update Email Address</p>
+          <p>Go to:</p>
+          <a href="https://www.epicgames.com/help/wizards/w6?s=0" target="_blank" rel="noopener noreferrer"
+            class="inline-flex items-center gap-1 text-cyan-400 hover:text-cyan-300 transition underline break-all">
+            https://www.epicgames.com/help/wizards/w6?s=0
+          </a>
+          <p>Select <strong class="text-white">Update Email Address</strong></p>
+          <p>Use a new email you create yourself.</p>
+        </div>
+      </li>
+
+      <!-- Step 2 -->
+      <li class="flex gap-4 rounded-2xl border border-white/8 bg-white/[0.02] p-4">
+        <span class="shrink-0 flex h-7 w-7 items-center justify-center rounded-full border border-cyan-500/40 bg-cyan-500/10 text-sm font-bold text-cyan-400">2</span>
+        <div class="space-y-1 text-sm text-zinc-400">
+          <p class="font-semibold text-cyan-400">✅ Find Account</p>
+          <p>Choose <strong class="text-white">Find account using email address</strong></p>
+          <p>Enter the most recently used email connected to the account you purchased.</p>
+        </div>
+      </li>
+
+      <!-- Step 3 -->
+      <li class="flex gap-4 rounded-2xl border border-white/8 bg-white/[0.02] p-4">
+        <span class="shrink-0 flex h-7 w-7 items-center justify-center rounded-full border border-cyan-500/40 bg-cyan-500/10 text-sm font-bold text-cyan-400">3</span>
+        <div class="space-y-1 text-sm text-zinc-400">
+          <p class="font-semibold text-cyan-400">✅ Email Change Question</p>
+          <p>When asked: <em class="text-zinc-300">Have you ever changed your account email address?</em></p>
+          <p>Select <strong class="text-white">No</strong> or <strong class="text-white">Not Sure</strong></p>
+          <p>After entering the code, choose <strong class="text-white">No One / Not Sure</strong> again if prompted.</p>
+        </div>
+      </li>
+
+      <!-- Step 4 -->
+      <li class="flex gap-4 rounded-2xl border border-white/8 bg-white/[0.02] p-4">
+        <span class="shrink-0 flex h-7 w-7 items-center justify-center rounded-full border border-cyan-500/40 bg-cyan-500/10 text-sm font-bold text-cyan-400">4</span>
+        <div class="space-y-1 text-sm text-zinc-400">
+          <p class="font-semibold text-cyan-400">✅ Name &amp; Location</p>
+          <p>Enter basic info such as:</p>
+          <ul class="ml-4 list-disc space-y-0.5">
+            <li><strong class="text-white">Name:</strong> John Jones (or any name)</li>
+            <li><strong class="text-white">Location:</strong> Your current location</li>
+          </ul>
+        </div>
+      </li>
+
+      <!-- Step 5 -->
+      <li class="flex gap-4 rounded-2xl border border-white/8 bg-white/[0.02] p-4">
+        <span class="shrink-0 flex h-7 w-7 items-center justify-center rounded-full border border-cyan-500/40 bg-cyan-500/10 text-sm font-bold text-cyan-400">5</span>
+        <div class="space-y-1 text-sm text-zinc-400">
+          <p class="font-semibold text-cyan-400">✅ Connected Accounts</p>
+          <p>Select <strong class="text-white">No</strong> or <strong class="text-white">Not Sure</strong></p>
+        </div>
+      </li>
+
+      <!-- Step 6 -->
+      <li class="flex gap-4 rounded-2xl border border-white/8 bg-white/[0.02] p-4">
+        <span class="shrink-0 flex h-7 w-7 items-center justify-center rounded-full border border-cyan-500/40 bg-cyan-500/10 text-sm font-bold text-cyan-400">6</span>
+        <div class="space-y-1 text-sm text-zinc-400">
+          <p class="font-semibold text-cyan-400">✅ Payment Information</p>
+          <p>Select <strong class="text-white">No</strong> or <strong class="text-white">Not Sure</strong></p>
+        </div>
+      </li>
+
+      <!-- Step 7 -->
+      <li class="flex gap-4 rounded-2xl border border-white/8 bg-white/[0.02] p-4">
+        <span class="shrink-0 flex h-7 w-7 items-center justify-center rounded-full border border-cyan-500/40 bg-cyan-500/10 text-sm font-bold text-cyan-400">7</span>
+        <div class="space-y-1 text-sm text-zinc-400">
+          <p class="font-semibold text-cyan-400">✅ Reason &amp; Submit</p>
+          <p>Choose: <strong class="text-white">I lost access to my email</strong></p>
+          <p>Then submit the request.</p>
+        </div>
+      </li>
+
+    </ol>
+  </section>
+
+  <!-- Important notes -->
+  <section class="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-5 space-y-2">
+    <h2 class="flex items-center gap-2 font-space text-base font-semibold text-amber-300 sm:text-lg">
+      <i class="ri-pushpin-line"></i>Important
+    </h2>
+    <ul class="space-y-2 text-sm text-zinc-400">
+      <li class="flex items-start gap-2">
+        <span class="shrink-0 flex h-5 w-5 items-center justify-center rounded-full border border-amber-500/40 bg-amber-500/10 text-[10px] font-bold text-amber-400">1</span>
+        <span>Do <strong class="text-white">NOT</strong> try to force an email change.</span>
+      </li>
+      <li class="flex items-start gap-2">
+        <span class="shrink-0 flex h-5 w-5 items-center justify-center rounded-full border border-amber-500/40 bg-amber-500/10 text-[10px] font-bold text-amber-400">2</span>
+        <span>Simply submit a recovery request.</span>
+      </li>
+      <li class="flex items-start gap-2">
+        <span class="shrink-0 flex h-5 w-5 items-center justify-center rounded-full border border-amber-500/40 bg-amber-500/10 text-[10px] font-bold text-amber-400">3</span>
+        <span>Submit a new request every time they email you back that it has been denied.</span>
+      </li>
+      <li class="flex items-start gap-2">
+        <span class="shrink-0 flex h-5 w-5 items-center justify-center rounded-full border border-amber-500/40 bg-amber-500/10 text-[10px] font-bold text-amber-400">4</span>
+        <span>Record the date each time you submit it.</span>
+      </li>
+    </ul>
+    <p class="text-xs text-zinc-500 mt-2">This helps maintain account security over time.</p>
+  </section>
+
+  <!-- Rambler section -->
+  <section>
+    <h2 class="mb-3 flex items-center gap-2 font-space text-base font-semibold text-white sm:text-lg">
+      <i class="ri-mail-lock-line text-cyan-400"></i>Change Your Rambler Email Password
+    </h2>
+    <p class="mb-3 text-sm leading-relaxed text-zinc-400">
+      If your account uses a Rambler.ru email, you should also update that email password for added security.
+    </p>
+    <ol class="space-y-3">
+      <li class="flex gap-3 text-sm text-zinc-400">
+        <span class="shrink-0 flex h-5 w-5 items-center justify-center rounded-full border border-cyan-500/40 bg-cyan-500/10 text-[10px] font-bold text-cyan-400">1</span>
+        <span>Go to <a href="https://mail.rambler.ru" target="_blank" rel="noopener noreferrer" class="text-cyan-400 hover:text-cyan-300 transition underline">mail.rambler.ru</a></span>
+      </li>
+      <li class="flex gap-3 text-sm text-zinc-400">
+        <span class="shrink-0 flex h-5 w-5 items-center justify-center rounded-full border border-cyan-500/40 bg-cyan-500/10 text-[10px] font-bold text-cyan-400">2</span>
+        <span>Log in with your Rambler email and current password</span>
+      </li>
+      <li class="flex gap-3 text-sm text-zinc-400">
+        <span class="shrink-0 flex h-5 w-5 items-center justify-center rounded-full border border-cyan-500/40 bg-cyan-500/10 text-[10px] font-bold text-cyan-400">3</span>
+        <span>Navigate to <strong class="text-white">Settings / Account Settings</strong></span>
+      </li>
+      <li class="flex gap-3 text-sm text-zinc-400">
+        <span class="shrink-0 flex h-5 w-5 items-center justify-center rounded-full border border-cyan-500/40 bg-cyan-500/10 text-[10px] font-bold text-cyan-400">4</span>
+        <span>Select <strong class="text-white">Change Password</strong> and set a strong new password</span>
+      </li>
+    </ol>
+    <div class="mt-3 rounded-xl border border-white/10 bg-white/[0.02] p-4 text-sm text-zinc-400">
+      <i class="ri-lightbulb-line text-amber-400 mr-1"></i>
+      <strong class="text-amber-300">Tip:</strong> Use a unique password you do not use anywhere else.
+    </div>
+  </section>
+
+</div>
+
+{% endblock %}

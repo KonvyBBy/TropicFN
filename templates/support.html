@@ -1,0 +1,788 @@
+{% extends "base.html" %}
+{% block title %}Support — Konvy Accounts{% endblock %}
+{% block extra_styles %}
+:root { --sp-border: rgba(255,255,255,0.08); --sp-bg: rgba(255,255,255,0.02); --sp-hover: rgba(255,255,255,0.05); }
+.sp-layout { display:grid;grid-template-columns:320px 1fr 300px;gap:0;height:calc(100vh - 160px);min-height:500px;border:1px solid var(--sp-border);border-radius:16px;overflow:hidden;background:rgba(0,0,0,0.15); }
+.sp-col { display:flex;flex-direction:column;overflow:hidden; }
+.sp-col-left { border-right:1px solid var(--sp-border); }
+.sp-col-right { border-left:1px solid var(--sp-border); }
+.sp-col-middle { background:rgba(0,0,0,0.08); }
+.sp-header { padding:14px 16px;border-bottom:1px solid var(--sp-border);flex-shrink:0; }
+.sp-header h2 { margin:0;font-size:14px;font-weight:700;color:#fff; }
+.sp-header .count { font-size:11px;color:#6b7280; }
+/* Counters */
+.sp-counters { display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px 12px;border-bottom:1px solid var(--sp-border); }
+.sp-counter { padding:8px 10px;border-radius:10px;text-align:center; }
+.sp-counter .num { font-size:18px;font-weight:800; }
+.sp-counter .label { font-size:10px;color:#9ca3af;margin-top:1px; }
+.cnt-all { background:rgba(99,102,241,0.1); }.cnt-all .num { color:#818cf8; }
+.cnt-needs { background:rgba(239,68,68,0.1); }.cnt-needs .num { color:#f87171; }
+.cnt-waiting { background:rgba(234,179,8,0.1); }.cnt-waiting .num { color:#fbbf24; }
+.cnt-closed { background:rgba(107,114,128,0.1); }.cnt-closed .num { color:#9ca3af; }
+/* Filters */
+.sp-filters { display:flex;gap:4px;padding:8px 12px;border-bottom:1px solid var(--sp-border);overflow-x:auto;flex-shrink:0; }
+.sp-filter-btn { padding:4px 12px;border-radius:8px;border:none;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;background:transparent;color:#6b7280;transition:all 0.15s; }
+.sp-filter-btn:hover { background:var(--sp-hover);color:#d4d4d8; }
+.sp-filter-btn.active { background:rgba(0,229,255,0.1);color:var(--neon-cyan); }
+/* Ticket list */
+.sp-ticket-list { flex:1;overflow-y:auto;padding:4px 0; }
+.sp-ticket { padding:10px 14px;border-bottom:1px solid var(--sp-border);cursor:pointer;transition:background 0.15s; }
+.sp-ticket:hover { background:var(--sp-hover); }
+.sp-ticket.active { background:rgba(0,229,255,0.06);border-left:3px solid var(--neon-cyan); }
+.sp-ticket .t-subject { font-size:13px;font-weight:600;color:#e4e4e7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.sp-ticket .t-user { font-size:11px;color:#6b7280;margin-top:1px; }
+.sp-ticket .t-preview { font-size:12px;color:#9ca3af;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.sp-ticket .t-meta { display:flex;align-items:center;justify-content:space-between;margin-top:5px; }
+.sp-ticket .t-time { font-size:10px;color:#52525b; }
+/* Status badges */
+.sb { display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700; }
+.sb-needs { background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);color:#f87171; }
+.sb-waiting { background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.25);color:#fbbf24; }
+.sb-closed { background:rgba(107,114,128,0.1);border:1px solid rgba(107,114,128,0.25);color:#9ca3af; }
+.sb-high { background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);color:#f87171; }
+.sb-medium { background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.25);color:#fbbf24; }
+.sb-low { background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);color:#4ade80; }
+/* Conversation */
+.sp-convo-header { padding:14px 24px;border-bottom:1px solid var(--sp-border);flex-shrink:0;max-width:900px;margin:0 auto;width:100%; }
+.sp-convo-header h3 { font-size:15px;font-weight:700;color:#fff;margin:0; }
+.sp-convo-header .sub { font-size:11px;color:#6b7280;margin-top:2px;display:flex;align-items:center;gap:8px;flex-wrap:wrap; }
+.sp-messages { flex:1;overflow-y:auto;padding:12px 24px;display:flex;flex-direction:column;max-width:900px;margin:0 auto;width:100%; }
+.msg-bubble { max-width:80%;padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.5;word-break:break-word;position:relative; }
+.msg-bubble.user { align-self:flex-start;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-bottom-left-radius:4px; }
+.msg-bubble.admin { align-self:flex-end;background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.15);border-bottom-right-radius:4px; }
+.msg-bubble .m-author { font-size:11px;font-weight:600;margin-bottom:3px; }
+.msg-bubble.user .m-author { color:#9ca3af; }
+.msg-bubble.admin .m-author { color:var(--neon-cyan); }
+.msg-bubble .m-time { font-size:10px;color:#52525b;margin-top:5px;display:block;text-align:right; }
+.msg-bubble .m-attach { margin-top:6px;display:flex;flex-wrap:wrap;gap:6px; }
+.msg-bubble .m-attach a { display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);font-size:11px;color:#d4d4d8;text-decoration:none; }
+.msg-bubble .m-attach a:hover { background:rgba(255,255,255,0.1); }
+.msg-bubble .m-attach img { max-height:120px;max-width:200px;border-radius:8px;object-fit:cover;cursor:pointer; }
+.sp-reply { padding:12px 20px;border-top:1px solid var(--sp-border);flex-shrink:0;background:rgba(0,0,0,0.15);max-width:900px;margin:0 auto;width:100%; }
+.sp-reply .reply-row { display:flex;gap:10px;align-items:flex-end; }
+.sp-reply textarea { flex:1;padding:12px 16px;border-radius:14px;border:1px solid var(--sp-border);background:rgba(255,255,255,0.04);color:#fff;font-size:14px;outline:none;resize:none;min-height:48px;max-height:140px;font-family:inherit;line-height:1.4; }
+.sp-reply textarea:focus { border-color:rgba(0,229,255,0.3); }
+.sp-reply .reply-actions { display:flex;gap:4px; }
+.sp-reply .reply-actions button { padding:12px 16px;border-radius:12px;border:none;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:center; }
+.sp-reply .reply-actions button:hover { opacity:0.85;transform:translateY(-1px); }
+.sp-reply .reply-actions .btn-send { background:var(--neon-cyan);color:#000;padding:12px 24px; }
+.sp-reply .reply-actions .btn-attach { background:rgba(255,255,255,0.06);color:#9ca3af;font-size:18px;padding:12px 14px; }
+.sp-reply .reply-templates { display:flex;gap:4px;margin-top:8px;flex-wrap:wrap; }
+.sp-reply .reply-templates button { padding:4px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);color:#6b7280;font-size:11px;cursor:pointer;transition:all 0.15s; }
+.sp-reply .reply-templates button:hover { background:rgba(0,229,255,0.06);border-color:rgba(0,229,255,0.15);color:#d4d4d8; }
+/* Customer info panel */
+.sp-cust-header { padding:14px 14px;border-bottom:1px solid var(--sp-border);text-align:center; }
+.sp-cust-header .c-avatar { width:48px;height:48px;border-radius:50%;object-fit:cover;margin:0 auto 8px;border:2px solid rgba(0,229,255,0.2); }
+.sp-cust-header .c-name { font-size:14px;font-weight:700;color:#fff; }
+.sp-cust-header .c-status { font-size:11px;color:#6b7280;margin-top:2px; }
+.sp-cust-stats { display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:10px 12px;border-bottom:1px solid var(--sp-border); }
+.sp-cust-stat { padding:6px 8px;border-radius:8px;background:rgba(255,255,255,0.02);text-align:center; }
+.sp-cust-stat .val { font-size:14px;font-weight:700;color:#e4e4e7; }
+.sp-cust-stat .lbl { font-size:9px;color:#6b7280;margin-top:1px;text-transform:uppercase;letter-spacing:0.04em; }
+.sp-cust-body { flex:1;overflow-y:auto;padding:10px 12px; }
+.sp-cust-section { margin-bottom:12px; }
+.sp-cust-section h4 { font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 6px; }
+.sp-action-btn { display:block;width:100%;padding:7px 12px;margin-bottom:4px;border-radius:8px;border:1px solid var(--sp-border);background:transparent;color:#d4d4d8;font-size:12px;font-weight:500;cursor:pointer;text-align:left;transition:all 0.15s; }
+.sp-action-btn:hover { background:var(--sp-hover);color:#fff; }
+.sp-action-btn.danger:hover { background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.3);color:#f87171; }
+.sp-action-btn.success:hover { background:rgba(34,197,94,0.1);border-color:rgba(34,197,94,0.3);color:#4ade80; }
+/* Internal notes */
+.sp-note { padding:8px 10px;background:rgba(255,255,255,0.02);border:1px dashed rgba(255,255,255,0.06);border-radius:8px;margin-bottom:6px;font-size:11px;color:#9ca3af; }
+.sp-note .n-author { font-weight:600;color:#d4d4d8; }
+.sp-note .n-time { font-size:10px;color:#52525b;margin-left:6px; }
+.sp-note-input-wrap { display:flex;gap:4px;margin-top:6px; }
+.sp-note-input-wrap input { flex:1;padding:6px 10px;border-radius:8px;border:1px solid var(--sp-border);background:rgba(255,255,255,0.04);color:#fff;font-size:11px;outline:none; }
+.sp-note-input-wrap button { padding:6px 12px;border-radius:8px;border:none;background:rgba(99,102,241,0.2);color:#818cf8;font-size:11px;font-weight:600;cursor:pointer; }
+/* Empty states */
+.sp-empty { display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#52525b;font-size:13px;padding:20px;text-align:center; }
+.sp-empty .icon { font-size:32px;margin-bottom:10px; }
+/* Scrollbar */
+.sp-ticket-list::-webkit-scrollbar, .sp-messages::-webkit-scrollbar, .sp-cust-body::-webkit-scrollbar { width:4px; }
+.sp-ticket-list::-webkit-scrollbar-track, .sp-messages::-webkit-scrollbar-track, .sp-cust-body::-webkit-scrollbar-track { background:transparent; }
+.sp-ticket-list::-webkit-scrollbar-thumb, .sp-messages::-webkit-scrollbar-thumb, .sp-cust-body::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.08);border-radius:99px; }
+@media (max-width:1024px) { .sp-layout { grid-template-columns:1fr;height:auto; }.sp-col-right { display:none; } }
+@media (max-width:768px) {
+  .sp-layout { grid-template-columns:1fr; }
+  .sp-col-left.mob-hide { display:none; }
+  .sp-col-middle.mob-hide { display:none; }
+  .sp-col-right { display:none; }
+  .mob-back-btn { display:inline-flex !important; }
+}
+/* Toast */
+.sp-toast { position:fixed;bottom:20px;right:20px;padding:10px 18px;border-radius:10px;font-size:12px;font-weight:600;z-index:9999;display:none;background:rgba(0,229,255,0.9);color:#000; }
+.sp-toast.error { background:rgba(239,68,68,0.9);color:#fff; }
+.sp-toast.show { display:block;animation:spFadeIn 0.25s; }
+@keyframes spFadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+.priority-dot { width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px; }
+.priority-dot.high { background:#f87171; }
+.priority-dot.medium { background:#fbbf24; }
+.priority-dot.low { background:#4ade80; }
+/* Chat bubbles */
+.cb-wrap { display:flex;flex-direction:column; }
+.cb-group { margin-bottom:4px; }
+.cb-first { display:flex;align-items:flex-start;gap:10px;margin-top:12px; }
+.cb-avatar { width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid rgba(255,255,255,0.06); }
+.cb-body { flex:1;min-width:0; }
+.cb-header { display:flex;align-items:baseline;gap:8px;margin-bottom:4px; }
+.cb-name { font-size:13px;font-weight:700;color:#e4e4e7; }
+.cb-badge { font-size:10px;padding:1px 8px;border-radius:99px;font-weight:700; }
+.cb-badge.support { background:rgba(0,229,255,0.1);color:var(--neon-cyan);border:1px solid rgba(0,229,255,0.2); }
+.cb-time { font-size:11px;color:#52525b; }
+.cb-bubble { padding:10px 16px;border-radius:14px;font-size:14px;line-height:1.55;word-break:break-word;max-width:90%;width:fit-content;margin-bottom:3px; }
+.cb-bubble.admin { background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.12);border-top-left-radius:4px;color:#e4e4e7; }
+.cb-bubble.user { background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-top-right-radius:4px;color:#e4e4e7; }
+.cb-bubble.follow { border-top-left-radius:14px;border-top-right-radius:14px;margin-top:1px; }
+.cb-attach { display:flex;flex-wrap:wrap;gap:6px;margin-top:8px; }
+.cb-attach a { display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);color:#d4d4d8;font-size:12px;text-decoration:none;transition:all .1s; }
+.cb-attach a:hover { background:rgba(255,255,255,0.06); }
+.cb-attach img { max-height:180px;max-width:260px;border-radius:10px;object-fit:cover;cursor:pointer;border:1px solid rgba(255,255,255,0.06); }
+.cb-attach video { max-height:180px;max-width:260px;border-radius:10px; }
+.cb-date-sep { text-align:center;font-size:11px;font-weight:600;color:#52525b;padding:16px 0 8px;position:relative; }
+.cb-date-sep::before,.cb-date-sep::after { content:'';position:absolute;top:50%;height:1px;width:30%;background:rgba(255,255,255,0.04); }
+.cb-date-sep::before { left:0; } .cb-date-sep::after { right:0; }
+{% endblock %}
+{% block content %}
+{% if not logged_in %}
+<section class="glass-panel rounded-3xl p-6 sm:p-8 reveal"><h2 class="font-space text-xl font-semibold text-white">Login required</h2><p class="mt-2 text-sm text-zinc-400">Please log in to create and manage support tickets.</p><a href="/login" class="ripple-btn mt-5 btn-primary inline-flex h-11 items-center justify-center rounded-xl px-5 text-sm font-bold">Go to Login</a></section>
+{% elif not is_support_admin %}
+<!-- USER VIEW: Discord/chat-style support -->
+<div id="user-support-root" style="max-width:720px;margin:0 auto;">
+
+  <!-- Hero -->
+  <div class="glass-panel rounded-3xl p-5 sm:p-6 reveal" style="margin-bottom:16px;">
+    <h1 style="font-size:22px;font-weight:800;color:#fff;margin:0;">Support Center</h1>
+    <p style="font-size:13px;color:#6b7280;margin:6px 0 16px;">Need help with an order, account, payment, or delivery?</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:120px;padding:10px 14px;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.2);border-radius:12px;">
+        <div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#4ade80;"><span style="width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block;box-shadow:0 0 8px rgba(34,197,94,0.5);"></span>Support Online</div>
+        <div style="font-size:11px;color:#6b7280;margin-top:4px;">Avg response: ~5 min</div>
+      </div>
+      <div style="flex:1;min-width:120px;padding:10px 14px;background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.15);border-radius:12px;">
+        <div style="font-size:13px;font-weight:600;color:#818cf8;">Open Tickets</div>
+        <div style="font-size:22px;font-weight:800;color:#e4e4e7;margin-top:2px;" id="user-ticket-count">0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- New ticket form (hidden when ticket exists) -->
+  <div id="user-new-ticket-section" class="glass-panel rounded-3xl p-5 sm:p-6 reveal" style="margin-bottom:16px;">
+    <h2 style="font-size:17px;font-weight:700;color:#fff;margin:0 0 4px;">Need Help?</h2>
+    <p style="font-size:13px;color:#6b7280;margin:0 0 14px;">Open a support ticket and we'll get back to you.</p>
+    <div id="existing-open-ticket-notice" class="hidden" style="padding:12px 16px;border-radius:12px;border:1px solid rgba(234,179,8,0.3);background:rgba(234,179,8,0.08);font-size:13px;color:#fbbf24;margin-bottom:14px;">You already have an open ticket. Reply below or wait for support.</div>
+    <form id="new-ticket-form">
+      <div style="margin-bottom:12px;"><input id="ticket-subject" maxlength="120" required type="text" placeholder="Brief title (e.g. Refund Request)" style="width:100%;padding:12px 16px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:#fff;font-size:14px;outline:none;box-sizing:border-box;"></div>
+      <div style="margin-bottom:12px;"><textarea id="ticket-message" rows="4" maxlength="2000" placeholder="Explain your issue in detail..." style="width:100%;padding:12px 16px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:#fff;font-size:14px;outline:none;resize:vertical;font-family:inherit;box-sizing:border-box;"></textarea><p style="margin:4px 0 0;text-align:right;font-size:11px;color:#52525b;"><span id="ticket-msg-count">0</span>/2000</p></div>
+      <div style="margin-bottom:12px;"><label style="font-size:12px;color:#6b7280;display:block;margin-bottom:6px;">Attachments (optional — images, videos, PDF, zip)</label>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <input id="ticket-files" type="file" name="files[]" multiple accept=".jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.avi,.webm,.zip,.pdf" style="font-size:12px;color:#9ca3af;flex:1;min-width:150px;">
+          <button type="submit" class="btn-primary" style="padding:10px 24px;border-radius:12px;border:none;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">Submit Ticket</button>
+        </div>
+        <span id="ticket-create-status" style="font-size:12px;color:#6b7280;margin-top:6px;display:block;"></span>
+      </div>
+    </form>
+  </div>
+
+  <!-- Active ticket chat view -->
+  <div id="user-active-ticket" style="display:none;margin-bottom:16px;">
+    <div class="glass-panel" style="border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,0.06);display:flex;flex-direction:column;">
+      <!-- Chat header -->
+      <div style="padding:14px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+        <div>
+          <div style="font-size:15px;font-weight:700;color:#fff;" id="user-active-subject"></div>
+          <div style="font-size:12px;color:#6b7280;margin-top:2px;"><span id="user-active-status-badge"></span> · <span id="user-active-updated"></span></div>
+        </div>
+        <button id="user-close-ticket-btn" type="button" style="padding:5px 12px;border-radius:8px;border:1px solid rgba(239,68,68,0.25);background:rgba(239,68,68,0.08);color:#f87171;font-size:11px;font-weight:600;cursor:pointer;">Close Ticket</button>
+      </div>
+      <!-- Notification banner -->
+      <div id="user-notif-banner" style="display:none;padding:10px 16px;background:rgba(0,229,255,0.08);border-bottom:1px solid rgba(0,229,255,0.15);font-size:13px;font-weight:600;color:var(--neon-cyan);">🔔 Support replied! Check the latest message below.</div>
+      <!-- Messages -->
+      <div id="user-msg-area" style="flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-height:300px;max-height:440px;"></div>
+      <!-- Sticky reply -->
+      <div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,0.06);background:rgba(0,0,0,0.15);">
+        <div style="display:flex;gap:8px;align-items:flex-end;">
+          <textarea id="user-reply-input" rows="1" placeholder="Type a message..." maxlength="2000" style="flex:1;padding:10px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:#fff;font-size:14px;outline:none;resize:none;min-height:44px;max-height:100px;font-family:inherit;"></textarea>
+          <div style="display:flex;gap:4px;">
+            <button type="button" onclick="document.getElementById('user-file-input').click()" style="padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:#9ca3af;font-size:16px;cursor:pointer;">📎</button>
+            <input type="file" id="user-file-input" style="display:none" multiple accept=".jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.avi,.webm,.zip,.pdf">
+            <button type="button" id="user-send-btn" onclick="userSendReply()" style="padding:10px 20px;border-radius:10px;background:var(--neon-cyan);color:#000;font-weight:700;border:none;font-size:14px;cursor:pointer;">Send</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Previous tickets -->
+  <div class="glass-panel rounded-3xl p-5 sm:p-6 reveal" style="margin-bottom:16px;">
+    <div onclick="togglePrevTickets()" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
+      <h2 style="font-size:15px;font-weight:700;color:#d4d4d8;margin:0;">Previous Tickets <span id="prev-count" style="color:#6b7280;font-weight:400;"></span></h2>
+      <span id="prev-chevron" style="color:#6b7280;font-size:14px;transition:transform 0.2s;">▶</span>
+    </div>
+    <div id="prev-tickets-list" style="display:none;margin-top:12px;"></div>
+  </div>
+</div>
+{% else %}
+<!-- ADMIN VIEW: 3-column support panel -->
+<div class="sp-layout" id="sp-layout">
+  <!-- LEFT: Ticket Queue -->
+  <div class="sp-col sp-col-left" id="sp-ticket-list-wrap">
+    <div class="sp-header" style="display:flex;align-items:center;justify-content:space-between;">
+      <h2>Support Tickets</h2>
+      <button onclick="closeAllTickets()" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(239,68,68,0.3);background:rgba(239,68,68,0.1);color:#f87171;font-size:10px;font-weight:600;cursor:pointer;">Close All</button>
+    </div>
+    <div class="sp-counters">
+      <div class="sp-counter cnt-all"><div class="num" id="sp-cnt-all">0</div><div class="label">Open</div></div>
+      <div class="sp-counter cnt-needs"><div class="num" id="sp-cnt-needs">0</div><div class="label">Needs Reply</div></div>
+      <div class="sp-counter cnt-waiting"><div class="num" id="sp-cnt-waiting">0</div><div class="label">Waiting</div></div>
+      <div class="sp-counter cnt-closed"><div class="num" id="sp-cnt-closed">0</div><div class="label">Closed</div></div>
+    </div>
+    <div class="sp-filters" id="sp-filters">
+      <button class="sp-filter-btn" data-filter="all">All</button>
+      <button class="sp-filter-btn active" data-filter="needs">Needs Reply</button>
+      <button class="sp-filter-btn" data-filter="waiting">Waiting</button>
+      <button class="sp-filter-btn" data-filter="closed">Closed</button>
+      <button class="sp-filter-btn" data-filter="high">🔴 High</button>
+      <input type="text" id="sp-search" placeholder="Search..." style="padding:4px 8px;border-radius:8px;border:1px solid var(--sp-border);background:rgba(255,255,255,0.04);color:#fff;font-size:11px;outline:none;margin-left:auto;width:100px;">
+    </div>
+    <div class="sp-ticket-list" id="sp-ticket-list"><div class="sp-empty"><div class="icon">📋</div>No tickets</div></div>
+  </div>
+  <!-- MIDDLE: Conversation -->
+  <div class="sp-col sp-col-middle" id="sp-convo-col">
+    <div class="sp-empty" id="sp-convo-empty"><div class="icon">💬</div>Select a ticket to view</div>
+    <div id="sp-convo-view" style="display:none;flex-direction:column;height:100%;">
+      <div class="sp-convo-header">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <button class="mob-back-btn" onclick="mobShowList()" style="display:none;padding:4px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:#9ca3af;font-size:13px;cursor:pointer;">← Back</button>
+          <h3 id="sp-convo-title" style="flex:1;"></h3>
+        </div>
+        <div class="sub"><span id="sp-convo-id"></span><span id="sp-convo-time"></span><span id="sp-convo-status-badge"></span></div>
+      </div>
+      <div class="sp-messages" id="sp-messages"></div>
+      <div class="sp-reply">
+        <div class="reply-row">
+          <textarea id="sp-reply-input" rows="1" placeholder="Type a message..." maxlength="2000"></textarea>
+          <div class="reply-actions">
+            <button class="btn-attach" onclick="document.getElementById('sp-file-input').click()" title="Attach file">📎</button>
+            <input type="file" id="sp-file-input" style="display:none" multiple accept=".jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.avi,.webm,.zip,.pdf">
+            <button class="btn-send" onclick="sendSpReply()"><i class="ri-send-plane-fill" style="font-size:16px;"></i></button>
+          </div>
+        </div>
+        <div class="reply-templates">
+          <button onclick="fillTemplate('Hi, thanks for reaching out. Let me look into this for you.')">👋 Intro</button>
+          <button onclick="fillTemplate('Could you provide your order ID so I can look into this?')">📋 Request Order</button>
+          <button onclick="fillTemplate('This has been resolved. Let me know if you need anything else.')">✅ Resolved</button>
+          <button onclick="fillTemplate('I\'ve escalated this to our team. We\'ll get back to you shortly.')">🔼 Escalate</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- RIGHT: Customer Info -->
+  <div class="sp-col sp-col-right" id="sp-cust-col">
+    <div class="sp-empty" id="sp-cust-empty"><div class="icon">👤</div>Select a ticket</div>
+    <div id="sp-cust-view" style="display:none;flex-direction:column;height:100%;">
+      <div class="sp-cust-header">
+        <img id="sp-cust-avatar" src="/static/default-avatar.svg" alt="" class="c-avatar" onerror="this.src='/static/default-avatar.svg'">
+        <div class="c-name" id="sp-cust-name"></div>
+        <div class="c-status" id="sp-cust-status"></div>
+      </div>
+      <div class="sp-cust-stats">
+        <div class="sp-cust-stat"><div class="val" id="sp-cust-orders">0</div><div class="lbl">Orders</div></div>
+        <div class="sp-cust-stat"><div class="val" id="sp-cust-spent">$0</div><div class="lbl">Spent</div></div>
+        <div class="sp-cust-stat"><div class="val" id="sp-cust-opentix">0</div><div class="lbl">Open Tix</div></div>
+        <div class="sp-cust-stat"><div class="val" id="sp-cust-totaltix">0</div><div class="lbl">Total Tix</div></div>
+      </div>
+      <div class="sp-cust-body">
+        <div class="sp-cust-section"><h4>Actions</h4>
+          <button class="sp-action-btn" onclick="setPriority('high')">🔴 Mark High Priority</button>
+          <button class="sp-action-btn" onclick="setPriority('medium')">🟡 Mark Medium Priority</button>
+          <button class="sp-action-btn" onclick="setPriority('low')">🟢 Mark Low Priority</button>
+          <button class="sp-action-btn success" onclick="closeSpTicket()">✅ Close Ticket</button>
+          <button class="sp-action-btn danger" onclick="banSpUser()">🚫 Ban User</button>
+        </div>
+        <div class="sp-cust-section"><h4>Internal Notes</h4>
+          <div id="sp-notes-list"></div>
+          <div class="sp-note-input-wrap">
+            <input type="text" id="sp-note-input" placeholder="Add a note..." maxlength="500">
+            <button onclick="addSpNote()">Add</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="sp-toast" id="sp-toast"></div>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+{% if logged_in and not is_support_admin %}
+<script>
+// ===================== CUSTOMER SUPPORT (CHAT STYLE) =====================
+let userTickets = [];
+let userActiveTicketId = null;
+let userPollTimer = null;
+let prevExpanded = false;
+let userAvatar = '{{ user_profile_pic or "/static/default-avatar.svg" }}';
+
+const IMG_X=new Set(['jpg','jpeg','png','gif','webp']),VID_X=new Set(['mp4','mov','avi','webm']);
+function esc(v){return String(v||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;')}
+function fd(ts){if(!ts)return'';return new Date(ts*1000).toLocaleString()}
+function ta(ts){if(!ts)return'';const s=Math.floor(Date.now()/1000-ts);if(s<60)return'just now';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago'}
+function userStatusHtml(t){
+  if(t.status==='closed')return'<span style="padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700;background:rgba(107,114,128,0.1);border:1px solid rgba(107,114,128,0.25);color:#9ca3af;">⚫ Closed</span>';
+  if(t.last_message_from_admin)return'<span style="padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700;background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.2);color:var(--neon-cyan);">🔴 Support Replied</span>';
+  return'<span style="padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700;background:rgba(234,179,8,0.08);border:1px solid rgba(234,179,8,0.2);color:#fbbf24;">🟢 Waiting For Support</span>';
+}
+function renderAttachHtml(attachments,ticketId){
+  if(!Array.isArray(attachments)||!attachments.length)return'';
+  return attachments.map(a=>{
+    const ext=(a.original_name||'').split('.').pop().toLowerCase();
+    const url='/ticket-uploads/'+encodeURIComponent(ticketId)+'/'+encodeURIComponent(a.stored_name);
+    const n=esc(a.original_name||a.stored_name);
+    if(IMG_X.has(ext))return'<div style="margin-top:6px;"><a href="'+url+'" target="_blank" rel="noopener"><img src="'+url+'" alt="'+n+'" style="max-height:160px;max-width:240px;border-radius:10px;object-fit:cover;border:1px solid rgba(255,255,255,0.08);cursor:pointer;"></a></div>';
+    if(VID_X.has(ext))return'<div style="margin-top:6px;"><video src="'+url+'" controls style="max-height:160px;max-width:240px;border-radius:10px;"></video></div>';
+    return'<div style="margin-top:6px;"><a href="'+url+'" target="_blank" rel="noopener" download style="display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);color:#d4d4d8;font-size:11px;text-decoration:none;">📎 '+n+'</a></div>';
+  }).join('');
+}
+
+function renderUserMessages(ticket){
+  const el=document.getElementById('user-msg-area');
+  const msgs=Array.isArray(ticket.messages)?ticket.messages:[];
+  if(!msgs.length){el.innerHTML='<div style="text-align:center;padding:40px;color:#52525b;font-size:13px;">No messages yet.</div>';return}
+  let html='';let lastDate='';let lastAuthor='';
+  msgs.forEach((m,i)=>{
+    const isAdmin=m.author_type==='admin';
+    const authorKey=isAdmin?'__admin__':'__user__';
+    const msgDate=new Date(m.timestamp*1000);
+    const dateStr=msgDate.toLocaleDateString();
+    const timeStr=msgDate.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    if(dateStr!==lastDate){
+      const today=new Date();const yest=new Date(Date.now()-86400000);
+      const label=dateStr===today.toLocaleDateString()?'Today':dateStr===yest.toLocaleDateString()?'Yesterday':msgDate.toLocaleDateString([],{month:'long',day:'numeric',year:'numeric'});
+      html+='<div class="cb-date-sep">'+label+'</div>';lastDate=dateStr;lastAuthor='';
+    }
+    const firstInGroup=authorKey!==lastAuthor;lastAuthor=authorKey;
+    let attachHtml='';
+    if(Array.isArray(m.attachments)&&m.attachments.length){
+      attachHtml='<div class="cb-attach">'+m.attachments.map(a=>{
+        const ext=(a.original_name||'').split('.').pop().toLowerCase();
+        const url='/ticket-uploads/'+encodeURIComponent(ticket.id)+'/'+encodeURIComponent(a.stored_name);
+        const nm=esc(a.original_name||a.stored_name);
+        if(IMG_X.has(ext))return'<a href="'+url+'" target="_blank" rel="noopener"><img src="'+url+'" alt="'+nm+'"></a>';
+        if(VID_X.has(ext))return'<a href="'+url+'" target="_blank" rel="noopener"><video src="'+url+'" controls></video></a>';
+        return'<a href="'+url+'" target="_blank" rel="noopener" download>📎 '+nm+'</a>';
+      }).join('')+'</div>';
+    }
+    if(firstInGroup){
+      if(isAdmin){
+        html+='<div class="cb-first">'+
+          '<img src="/static/default-avatar.svg" alt="" class="cb-avatar" onerror="this.src=\'/static/default-avatar.svg\'">'+
+          '<div class="cb-body"><div class="cb-header"><span class="cb-name">Konvy Support</span><span class="cb-badge support">Support</span><span class="cb-time">'+timeStr+'</span></div>'+
+          '<div class="cb-bubble admin">'+(m.message?esc(m.message):'')+attachHtml+'</div></div></div>';
+      }else{
+        html+='<div class="cb-first" style="flex-direction:row-reverse;">'+
+          '<img src="'+userAvatar+'" alt="" class="cb-avatar" onerror="this.src=\'/static/default-avatar.svg\'">'+
+          '<div class="cb-body"><div class="cb-header" style="flex-direction:row-reverse;"><span class="cb-name">You</span><span class="cb-time">'+timeStr+'</span></div>'+
+          '<div class="cb-bubble user" style="margin-left:auto;">'+(m.message?esc(m.message):'')+attachHtml+'</div></div></div>';
+      }
+    }else{
+      html+='<div style="padding-left:46px;'+(!isAdmin?';display:flex;flex-direction:column;align-items:flex-end':'')+'">'+
+        '<div class="cb-bubble '+(isAdmin?'admin':'user')+' follow'+(isAdmin?'':' style="margin-left:auto;"')+'">'+
+        (m.message?esc(m.message):'')+attachHtml+'</div></div>';
+    }
+  });
+  el.innerHTML=html;el.scrollTop=el.scrollHeight;
+}
+
+function renderPrevTicket(t){
+  return '<div style="padding:12px 14px;border:1px solid rgba(255,255,255,0.04);border-radius:12px;margin-bottom:6px;background:rgba(255,255,255,0.01);">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">'+
+    '<div><div style="font-size:13px;font-weight:600;color:#d4d4d8;">'+esc(t.subject)+'</div>'+
+    '<div style="font-size:11px;color:#6b7280;margin-top:2px;">'+fd(t.closed_at||t.updated_at)+' · '+esc(t.last_message_preview||'')+'</div></div>'+
+    userStatusHtml(t)+'</div></div>';
+}
+
+async function userLoadTickets(){
+  try{
+    const res=await fetch('/api/support/tickets');
+    const data=await res.json();
+    userTickets=Array.isArray(data.tickets)?data.tickets:[];
+    const open=userTickets.filter(t=>t.status!=='closed');
+    const closed=userTickets.filter(t=>t.status==='closed');
+    document.getElementById('user-ticket-count').textContent=open.length;
+    // Toggle new ticket section
+    const hasOpen=open.length>0;
+    document.getElementById('user-new-ticket-section').style.display=hasOpen?'none':'block';
+    if(hasOpen){
+      document.getElementById('user-active-ticket').style.display='block';
+      const active=open[0];
+      userActiveTicketId=active.id;
+      document.getElementById('user-active-subject').textContent=active.subject;
+      document.getElementById('user-active-status-badge').innerHTML=userStatusHtml(active);
+      document.getElementById('user-active-updated').textContent='Last update: '+(active.updated_at?ta(active.updated_at):'');
+      // Notification banner
+      const notifEl=document.getElementById('user-notif-banner');
+      if(active.last_message_from_admin){
+        notifEl.style.display='block';
+      }else{
+        notifEl.style.display='none';
+      }
+      renderUserMessages(active);
+    }else{
+      document.getElementById('user-active-ticket').style.display='none';
+      userActiveTicketId=null;
+    }
+    // Previous tickets
+    document.getElementById('prev-count').textContent='('+closed.length+')';
+    document.getElementById('prev-tickets-list').innerHTML=closed.length?closed.map(renderPrevTicket).join(''):'<div style="text-align:center;padding:20px;color:#52525b;font-size:12px;">No previous tickets</div>';
+  }catch(e){}
+}
+
+async function userSendReply(){
+  if(!userActiveTicketId)return;
+  const input=document.getElementById('user-reply-input');
+  const fileInput=document.getElementById('user-file-input');
+  const msg=input.value.trim();
+  const hasFiles=fileInput?.files?.length>0;
+  if(!msg&&!hasFiles)return;
+  const fd=new FormData();
+  fd.append('message',msg);
+  if(hasFiles){for(const f of fileInput.files)fd.append('files[]',f)}
+  const res=await fetch('/api/support/tickets/'+encodeURIComponent(userActiveTicketId)+'/reply',{method:'POST',body:fd});
+  const data=await res.json();
+  if(data.ok){
+    input.value='';
+    if(fileInput)fileInput.value='';
+    document.getElementById('user-notif-banner').style.display='none';
+    await userLoadTickets();
+  }else{
+    alert(data.error||'Failed to send');
+  }
+}
+
+document.getElementById('user-reply-input')?.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();userSendReply()}});
+document.getElementById('user-close-ticket-btn')?.addEventListener('click',async()=>{
+  if(!userActiveTicketId||!confirm('Close this ticket?'))return;
+  const r=await fetch('/api/support/tickets/'+encodeURIComponent(userActiveTicketId)+'/close',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+  const d=await r.json();
+  if(d.ok){await userLoadTickets()}else alert(d.error||'Error');
+});
+document.getElementById('ticket-message')?.addEventListener('input',()=>{const el=document.getElementById('ticket-msg-count');if(el)el.textContent=String(document.getElementById('ticket-message').value.length)});
+document.getElementById('new-ticket-form')?.addEventListener('submit',async e=>{
+  e.preventDefault();const st=document.getElementById('ticket-create-status');st.textContent='Submitting...';
+  const fd=new FormData();fd.append('subject',document.getElementById('ticket-subject').value);fd.append('message',document.getElementById('ticket-message').value);
+  const fi=document.getElementById('ticket-files');if(fi?.files){for(const f of fi.files)fd.append('files[]',f)}
+  const r=await fetch('/api/support/tickets',{method:'POST',body:fd});const d=await r.json();
+  if(d.ok){st.textContent='Ticket created!';document.getElementById('new-ticket-form').reset();document.getElementById('ticket-msg-count').textContent='0';await userLoadTickets()}
+  else st.textContent=d.error||'Error';
+});
+function togglePrevTickets(){
+  prevExpanded=!prevExpanded;
+  document.getElementById('prev-tickets-list').style.display=prevExpanded?'block':'none';
+  document.getElementById('prev-chevron').style.transform=prevExpanded?'rotate(90deg)':'';
+}
+// Check URL for pre-filled item_id
+(function(){
+  const params=new URLSearchParams(window.location.search);
+  const itemId=params.get('item_id');
+  if(itemId){
+    const subj=document.getElementById('ticket-subject');
+    const msg=document.getElementById('ticket-message');
+    const accLink=window.location.origin+'/account/'+itemId;
+    if(subj)subj.value='Question about account #'+itemId;
+    if(msg)msg.value='I have a question about this account:\n'+accLink+'\n\n';
+    setTimeout(()=>subj?.focus(),300);
+  }
+})();
+userLoadTickets();userPollTimer=setInterval(userLoadTickets,4000);
+</script>
+{% elif logged_in and is_support_admin %}
+<script>
+// ===================== ADMIN SUPPORT PANEL =====================
+let ticketsCache = [];
+let selectedTicketId = null;
+let currentFilter = 'needs';
+let pollTimer = null;
+let currentCustAvatar = '/static/default-avatar.svg';
+let mobOnList = true;
+
+const IMAGE_EXTS_ADMIN=new Set(['jpg','jpeg','png','gif','webp']),VIDEO_EXTS_ADMIN=new Set(['mp4','mov','avi','webm']);
+function escapeHtml(v){return String(v||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;')}
+function fmtDate(ts){if(!ts)return'—';return new Date(ts*1000).toLocaleString()}
+function fmtTimeAgo(ts){if(!ts)return'';const s=Math.floor((Date.now()/1000)-ts);if(s<60)return'just now';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago'}
+function statusLabel(t){if(t.status==='closed')return'closed';return t.needs_admin_response?'needs':'waiting'}
+function statusBadgeHtml(t){
+  if(t.status==='closed')return'<span class="sb sb-closed">⚫ Closed</span>';
+  if(t.needs_admin_response)return'<span class="sb sb-needs">🔴 Needs Staff Reply</span>';
+  return'<span class="sb sb-waiting">🟢 Waiting On User</span>';
+}
+function priorityBadgeHtml(p){
+  if(p==='high')return'<span class="sb sb-high">🔴 High</span>';
+  if(p==='low')return'<span class="sb sb-low">🟢 Low</span>';
+  return'<span class="sb sb-medium">🟡 Medium</span>';
+}
+function priorityDot(p){return'<span class="priority-dot '+p+'"></span>'}
+function spToast(msg,err){const el=document.getElementById('sp-toast');el.textContent=msg;el.className='sp-toast'+(err?' error':'')+' show';clearTimeout(el._timer);el._timer=setTimeout(()=>el.className='sp-toast',3000)}
+
+// ---- Render ticket list ----
+function renderTicketList(tickets){
+  const el=document.getElementById('sp-ticket-list');
+  if(!tickets.length){el.innerHTML='<div class="sp-empty"><div class="icon">📋</div>No tickets match</div>';return}
+  el.innerHTML=tickets.map(t=>{
+    const sl=statusLabel(t);
+    const isActive=t.id===selectedTicketId;
+    return '<div class="sp-ticket'+(isActive?' active':'')+'" data-id="'+escapeHtml(t.id)+'" onclick="selectTicket(\''+escapeHtml(t.id)+'\')">'+
+      '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">'+
+        '<span class="priority-dot '+t.priority+'"></span>'+
+        '<span class="t-subject">'+escapeHtml(t.subject)+'</span>'+
+      '</div>'+
+      '<div style="font-size:11px;color:#6b7280;margin-bottom:4px;">'+escapeHtml(t.username)+'</div>'+
+      '<div class="t-preview" style="margin-bottom:6px;">'+escapeHtml(t.last_message_preview||'No messages')+'</div>'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">'+
+        statusBadgeHtml(t)+
+        '<span style="font-size:10px;color:#52525b;white-space:nowrap;">'+fmtTimeAgo(t.updated_at)+'</span>'+
+      '</div>'+
+    '</div>'
+  }).join('');
+}
+
+function mobShowList(){mobOnList=true;document.getElementById('sp-ticket-list-wrap').classList.remove('mob-hide');document.getElementById('sp-convo-col').classList.add('mob-hide')}
+function mobShowConvo(){mobOnList=false;document.getElementById('sp-ticket-list-wrap').classList.add('mob-hide');document.getElementById('sp-convo-col').classList.remove('mob-hide')}
+
+// ---- Select ticket ----
+async function selectTicket(ticketId){
+  selectedTicketId=ticketId;
+  const t=ticketsCache.find(x=>x.id===ticketId);
+  if(!t)return;
+  document.getElementById('sp-convo-empty').style.display='none';
+  document.getElementById('sp-convo-view').style.display='flex';
+  document.getElementById('sp-cust-empty').style.display='none';
+  document.getElementById('sp-cust-view').style.display='flex';
+  mobShowConvo();
+  // Conversation header
+  document.getElementById('sp-convo-title').textContent=t.subject;
+  const linkInfo=t.linked_item_id ? ' • <a href="/account/'+t.linked_item_id+'" style="color:var(--neon-cyan);text-decoration:none;" target="_blank">Account #'+t.linked_item_id+'</a>' : '';
+  document.getElementById('sp-convo-id').innerHTML='#'+t.id+' • Created '+fmtDate(t.created_at)+linkInfo;
+  document.getElementById('sp-convo-time').textContent='';
+  document.getElementById('sp-convo-status-badge').innerHTML=statusBadgeHtml(t);
+  // Messages
+  renderMessages(t);
+  // Customer info
+  loadCustInfo(t.username);
+  // Highlight in list
+  document.querySelectorAll('.sp-ticket').forEach(el=>el.classList.toggle('active',el.dataset.id===ticketId));
+}
+
+// ---- Render messages (Discord style) ----
+function renderMessages(ticket){
+  const el=document.getElementById('sp-messages');
+  const msgs=Array.isArray(ticket.messages)?ticket.messages:[];
+  if(!msgs.length){el.innerHTML='<div class="sp-empty" style="height:100%"><div class="icon">💬</div>No messages</div>';return}
+  let html='';
+  let lastDate='';
+  let lastAuthor='';
+  const custName=escapeHtml(ticket.username||'User');
+  const custInitial=custName.charAt(0).toUpperCase();
+  msgs.forEach((m,i)=>{
+    const isAdmin=m.author_type==='admin';
+    const authorKey=isAdmin?'__admin__':custName;
+    const msgDate=new Date(m.timestamp*1000);
+    const dateStr=msgDate.toLocaleDateString();
+    const timeStr=msgDate.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    // Date separator
+    if(dateStr!==lastDate){
+      const today=new Date();const yest=new Date(Date.now()-86400000);
+      const label=dateStr===today.toLocaleDateString()?'Today':
+                  dateStr===yest.toLocaleDateString()?'Yesterday':
+                  msgDate.toLocaleDateString([],{month:'long',day:'numeric',year:'numeric'});
+      html+='<div class="cb-date-sep">'+label+'</div>';
+      lastDate=dateStr;
+      lastAuthor='';
+    }
+    const isFirstInGroup=authorKey!==lastAuthor;
+    lastAuthor=authorKey;
+    // Attachments
+    let attachHtml='';
+    if(Array.isArray(m.attachments)&&m.attachments.length){
+      attachHtml='<div class="cb-attach">'+m.attachments.map(a=>{
+        const ext=(a.original_name||'').split('.').pop().toLowerCase();
+        const url='/ticket-uploads/'+encodeURIComponent(ticket.id)+'/'+encodeURIComponent(a.stored_name);
+        const nm=escapeHtml(a.original_name||a.stored_name);
+        if(IMAGE_EXTS_ADMIN.has(ext))return'<a href="'+url+'" target="_blank" rel="noopener"><img src="'+url+'" alt="'+nm+'"></a>';
+        if(VIDEO_EXTS_ADMIN.has(ext))return'<a href="'+url+'" target="_blank" rel="noopener"><video src="'+url+'" controls></video></a>';
+        return'<a href="'+url+'" target="_blank" rel="noopener" download>📎 '+nm+'</a>';
+      }).join('')+'</div>';
+    }
+    if(isFirstInGroup){
+      if(isAdmin){
+        html+='<div class="cb-first">'+
+          '<img src="/static/default-avatar.svg" alt="" class="cb-avatar" onerror="this.src=\'/static/default-avatar.svg\'">'+
+          '<div class="cb-body">'+
+          '<div class="cb-header"><span class="cb-name">Konvy Support</span><span class="cb-badge support">Support</span><span class="cb-time">'+timeStr+'</span></div>'+
+          '<div class="cb-bubble admin">'+
+          (m.message?escapeHtml(m.message):'')+
+          attachHtml+
+          '</div></div></div>';
+      }else{
+        html+='<div class="cb-first">'+
+          '<img src="'+currentCustAvatar+'" alt="" class="cb-avatar" onerror="this.src=\'/static/default-avatar.svg\'">'+
+          '<div class="cb-body">'+
+          '<div class="cb-header"><span class="cb-name"><a href="/u/'+encodeURIComponent(ticket.username)+'" style="color:#e4e4e7;text-decoration:none;">'+custName+'</a></span><span class="cb-time">'+timeStr+'</span></div>'+
+          '<div class="cb-bubble user">'+
+          (m.message?escapeHtml(m.message):'')+
+          attachHtml+
+          '</div></div></div>';
+      }
+    }else{
+      html+='<div style="padding-left:46px;">'+
+        '<div class="cb-bubble '+(isAdmin?'admin':'user')+' follow">'+
+        (m.message?escapeHtml(m.message):'')+
+        attachHtml+
+        '</div></div>';
+    }
+  });
+  el.innerHTML=html;
+  el.scrollTop=el.scrollHeight;
+}
+
+// ---- Send reply ----
+async function sendSpReply(){
+  const input=document.getElementById('sp-reply-input');
+  const fileInput=document.getElementById('sp-file-input');
+  const msg=input.value.trim();
+  const hasFiles=fileInput?.files?.length>0;
+  if(!msg&&!hasFiles)return;
+  const fd=new FormData();
+  fd.append('message',msg);
+  if(hasFiles){for(const f of fileInput.files)fd.append('files[]',f)}
+  const res=await fetch('/api/support/tickets/'+encodeURIComponent(selectedTicketId)+'/reply',{method:'POST',body:fd});
+  const data=await res.json();
+  if(data.ok){
+    input.value='';
+    if(fileInput)fileInput.value='';
+    await loadAllTickets();
+    selectTicket(selectedTicketId);
+  }else{spToast(data.error||'Failed to send',true)}
+}
+
+document.getElementById('sp-reply-input')?.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendSpReply()}});
+function fillTemplate(text){const el=document.getElementById('sp-reply-input');if(el){el.value=text;el.focus();el.dispatchEvent(new Event('input'))}}
+
+// ---- Load user info ----
+async function loadCustInfo(username){
+  try{
+    const res=await fetch('/api/support/user-info/'+encodeURIComponent(username));
+    const data=await res.json();
+    document.getElementById('sp-cust-name').textContent=data.username;
+    currentCustAvatar=data.profile_pic||'/static/default-avatar.svg';
+    document.getElementById('sp-cust-avatar').src=currentCustAvatar;
+    document.getElementById('sp-cust-status').textContent=data.last_online?'Last seen '+fmtTimeAgo(data.last_online):'Offline';
+    document.getElementById('sp-cust-orders').textContent=data.purchase_count;
+    document.getElementById('sp-cust-spent').textContent='$'+(data.total_spent_cents/100).toFixed(2);
+    document.getElementById('sp-cust-opentix').textContent=data.open_tickets;
+    document.getElementById('sp-cust-totaltix').textContent=data.total_tickets;
+  }catch(e){}
+}
+
+// ---- Priority ----
+async function setPriority(p){
+  if(!selectedTicketId)return;
+  const res=await fetch('/api/support/tickets/'+encodeURIComponent(selectedTicketId)+'/priority',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({priority:p})});
+  const data=await res.json();
+  if(data.ok){spToast('Priority set to '+p);await loadAllTickets();selectTicket(selectedTicketId)}
+  else spToast(data.error||'Error',true);
+}
+
+// ---- Close ticket ----
+async function closeSpTicket(){
+  if(!selectedTicketId||!confirm('Close this ticket?'))return;
+  const res=await fetch('/api/support/tickets/'+encodeURIComponent(selectedTicketId)+'/close',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+  const data=await res.json();
+  if(data.ok){spToast('Ticket closed');await loadAllTickets();selectTicket(selectedTicketId)}
+  else spToast(data.error||'Error',true);
+}
+
+// ---- Ban user ----
+async function banSpUser(){
+  const name=document.getElementById('sp-cust-name').textContent;
+  if(!name||!confirm('Ban '+name+' from chat?'))return;
+  const res=await fetch('/api/chat/ban',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:name})});
+  const data=await res.json();
+  if(data.ok)spToast(data.message);else spToast(data.error||'Error',true);
+}
+async function closeAllTickets(){
+  if(!confirm('Close ALL open tickets?'))return;
+  const res=await fetch('/api/support/close-all',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+  const data=await res.json();
+  if(data.ok){spToast(data.message);await loadAllTickets()}
+  else spToast(data.error||'Error',true);
+}
+
+// ---- Internal notes ----
+async function loadNotes(){
+  if(!selectedTicketId)return;
+  const res=await fetch('/api/support/tickets/'+encodeURIComponent(selectedTicketId)+'/notes');
+  const data=await res.json();
+  const el=document.getElementById('sp-notes-list');
+  const notes=Array.isArray(data.notes)?data.notes:[];
+  if(!notes.length){el.innerHTML='<div style="font-size:11px;color:#52525b;padding:4px 0;">No notes</div>';return}
+  el.innerHTML=notes.map(n=>'<div class="sp-note"><span class="n-author">'+escapeHtml(n.author)+'</span><span class="n-time">'+fmtDate(n.timestamp)+'</span><br>'+escapeHtml(n.content)+'</div>').join('');
+}
+async function addSpNote(){
+  const el=document.getElementById('sp-note-input');
+  const content=el.value.trim();
+  if(!content||!selectedTicketId)return;
+  const res=await fetch('/api/support/tickets/'+encodeURIComponent(selectedTicketId)+'/notes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content})});
+  const data=await res.json();
+  if(data.ok){el.value='';loadNotes()}else spToast(data.error||'Error',true);
+}
+document.getElementById('sp-note-input')?.addEventListener('keydown',e=>{if(e.key==='Enter')addSpNote()});
+
+// ---- Filter tickets ----
+function filterTickets(){
+  const search=document.getElementById('sp-search').value.toLowerCase().trim();
+  let filtered=ticketsCache;
+  if(currentFilter==='needs')filtered=filtered.filter(t=>t.status!=='closed'&&t.needs_admin_response);
+  else if(currentFilter==='waiting')filtered=filtered.filter(t=>t.status==='open'&&!t.needs_admin_response);
+  else if(currentFilter==='closed')filtered=filtered.filter(t=>t.status==='closed');
+  else if(currentFilter==='high')filtered=filtered.filter(t=>t.priority==='high');
+  // 'all' shows everything including closed
+  if(search)filtered=filtered.filter(t=>t.subject.toLowerCase().includes(search)||t.username.toLowerCase().includes(search));
+  renderTicketList(filtered);
+  // Counters
+  const openCount=ticketsCache.filter(t=>t.status!=='closed').length;
+  const closedCount=ticketsCache.filter(t=>t.status==='closed').length;
+  const needs=ticketsCache.filter(t=>t.status!=='closed'&&t.needs_admin_response).length;
+  const waiting=ticketsCache.filter(t=>t.status==='open'&&!t.needs_admin_response).length;
+  document.getElementById('sp-cnt-all').textContent=ticketsCache.length;
+  document.getElementById('sp-cnt-needs').textContent=needs;
+  document.getElementById('sp-cnt-waiting').textContent=waiting;
+  document.getElementById('sp-cnt-closed').textContent=closedCount;
+}
+
+// ---- Load all tickets ----
+async function loadAllTickets(){
+  try{
+    const res=await fetch('/api/support/tickets');
+    const data=await res.json();
+    ticketsCache=Array.isArray(data.tickets)?data.tickets:[];
+    if(selectedTicketId&&!ticketsCache.some(t=>t.id===selectedTicketId)){selectedTicketId=null;document.getElementById('sp-convo-view').style.display='none';document.getElementById('sp-convo-empty').style.display='flex';document.getElementById('sp-cust-view').style.display='none';document.getElementById('sp-cust-empty').style.display='flex'}
+    filterTickets();
+    if(selectedTicketId&&!mobOnList){const t=ticketsCache.find(x=>x.id===selectedTicketId);if(t)selectTicket(selectedTicketId)}
+  }catch(e){}
+}
+
+// ---- Init ----
+document.querySelectorAll('.sp-filter-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.sp-filter-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter=btn.dataset.filter;
+    filterTickets();
+  });
+});
+document.getElementById('sp-search')?.addEventListener('input',filterTickets);
+
+loadAllTickets();
+pollTimer=setInterval(loadAllTickets,5000);
+</script>
+{% endif %}
+{% endblock %}

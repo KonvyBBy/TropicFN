@@ -1,0 +1,909 @@
+{% extends "base.html" %}
+{% block title %}Buy Fortnite Accounts — Marketplace | Konvy Accounts{% endblock %}
+{% block meta_desc %}Browse hundreds of Fortnite accounts for sale. Filter by skins, V-Bucks, level, price, and more. Instant delivery with full warranty.{% endblock %}
+{% block og_title %}Fortnite Account Marketplace — Buy Accounts | Konvy Accounts{% endblock %}
+
+{% block extra_styles %}
+<style>
+  /* ── Premium Filter Sidebar ── */
+  .filter-sidebar { width: 320px; min-width: 320px; }
+  .filter-card {
+    background: rgba(11,16,32,0.9);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px;
+    backdrop-filter: blur(16px);
+    position: sticky; top: 90px;
+    max-height: calc(100vh - 110px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .filter-card::-webkit-scrollbar { width: 3px; }
+  .filter-card::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 99px; }
+  .filter-section { border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .filter-section:last-child { border-bottom: none; }
+  .filter-head {
+    width: 100%; display: flex; align-items: center; gap: 8px;
+    padding: 10px 16px;
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em;
+    color: #64748b; cursor: pointer; transition: color .15s, background .15s;
+    background: none; border: none;
+  }
+  .filter-head:hover { color: #94a3b8; background: rgba(255,255,255,0.02); }
+  .filter-head .toggle-icon { margin-left: auto; font-size: 13px; transition: transform .25s; color: rgba(255,255,255,0.15); }
+  .filter-section[data-open="false"] .toggle-icon { transform: rotate(-90deg); }
+  .filter-section[data-open="false"] .filter-body { max-height: 0; padding-top: 0; padding-bottom: 0; opacity: 0; overflow: hidden; }
+  .filter-body {
+    max-height: 500px; padding: 2px 16px 10px;
+    transition: max-height .4s cubic-bezier(.4,0,.2,1), padding .3s ease, opacity .3s ease;
+    opacity: 1; overflow: hidden;
+  }
+
+  .filter-input {
+    background: rgba(5,8,20,0.7);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: #e2e8f0;
+    border-radius: 8px;
+    padding: 0 12px;
+    height: 34px;
+    font-size: 11px;
+    width: 100%;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .filter-input::placeholder { color: rgba(255,255,255,0.15); }
+
+  .filter-label { font-size: 9px; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+
+  /* Toggle buttons (No matter / Yes / No) */
+  .tg-group { display: flex; gap: 3px; }
+  .tg-btn {
+    flex: 1; padding: 5px 3px; font-size: 9px; font-weight: 600; border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.07); background: rgba(5,8,20,0.5);
+    color: #475569; cursor: pointer; transition: all .15s; text-align: center;
+  }
+  .tg-btn.active { background: linear-gradient(135deg, rgba(0,229,255,0.15), rgba(124,92,255,0.1)); border-color: rgba(0,229,255,0.3); color: #67e8f9; }
+  .tg-btn:not(.active):hover { background: rgba(255,255,255,0.06); color: #94a3b8; }
+
+  /* Selected cosmetics chips */
+  .sel-cos { display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 4px; }
+  .sel-cos-chip {
+    display: inline-flex; align-items: center; gap: 3px;
+    padding: 2px 7px; border-radius: 99px; font-size: 9px; font-weight: 600;
+    color: #67e8f9; background: rgba(0,229,255,0.08); border: 1px solid rgba(0,229,255,0.2);
+  }
+  .sel-cos-chip .rm { display: inline-flex; align-items: center; justify-content: center; width: 13px; height: 13px; border-radius: 99px; border: none; background: rgba(0,0,0,0.3); color: #94a3b8; font-size: 9px; line-height: 1; cursor: pointer; }
+  .sel-cos-chip .rm:hover { background: rgba(0,0,0,0.5); color: #fff; }
+
+  /* ── Marketplace Header ── */
+  .mkt-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px; gap: 12px; flex-wrap: wrap;
+  }
+  .mkt-header-count {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 22px; font-weight: 700;
+    color: #f1f5f9;
+  }
+  .mkt-header-count span { color: var(--neon-cyan); }
+  .mkt-header-sub {
+    font-size: 13px; color: #475569; margin-top: 2px;
+  }
+
+
+  /* ── Account Card List (wide premium cards) ── */
+  #search-results {
+    display: flex; flex-direction: column; gap: 24px;
+  }
+  .mkt-card {
+    position: relative; width: 100%;
+    border-radius: 18px; overflow: hidden; cursor: pointer;
+    background: #0B1020;
+    border: 1px solid rgba(255,255,255,0.06);
+    transition: transform .4s cubic-bezier(.15,.75,.4,1), box-shadow .5s ease, border-color .4s ease;
+  }
+  .mkt-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 30px 60px -15px rgba(0,0,0,0.8), 0 0 40px rgba(0,229,255,0.08), 0 0 80px rgba(0,229,255,0.03);
+    border-color: rgba(0,229,255,0.2);
+  }
+  .mkt-card:focus-visible { outline: 2px solid #00E5FF; outline-offset: 2px; }
+
+  /* ── Cinematic Banner ── */
+  .mkt-banner {
+    position: relative; height: 220px; overflow: hidden;
+    background: #050814;
+  }
+  .mkt-sc-bg {
+    position: absolute; inset: -60px;
+    background-size: cover; background-position: center;
+    filter: blur(40px) brightness(0.2) saturate(1.3);
+    opacity: 0.4;
+    transition: opacity .8s;
+  }
+  .mkt-sc-bg.loaded { opacity: 1; }
+  .mkt-sc-rarity {
+    position: absolute; inset: 0;
+    transition: opacity .6s;
+    pointer-events: none;
+  }
+  .mkt-sc-vignette {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at center, transparent 35%, rgba(5,8,20,0.7) 100%);
+    pointer-events: none;
+    z-index: 1;
+  }
+  .mkt-sc-glow {
+    position: absolute; inset: -20px;
+    pointer-events: none; z-index: 1;
+    transition: opacity .6s;
+  }
+  .mkt-sc-streak {
+    position: absolute; inset: 0; overflow: hidden;
+    pointer-events: none; z-index: 1;
+  }
+  .mkt-sc-streak::before {
+    content: ''; position: absolute; width: 400px; height: 2px;
+    top: 25%; left: -10%;
+    background: linear-gradient(90deg, transparent, rgba(0,229,255,0.08), transparent);
+    animation: streakDrift 10s ease-in-out infinite;
+  }
+  .mkt-sc-streak::after {
+    content: ''; position: absolute; width: 300px; height: 1.5px;
+    bottom: 35%; right: -5%;
+    background: linear-gradient(270deg, transparent, rgba(124,92,255,0.06), transparent);
+    animation: streakDrift2 14s ease-in-out infinite;
+  }
+  @keyframes streakDrift {
+    0%, 100% { transform: translateX(0) rotate(0deg); }
+    50% { transform: translateX(150%) rotate(3deg); }
+  }
+  @keyframes streakDrift2 {
+    0%, 100% { transform: translateX(0) rotate(0deg); }
+    50% { transform: translateX(-150%) rotate(-3deg); }
+  }
+  .mkt-sc-particle {
+    position: absolute; inset: 0; overflow: hidden;
+    pointer-events: none; z-index: 1;
+  }
+  .mkt-sc-particle::before {
+    content: ''; position: absolute;
+    width: 5px; height: 5px;
+    top: 30%; left: 20%;
+    background: rgba(0,229,255,0.2);
+    border-radius: 50%;
+    box-shadow:
+      100px 80px 0 -1px rgba(124,92,255,0.12),
+      250px 50px 0 -0.5px rgba(0,229,255,0.1),
+      380px 100px 0 -1px rgba(124,92,255,0.08),
+      180px -15px 0 -0.5px rgba(0,229,255,0.12),
+      450px 30px 0 -0.5px rgba(124,92,255,0.08);
+    animation: particleFloat 18s ease-in-out infinite;
+  }
+  @keyframes particleFloat {
+    0%, 100% { transform: translateY(0) scale(1); opacity: 0.2; }
+    50% { transform: translateY(-30px) scale(1.8); opacity: 0.6; }
+  }
+  .mkt-sc {
+    position: absolute; inset: 0;
+    z-index: 2;
+  }
+  .mkt-si {
+    position: absolute;
+    border-radius: 14px; overflow: hidden;
+    transition: transform .5s cubic-bezier(.15,.75,.4,1), box-shadow .5s ease;
+    background: rgba(5,8,20,0.4);
+    border: 2px solid rgba(255,255,255,0.1);
+    backdrop-filter: blur(3px);
+    animation: mktSiFloat 6s ease-in-out infinite;
+  }
+  @keyframes mktSiFloat {
+    0%, 100% { transform: var(--si-t) translateY(0); }
+    50% { transform: var(--si-t) translateY(-6px); }
+  }
+  .mkt-si img {
+    width: 100%; height: 100%; object-fit: cover;
+    display: block;
+  }
+  .mkt-si-main {
+    width: 140px; height: 140px;
+    left: 50%; top: 52%;
+    z-index: 6;
+    border: 2px solid rgba(255,255,255,0.15);
+    box-shadow: 0 0 60px rgba(0,229,255,0.25), 0 0 120px rgba(0,229,255,0.08), 0 12px 50px rgba(0,0,0,0.6);
+    border-radius: 16px;
+    --si-t: translate(-50%, -50%);
+  }
+  .mkt-si-main::after {
+    content: ''; position: absolute; inset: 0;
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 50%);
+    pointer-events: none;
+  }
+  .mkt-si-side {
+    width: 78px; height: 78px;
+    border: 1.5px solid rgba(255,255,255,0.08);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+    border-radius: 12px;
+  }
+  .mkt-si-side::after {
+    content: ''; position: absolute; inset: 0;
+    border-radius: 11px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 50%);
+    pointer-events: none;
+  }
+  .mkt-si-1 { --si-t: translate(-50%, -50%) rotate(-4deg); left: 25%; top: 52%; z-index: 4; animation-delay: -1.5s; }
+  .mkt-si-2 { --si-t: translate(-50%, -50%) rotate(4deg); left: 75%; top: 52%; z-index: 4; animation-delay: -3s; }
+  .mkt-si-3 { --si-t: translate(-50%, -50%) rotate(-10deg); left: 5%; top: 60%; z-index: 3; animation-delay: -0.5s; }
+  .mkt-si-4 { --si-t: translate(-50%, -50%) rotate(10deg); left: 95%; top: 60%; z-index: 3; animation-delay: -2s; }
+  .mkt-si-5 { --si-t: translate(-50%, -50%) rotate(-3deg); left: 50%; top: 13%; z-index: 2; animation-delay: -4s; }
+  .mkt-card:hover .mkt-si-1 { --si-t: translate(-50%, -50%) rotate(-2deg) scale(1.08); }
+  .mkt-card:hover .mkt-si-2 { --si-t: translate(-50%, -50%) rotate(2deg) scale(1.08); }
+  .mkt-card:hover .mkt-si-3 { --si-t: translate(-50%, -50%) rotate(-8deg) scale(1.08); }
+  .mkt-card:hover .mkt-si-4 { --si-t: translate(-50%, -50%) rotate(8deg) scale(1.08); }
+  .mkt-card:hover .mkt-si-5 { --si-t: translate(-50%, -50%) rotate(-1deg) scale(1.06); }
+  .mkt-si.placeholder { background: linear-gradient(135deg, #050814, #0B1020); }
+  .mkt-si.placeholder img { opacity: 0; }
+  .mkt-banner-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 5%, rgba(11,16,32,0.65) 50%, #0B1020 100%);
+    pointer-events: none; z-index: 3;
+  }
+  .mkt-banner-top {
+    position: absolute; top: 0; left: 0; right: 0;
+    display: flex; align-items: flex-start; justify-content: space-between;
+    padding: 14px 18px; z-index: 4;
+    background: linear-gradient(180deg, rgba(5,8,20,0.6) 0%, transparent 100%);
+    pointer-events: none;
+  }
+  .mkt-banner-platforms { display: flex; gap: 6px; pointer-events: auto; }
+  .mkt-banner-platform {
+    font-size: 9px; font-weight: 700; padding: 4px 10px; border-radius: 6px;
+    background: rgba(5,8,20,0.55); color: #94a3b8;
+    border: 1px solid rgba(255,255,255,0.08);
+    backdrop-filter: blur(8px);
+    text-transform: uppercase; letter-spacing: .04em;
+  }
+  .mkt-banner-platform.xbox { color: #6ee7b7; border-color: rgba(16,185,129,0.2); }
+  .mkt-banner-platform.psn { color: #93c5fd; border-color: rgba(59,130,246,0.2); }
+  .mkt-banner-platform.pc { color: #c4b5fd; border-color: rgba(124,92,255,0.2); }
+
+  .mkt-banner-actions { display: flex; align-items: center; gap: 10px; pointer-events: auto; }
+  .mkt-fav {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: rgba(5,8,20,0.5); border: 1px solid rgba(255,255,255,0.08);
+    color: #94a3b8; font-size: 15px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all .2s;
+    backdrop-filter: blur(8px);
+  }
+  .mkt-fav:hover { color: #ec4899; border-color: rgba(236,72,153,0.3); background: rgba(5,8,20,0.65); transform: scale(1.05); }
+  .mkt-price {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 26px; font-weight: 800;
+    padding: 8px 20px;
+    background: rgba(5,8,20,0.7); border: 1.5px solid rgba(0,229,255,0.25);
+    border-radius: 11px;
+    backdrop-filter: blur(8px);
+    color: #00E5FF;
+    text-shadow: 0 0 30px rgba(0,229,255,0.3);
+    animation: pricePulse 3s ease-in-out infinite;
+    letter-spacing: -.02em;
+    line-height: 1;
+  }
+  @keyframes pricePulse {
+    0%, 100% { text-shadow: 0 0 30px rgba(0,229,255,0.3); box-shadow: 0 0 20px rgba(0,229,255,0.08), 0 0 40px rgba(0,229,255,0.03); }
+    50% { text-shadow: 0 0 50px rgba(0,229,255,0.5), 0 0 100px rgba(0,229,255,0.12); box-shadow: 0 0 30px rgba(0,229,255,0.15), 0 0 60px rgba(0,229,255,0.05); }
+  }
+  .mkt-card:hover .mkt-price {
+    text-shadow: 0 0 40px rgba(0,229,255,0.5);
+    border-color: rgba(0,229,255,0.4);
+    box-shadow: 0 0 40px rgba(0,229,255,0.12);
+  }
+  .mkt-banner-info {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    padding: 16px 18px 16px; z-index: 4;
+    pointer-events: none;
+  }
+  .mkt-card-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 18px; font-weight: 700; color: #f1f5f9;
+    line-height: 1.3; margin-bottom: 4px;
+    text-shadow: 0 2px 16px rgba(0,0,0,0.8);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .mkt-card-sub {
+    font-size: 12px; color: rgba(255,255,255,0.45); font-weight: 500;
+    text-shadow: 0 1px 10px rgba(0,0,0,0.7);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .mkt-activity-dot {
+    display: inline-block; font-size: 10px; font-weight: 700; padding: 1px 8px; border-radius: 99px; letter-spacing: .02em; vertical-align: middle;
+  }
+  .mkt-activity-dot.green { background: rgba(34,197,94,0.15); color: #4ade80; }
+  .mkt-activity-dot.yellow { background: rgba(234,179,8,0.15); color: #eab308; }
+  .mkt-activity-dot.red { background: rgba(239,68,68,0.15); color: #f87171; }
+  .mkt-activity-dot.gray { background: rgba(255,255,255,0.06); color: #64748b; }
+  .mkt-card:hover .mkt-card-title { color: #fff; }
+
+  /* ── Card Body ── */
+  .mkt-body {
+    padding: 16px 20px 18px;
+  }
+  /* ── Trust Row ── */
+  .mkt-trust {
+    display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;
+  }
+  .mkt-trust-item {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 10px; font-weight: 600; color: #64748b;
+  }
+  .mkt-trust-item i { font-size: 12px; }
+  .mkt-trust-item.cy { color: #67e8f9; }
+  .mkt-trust-item.gr { color: #4ade80; }
+  .mkt-trust-item.pu { color: #a78bfa; }
+
+  /* ── Premium Stats Row ── */
+  .mkt-stats {
+    display: flex;
+    background: rgba(5,8,20,0.4);
+    border: 1px solid rgba(255,255,255,0.04);
+    border-radius: 12px;
+    padding: 12px 0;
+    margin-bottom: 14px;
+  }
+  .mkt-stat {
+    flex: 1; text-align: center;
+    position: relative;
+  }
+  .mkt-stat:not(:first-child)::before {
+    content: ''; position: absolute; left: 0; top: 18%; bottom: 18%;
+    width: 1px; background: linear-gradient(180deg, transparent, rgba(255,255,255,0.05), transparent);
+  }
+  .mkt-stat-icon { font-size: 16px; display: block; line-height: 1; margin-bottom: 4px; }
+  .mkt-stat-val {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 18px; font-weight: 800; color: #f1f5f9;
+    display: block; line-height: 1.2;
+  }
+  .mkt-stat-lbl {
+    font-size: 9px; color: #475569;
+    text-transform: uppercase; letter-spacing: .07em;
+    display: block; margin-top: 3px; font-weight: 600;
+  }
+  .mkt-stat.emphasis .mkt-stat-icon { font-size: 18px; }
+  .mkt-stat.emphasis .mkt-stat-val { font-size: 20px; color: #00E5FF; }
+  .mkt-stat.emphasis .mkt-stat-lbl { color: #64748b; }
+
+  /* ── Bottom Section (badges + meta + CTA) ── */
+  .mkt-bottom {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  }
+  .mkt-bottom-left { flex: 1; min-width: 0; }
+  .mkt-badges {
+    display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 6px;
+  }
+  .mkt-badge {
+    font-size: 10px; font-weight: 700; padding: 4px 11px; border-radius: 99px;
+    letter-spacing: .02em; white-space: nowrap;
+  }
+  .mkt-badge-green { background: rgba(34,197,94,0.1); color: #4ade80; border: 1px solid rgba(34,197,94,0.18); }
+  .mkt-badge-blue { background: rgba(59,130,246,0.1); color: #93c5fd; border: 1px solid rgba(59,130,246,0.18); }
+  .mkt-badge-purple { background: rgba(124,92,255,0.1); color: #a78bfa; border: 1px solid rgba(124,92,255,0.18); }
+  .mkt-badge-orange { background: rgba(251,146,60,0.1); color: #fb923c; border: 1px solid rgba(251,146,60,0.18); }
+  .mkt-badge-gray { background: rgba(255,255,255,0.04); color: #475569; border: 1px solid rgba(255,255,255,0.06); }
+  .mkt-badge-red { background: rgba(239,68,68,0.1); color: #f87171; border: 1px solid rgba(239,68,68,0.18); }
+
+  .mkt-meta {
+    display: flex; flex-wrap: wrap; gap: 3px 16px;
+  }
+  .mkt-meta-item {
+    font-size: 11px; color: #475569; white-space: nowrap;
+  }
+  .mkt-meta-item .lbl { color: #64748b; font-weight: 600; }
+
+  .mkt-bottom-right { flex-shrink: 0; }
+  .mkt-cta {
+    font-size: 14px; font-weight: 700;
+    padding: 13px 30px; border-radius: 12px;
+    background: linear-gradient(135deg, rgba(0,229,255,0.15), rgba(124,92,255,0.1));
+    color: #67e8f9;
+    border: 1px solid rgba(0,229,255,0.2);
+    cursor: pointer; transition: all .3s cubic-bezier(.15,.75,.4,1);
+    white-space: nowrap;
+    display: inline-flex; align-items: center; gap: 10px;
+    position: relative; overflow: hidden;
+  }
+  .mkt-cta::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, #00E5FF, #7C5CFF);
+    opacity: 0; transition: opacity .3s;
+    border-radius: inherit;
+  }
+  .mkt-cta:hover {
+    color: #fff; border-color: rgba(0,229,255,0.4);
+    box-shadow: 0 0 30px rgba(0,229,255,0.15);
+    transform: translateX(4px); gap: 14px;
+  }
+  .mkt-cta:hover::before { opacity: 1; }
+  .mkt-cta span, .mkt-cta i { position: relative; z-index: 1; }
+  .mkt-cta i { transition: transform .3s; }
+  .mkt-cta:hover i { transform: translateX(4px); }
+
+  /* ── Card Entrance Animation ── */
+  @keyframes mktCardIn {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .mkt-card {
+    animation: mktCardIn .55s cubic-bezier(.15,.75,.4,1) forwards;
+  }
+
+  /* ── Skeleton Loading ── */
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  .mkt-skeleton {
+    border-radius: 18px; overflow: hidden;
+    background: #0B1020;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .mkt-skeleton .sk-banner {
+    height: 220px;
+    background: linear-gradient(90deg, #0d1428 25%, #141c38 50%, #0d1428 75%);
+    background-size: 200% 100%;
+    animation: shimmer 2s ease-in-out infinite;
+  }
+  .mkt-skeleton .sk-body {
+    padding: 16px 20px 18px;
+  }
+  .mkt-skeleton .sk-stats {
+    display: flex; gap: 0;
+    background: rgba(5,8,20,0.4);
+    border: 1px solid rgba(255,255,255,0.04);
+    border-radius: 12px; padding: 10px 0; margin-bottom: 14px;
+  }
+  .mkt-skeleton .sk-stat {
+    flex: 1; text-align: center;
+    padding: 4px 10px;
+  }
+  .mkt-skeleton .sk-stat:not(:first-child) { border-left: 1px solid rgba(255,255,255,0.04); }
+  .mkt-skeleton .sk-line {
+    height: 12px; border-radius: 6px;
+    background: linear-gradient(90deg, #0d1428 25%, #141c38 50%, #0d1428 75%);
+    background-size: 200% 100%;
+    animation: shimmer 2s ease-in-out infinite;
+    margin: 0 auto;
+  }
+  .mkt-skeleton .sk-line.w40 { width: 40%; }
+  .mkt-skeleton .sk-line.w50 { width: 50%; }
+  .mkt-skeleton .sk-line.w60 { width: 60%; }
+  .mkt-skeleton .sk-line.w70 { width: 70%; }
+  .mkt-skeleton .sk-line.h8 { height: 8px; }
+  .mkt-skeleton .sk-line.h14 { height: 14px; }
+  .mkt-skeleton .sk-bottom {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .mkt-skeleton .sk-left { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+  .mkt-skeleton .sk-badges-row { display: flex; gap: 6px; }
+  .mkt-skeleton .sk-badge-pill {
+    width: 60px; height: 22px; border-radius: 99px;
+    background: linear-gradient(90deg, #0d1428 25%, #141c38 50%, #0d1428 75%);
+    background-size: 200% 100%;
+    animation: shimmer 2s ease-in-out infinite;
+  }
+  .mkt-skeleton .sk-cta {
+    width: 120px; height: 38px; border-radius: 11px;
+    background: linear-gradient(90deg, #0d1428 25%, #141c38 50%, #0d1428 75%);
+    background-size: 200% 100%;
+    animation: shimmer 2s ease-in-out infinite;
+  }
+
+  /* ── Empty state cinematic ── */
+  .mkt-empty {
+    text-align: center; padding: 60px 20px;
+    position: relative;
+  }
+  .mkt-empty-icon {
+    font-size: 64px; margin-bottom: 16px;
+    display: inline-block;
+    position: relative;
+  }
+  .mkt-empty-icon::after {
+    content: ''; position: absolute; inset: -20px;
+    background: radial-gradient(circle, rgba(0,229,255,0.06), transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+
+  /* ── Nav link hover underline ── */
+  .nv a:not(.btn-ghost):not(.btn-primary) {
+    position: relative;
+  }
+  .nv a:not(.btn-ghost):not(.btn-primary)::after {
+    content: ''; position: absolute; bottom: 0; left: 50%; right: 50%;
+    height: 1.5px; background: #00E5FF;
+    transition: left .2s, right .2s; border-radius: 99px;
+  }
+  .nv a:not(.btn-ghost):not(.btn-primary):hover::after,
+  .nv a:not(.btn-ghost):not(.btn-primary).active-page::after {
+    left: 25%; right: 25%;
+  }
+
+  /* ── Input focus glow ── */
+  .filter-input:focus {
+    border-color: rgba(0,229,255,0.5) !important;
+    box-shadow: 0 0 0 3px rgba(0,229,255,0.08), 0 0 20px rgba(0,229,255,0.06);
+    outline: none;
+  }
+
+  /* ── Pagination ── */
+  .mkt-pagination {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    margin-top: 32px; padding-top: 24px;
+    border-top: 1px solid rgba(255,255,255,0.04);
+  }
+  .mkt-page-btn {
+    min-width: 40px; height: 40px; border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 600;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(5,8,20,0.5);
+    color: #64748b;
+    cursor: pointer; transition: all .15s;
+  }
+  .mkt-page-btn:hover { border-color: rgba(255,255,255,0.12); color: #e2e8f0; background: rgba(255,255,255,0.04); }
+  .mkt-page-btn.active { background: linear-gradient(135deg, rgba(0,229,255,0.15), rgba(124,92,255,0.1)); border-color: rgba(0,229,255,0.25); color: #67e8f9; }
+  .mkt-page-btn:disabled { opacity: .3; cursor: default; }
+
+  /* ── Mobile filter drawer ── */
+  .mobile-filter-overlay { position: fixed; inset: 0; z-index: 55; display: none; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); }
+  .mobile-filter-overlay.open { display: block; }
+  .mobile-filter-wrap {
+    position: fixed; top: 0; left: 0; z-index: 60; width: min(24rem, 100%); height: 100%;
+    transform: translateX(-100%); transition: transform .3s ease;
+    background: #0B1020; border-right: 1px solid rgba(255,255,255,0.06);
+    overflow-y: auto;
+  }
+  .mobile-filter-wrap.open { transform: translateX(0); }
+
+  /* ── Responsive ── */
+  @media (max-width: 1199px) {
+    .filter-sidebar.desktop-only { display: none; }
+  }
+  @media (max-width: 767px) {
+    .mkt-header { flex-direction: column; align-items: flex-start; }
+    .mkt-banner { height: 130px; }
+    .mkt-si-main { width: 92px; height: 92px; }
+    .mkt-si-side { width: 54px; height: 54px; }
+    .mkt-si-1 { left: 36%; }
+    .mkt-si-2 { left: 64%; }
+    .mkt-price { font-size: 15px; padding: 4px 12px; }
+    .mkt-card-title { font-size: 14px; }
+    .mkt-body { padding: 14px 16px 16px; }
+    .mkt-stat-icon { font-size: 12px; }
+    .mkt-stat-val { font-size: 13px; }
+    .mkt-stat-lbl { font-size: 8px; }
+    .mkt-badge { font-size: 9px; padding: 3px 9px; }
+    .mkt-meta-item { font-size: 10px; }
+    .mkt-cta { font-size: 11px; padding: 9px 18px; }
+    .mkt-bottom { flex-wrap: wrap; }
+    .mkt-bottom-right { width: 100%; }
+    .mkt-cta { width: 100%; justify-content: center; }
+    .mkt-stat.emphasis .mkt-stat-icon { font-size: 14px; }
+    .mkt-stat.emphasis .mkt-stat-val { font-size: 15px; }
+    .mkt-trust { gap: 6px; }
+    .mkt-trust-item { font-size: 9px; }
+    #search-results { gap: 16px; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="flex flex-col lg:flex-row gap-5">
+
+  <!-- Mobile filter overlay + drawer -->
+  <div id="mobile-filter-overlay" class="mobile-filter-overlay"></div>
+  <aside id="mobile-filter-wrap" class="mobile-filter-wrap p-4">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-xs font-bold uppercase tracking-[.1em]" style="color:var(--neon-cyan)">Filters</h2>
+      <button id="mobile-filter-close" class="btn-ghost h-8 w-8 rounded-lg text-xs">✕</button>
+    </div>
+    <div id="mobile-filters-slot"></div>
+  </aside>
+
+  <!-- Desktop sidebar -->
+  <aside class="filter-sidebar shrink-0 desktop-only">
+    <div class="filter-card">
+      <div class="flex items-center justify-between px-4 py-3 border-b" style="border-color:rgba(255,255,255,0.04);">
+        <h2 class="text-xs font-bold uppercase tracking-[.1em]" style="color:var(--neon-cyan)"><i class="ri-filter-3-line mr-1.5"></i>Filters</h2>
+        <button type="reset" form="search-form" class="text-[10px] font-semibold uppercase tracking-wide" style="color:var(--neon-cyan);background:none;border:none;cursor:pointer;">Reset</button>
+      </div>
+      <form id="search-form">
+        <div class="filter-section" data-open="false">
+          <button type="button" class="filter-head"><i class="ri-price-tag-3-line text-xs" style="color:var(--neon-cyan)"></i>Price <span class="toggle-icon">⌄</span></button>
+          <div class="filter-body space-y-2">
+            <div class="grid grid-cols-2 gap-2">
+              <input name="pmin" type="number" min="0" placeholder="Min $" class="filter-input">
+              <input name="pmax" type="number" min="0" placeholder="Max $" class="filter-input">
+            </div>
+          </div>
+        </div>
+
+        <div class="filter-section" data-open="true">
+          <button type="button" class="filter-head"><i class="ri-sparkling-line text-xs" style="color:var(--neon-cyan)"></i>Search Cosmetics <span class="toggle-icon">⌄</span></button>
+          <div class="filter-body space-y-3">
+            <div>
+              <div class="filter-label mb-1.5">Outfits</div>
+              <div class="autocomplete-wrap" style="position:relative;">
+                <div class="sel-cos" data-field="skin[]"></div>
+                <input name="skin[]" type="text" data-type="outfit" placeholder="Search outfits..." class="filter-input cos-search" autocomplete="off">
+                <div class="autocomplete-dropdown"></div>
+              </div>
+            </div>
+            <div>
+              <div class="filter-label mb-1.5">Pickaxes</div>
+              <div class="autocomplete-wrap" style="position:relative;">
+                <div class="sel-cos" data-field="pickaxe[]"></div>
+                <input name="pickaxe[]" type="text" data-type="pickaxe" placeholder="Search pickaxes..." class="filter-input cos-search" autocomplete="off">
+                <div class="autocomplete-dropdown"></div>
+              </div>
+            </div>
+            <div>
+              <div class="filter-label mb-1.5">Emotes</div>
+              <div class="autocomplete-wrap" style="position:relative;">
+                <div class="sel-cos" data-field="dance[]"></div>
+                <input name="dance[]" type="text" data-type="emote" placeholder="Search emotes..." class="filter-input cos-search" autocomplete="off">
+                <div class="autocomplete-dropdown"></div>
+              </div>
+            </div>
+            <div>
+              <div class="filter-label mb-1.5">Gliders</div>
+              <div class="autocomplete-wrap" style="position:relative;">
+                <div class="sel-cos" data-field="glider[]"></div>
+                <input name="glider[]" type="text" data-type="glider" placeholder="Search gliders..." class="filter-input cos-search" autocomplete="off">
+                <div class="autocomplete-dropdown"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="filter-section" data-open="false">
+          <button type="button" class="filter-head"><i class="ri-box-3-line text-xs" style="color:var(--neon-cyan)"></i>Cosmetic Counts <span class="toggle-icon">⌄</span></button>
+          <div class="filter-body space-y-2">
+            <div class="grid grid-cols-2 gap-2">
+              <input name="smin" type="number" min="0" placeholder="Skins from" class="filter-input">
+              <input name="smax" type="number" min="0" placeholder="to" class="filter-input">
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <input name="pickaxe_min" type="number" min="0" placeholder="Pickaxes from" class="filter-input">
+              <input name="pickaxe_max" type="number" min="0" placeholder="to" class="filter-input">
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <input name="dmin" type="number" min="0" placeholder="Dances from" class="filter-input">
+              <input name="dmax" type="number" min="0" placeholder="to" class="filter-input">
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <input name="gmin" type="number" min="0" placeholder="Gliders from" class="filter-input">
+              <input name="gmax" type="number" min="0" placeholder="to" class="filter-input">
+            </div>
+          </div>
+        </div>
+
+        <div class="filter-section" data-open="false">
+          <button type="button" class="filter-head"><i class="ri-vip-diamond-line text-xs" style="color:var(--neon-cyan)"></i>V-Bucks <span class="toggle-icon">⌄</span></button>
+          <div class="filter-body space-y-2">
+            <div class="grid grid-cols-2 gap-2">
+              <input name="vbmin" type="number" min="0" placeholder="Min V-Bucks" class="filter-input">
+              <input name="vbmax" type="number" min="0" placeholder="Max" class="filter-input">
+            </div>
+          </div>
+        </div>
+
+        <div class="filter-section" data-open="false">
+          <button type="button" class="filter-head"><i class="ri-bar-chart-line text-xs" style="color:var(--neon-cyan)"></i>Account Stats <span class="toggle-icon">⌄</span></button>
+          <div class="filter-body space-y-2">
+            <div class="grid grid-cols-2 gap-2">
+              <input name="lmin" type="number" min="0" placeholder="Level from" class="filter-input">
+              <input name="lmax" type="number" min="0" placeholder="to" class="filter-input">
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <input name="paid_items_min" type="number" min="0" placeholder="Paid items from" class="filter-input">
+              <input name="paid_items_max" type="number" min="0" placeholder="to" class="filter-input">
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <input name="refund_credits_min" type="number" min="0" placeholder="Refunds from" class="filter-input">
+              <input name="refund_credits_max" type="number" min="0" placeholder="to" class="filter-input">
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <input name="daybreak" type="number" min="0" placeholder="Last active (days) from" class="filter-input">
+              <input name="daybreak_max" type="number" min="0" placeholder="to" class="filter-input">
+            </div>
+          </div>
+        </div>
+
+        <div class="filter-section" data-open="false">
+          <button type="button" class="filter-head"><i class="ri-smartphone-line text-xs" style="color:var(--neon-cyan)"></i>Platform <span class="toggle-icon">⌄</span></button>
+          <div class="filter-body">
+            <div class="tg-group">
+              <button type="button" class="tg-btn active" data-field="platform" data-value="">All</button>
+              <button type="button" class="tg-btn" data-field="platform" data-value="xbox">Xbox</button>
+              <button type="button" class="tg-btn" data-field="platform" data-value="psn">PSN</button>
+              <button type="button" class="tg-btn" data-field="platform" data-value="pc">PC</button>
+            </div>
+            <input type="hidden" name="platform" value="" id="platform-hidden">
+          </div>
+        </div>
+
+        <div class="p-4 pt-2 flex gap-2">
+          <button type="submit" class="btn-primary flex-1 h-9 text-xs">Apply Filters</button>
+          <button type="reset" form="search-form" class="btn-ghost h-9 px-4 text-xs" id="filter-reset-btn">Reset</button>
+        </div>
+      </form>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <main class="min-w-0 flex-1">
+    <!-- Marketplace Header -->
+    <div class="mkt-header">
+      <div>
+        <div class="mkt-header-count"><span id="result-count" class="count-up" data-count="0">0</span> <span class="text-gradient-anim">Accounts Found</span></div>
+        <div class="mkt-header-sub reveal">Premium Fortnite accounts available now</div>
+      </div>
+      <div class="flex items-center gap-3">
+        <div id="mkt-header-stats" class="hidden sm:flex items-center gap-4 text-xs text-zinc-500">
+          <span>Avg: <strong id="hdr-avg-price" class="text-cyan-400">$0.00</strong></span>
+          <span class="w-px h-4 bg-white/10"></span>
+          <span>Max Skins: <strong id="hdr-max-skins" class="text-white">0</strong></span>
+          <span class="w-px h-4 bg-white/10"></span>
+          <span>Max V-Bucks: <strong id="hdr-max-vbucks" class="text-white">0</strong></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile filter CTA -->
+    <div class="lg:hidden mb-4" id="mobile-filter-cta">
+      <p class="text-xs text-zinc-500 mb-2 font-medium">Find your perfect account</p>
+      <button id="mobile-filter-toggle" class="w-full py-3 px-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2" style="background:linear-gradient(135deg,#00E5FF,#7C5CFF);color:#fff;box-shadow:0 4px 20px rgba(0,229,255,0.25);">
+        <i class="ri-filter-3-line text-base"></i> Filter Accounts <span id="mobile-filter-count" style="font-weight:400;opacity:0.8;font-size:12px;">(0)</span>
+      </button>
+      <div class="flex gap-3 mt-2 text-[11px] text-zinc-600 justify-center">
+        <span>🎨 Skins</span><span>⛏ Pickaxes</span><span>💃 Emotes</span><span>💎 V-Bucks</span><span>💰 Price</span>
+      </div>
+    </div>
+
+    <!-- Search results -->
+    <div id="search-results">
+      <div class="py-20 text-center" id="empty-state-default">
+        <div class="text-[48px] mb-4 opacity-20">🎮</div>
+        <p class="text-base font-semibold text-zinc-300">Find your perfect account</p>
+        <p class="mt-1.5 text-sm text-zinc-600 max-w-sm mx-auto">Use the filters to search by skins, pickaxes, price, and more.</p>
+      </div>
+      <div class="py-20 text-center" id="empty-state-no-results" style="display:none;">
+        <div class="text-[48px] mb-4 opacity-20">🔍</div>
+        <p class="text-base font-semibold text-zinc-300">No accounts match your filters</p>
+        <p class="mt-1.5 text-sm text-zinc-600 max-w-sm mx-auto">Try adjusting your filters or searching for different cosmetics.</p>
+        <button onclick="resetFilters()" class="mt-4 btn-primary px-5 py-2.5 text-sm font-bold rounded-xl" style="display:inline-flex;">Adjust Filters</button>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div id="mkt-pagination" class="mkt-pagination" style="display:none;">
+      <button class="mkt-page-btn" id="page-prev" disabled><i class="ri-arrow-left-s-line text-lg"></i></button>
+      <div id="page-numbers" class="flex items-center gap-1"></div>
+      <button class="mkt-page-btn" id="page-next"><i class="ri-arrow-right-s-line text-lg"></i></button>
+    </div>
+  </main>
+</div>
+
+<!-- Skins modal -->
+<div id="skins-modal" class="skins-modal">
+  <div class="skins-modal-content">
+    <div class="skins-modal-header">
+      <h2>Account Preview</h2>
+      <button class="modal-close-btn" onclick="closeSkinsModal()">✕</button>
+    </div>
+    <div id="skins-grid" class="skins-grid"></div>
+    <div id="skins-loader" class="skins-loader">
+      <div class="loader-spinner"></div>
+      <div class="loader-text">Loading Preview...</div>
+      <div class="loader-progress"><span id="skins-loaded">0</span> / <span id="skins-total">0</span></div>
+      <div class="loader-count">Loading cosmetics in optimized batches</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  <script>window.KONVY_LOGGED_IN = {{ 'true' if logged_in else 'false' }};window.KONVY_SORT = 'cheap';</script>
+<script src="{{ url_for('static', filename='dashboard.js') }}"></script>
+<script>
+(function(){
+  // Filter section toggles (independent open/close)
+  document.querySelectorAll('.filter-head').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const wrap = btn.closest('.filter-section');
+      if (!wrap) return;
+      wrap.dataset.open = wrap.dataset.open === 'true' ? 'false' : 'true';
+    });
+  });
+
+  // Toggle button groups
+  const hiddenInputs = {
+    platform: document.getElementById('platform-hidden'),
+  };
+  document.querySelectorAll('.tg-group').forEach(group => {
+    const btns = group.querySelectorAll('.tg-btn');
+    btns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        btns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const field = btn.dataset.field;
+        if (field && hiddenInputs[field]) {
+          hiddenInputs[field].value = btn.dataset.value || '';
+          hiddenInputs[field].dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      });
+    });
+  });
+
+  // Reset filters
+  document.getElementById('search-form')?.addEventListener('reset', () => {
+    setTimeout(() => {
+      document.querySelectorAll('.tg-group').forEach(group => {
+        group.querySelectorAll('.tg-btn').forEach(b => { b.classList.toggle('active', (b.dataset.value??'')===''); });
+        const f = group.querySelector('.tg-btn')?.dataset.field;
+        if (f && hiddenInputs[f]) hiddenInputs[f].value = '';
+      });
+      document.querySelectorAll('.autocomplete-dropdown').forEach(d => d.classList.remove('show'));
+      document.querySelectorAll('.cos-search').forEach(i => i.removeAttribute('data-cosmetic-id'));
+    }, 0);
+  });
+  document.getElementById('filter-reset-btn')?.addEventListener('click', () => {
+    document.getElementById('search-form')?.dispatchEvent(new Event('reset'));
+  });
+
+  // Mobile filters
+  const mToggle = document.getElementById('mobile-filter-toggle');
+  const mClose = document.getElementById('mobile-filter-close');
+  const mWrap = document.getElementById('mobile-filter-wrap');
+  const mOverlay = document.getElementById('mobile-filter-overlay');
+  const dForm = document.getElementById('search-form');
+  const dParent = dForm?.parentElement;
+  const mSlot = document.getElementById('mobile-filters-slot');
+
+  function closeMobile() {
+    mWrap?.classList.remove('open'); mOverlay?.classList.remove('open');
+    document.body.style.overflow = '';
+    if (dForm && dParent && dForm.parentElement !== dParent) dParent.appendChild(dForm);
+  }
+  mToggle?.addEventListener('click', () => {
+    if (dForm && mSlot) mSlot.appendChild(dForm);
+    mWrap?.classList.add('open'); mOverlay?.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  });
+  mClose?.addEventListener('click', closeMobile);
+  mOverlay?.addEventListener('click', closeMobile);
+  // Close mobile filters on Apply Filters submit
+  mSlot?.addEventListener('submit', closeMobile);
+  window.addEventListener('resize', () => { if (window.innerWidth >= 1024) closeMobile(); });
+
+  // Result count
+  const results = document.getElementById('search-results');
+  const countEl = document.getElementById('result-count');
+  if (results && countEl) {
+    const obs = new MutationObserver(() => {
+      const n = results.querySelectorAll('.mkt-card').length;
+      countEl.textContent = String(n);
+      countEl.classList.remove('count-pop');
+      void countEl.offsetWidth;
+      countEl.classList.add('count-pop');
+    });
+    obs.observe(results, { childList: true, subtree: false });
+    window.addEventListener('beforeunload', () => obs.disconnect(), { once: true });
+  }
+
+
+})();
+</script>
+{% endblock %}

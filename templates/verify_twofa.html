@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Two-Factor Auth — Konvy Accounts{% endblock %}
+{% block content %}
+<div style="max-width:400px;margin:40px auto;padding:0 12px;">
+  <div class="glass-panel" style="padding:28px;border-radius:18px;text-align:center;">
+    <div style="font-size:36px;margin-bottom:12px;">🔐</div>
+    <h2 style="font-size:20px;font-weight:800;color:#fff;margin:0 0 4px;">Two-Factor Auth</h2>
+    <p style="font-size:13px;color:#6b7280;margin:0 0 20px;">Enter the code sent to your email to complete login.</p>
+    {% if error %}<div style="padding:8px 12px;border-radius:8px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);color:#f87171;font-size:12px;margin-bottom:14px;">{{ error }}</div>{% endif %}
+    <form method="post">
+      <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code" placeholder="000000" maxlength="6" style="width:100%;padding:12px 16px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:#fff;font-size:20px;text-align:center;outline:none;letter-spacing:8px;box-sizing:border-box;font-family:monospace;">
+      <button type="submit" style="width:100%;margin-top:14px;padding:12px;border-radius:12px;border:none;background:linear-gradient(135deg,#00E5FF,#7C5CFF);color:#fff;font-weight:700;font-size:14px;cursor:pointer;">Verify</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Konvy Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.0.0/fonts/remixicon.css" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{--bg:#06080f;--bg2:#0c0e17;--bg3:rgba(255,255,255,0.03);--border:rgba(255,255,255,0.06);--text:#f0f0f2;--muted:#6b7280;--cyan:#00E5FF;--purple:#7C5CFF;--grad:linear-gradient(135deg,#00E5FF,#7C5CFF)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.06);border-radius:99px}
+/* Sidebar */
+.sb{width:220px;min-width:220px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;position:sticky;top:0;overflow-y:auto}
+.sb-logo{padding:18px 16px 14px;border-bottom:1px solid var(--border);font-size:15px;font-weight:800;display:flex;align-items:center;gap:10px}
+.sb-logo span{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.sb-nav{flex:1;padding:8px 8px}
+.sb-grp{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:16px 12px 6px}
+.sb-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;font-size:13px;font-weight:500;color:#9ca3af;cursor:pointer;transition:all .12s;border:none;background:none;width:100%;text-align:left;font-family:inherit}
+.sb-item:hover{background:rgba(255,255,255,0.04);color:#e4e4e7}
+.sb-item.active{background:rgba(0,229,255,0.08);color:#fff}
+.sb-item i{font-size:16px;width:20px;text-align:center}
+.sb-foot{padding:8px;border-top:1px solid var(--border)}
+/* Main */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{height:52px;min-height:52px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:var(--bg2)}
+.topbar h2{font-size:15px;font-weight:700}
+.topbar .r{display:flex;align-items:center;gap:12px;font-size:12px;color:var(--muted)}
+.content{flex:1;overflow-y:auto;padding:20px 24px}
+.page{display:none}
+.page.active{display:block}
+/* Stat cards */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px}
+.stat{background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:16px;display:flex;align-items:flex-start;gap:14px}
+.stat .si{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.stat .sv{font-size:22px;font-weight:800;color:#fff;line-height:1.1}
+.stat .sl{font-size:11px;color:var(--muted);margin-top:2px}
+.stat-c1 .si{background:rgba(0,229,255,0.1);color:var(--cyan)}
+.stat-c2 .si{background:rgba(124,92,255,0.1);color:var(--purple)}
+.stat-c3 .si{background:rgba(239,68,68,0.1);color:#f87171}
+.stat-c4 .si{background:rgba(234,179,8,0.1);color:#fbbf24}
+.stat-c5 .si{background:rgba(34,197,94,0.1);color:#4ade80}
+/* Quick actions */
+.qactions{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:24px}
+.qa{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:var(--bg3);color:#d4d4d8;font-size:12px;font-weight:500;cursor:pointer;transition:all .12s;text-decoration:none}
+.qa:hover{background:rgba(0,229,255,0.06);border-color:rgba(0,229,255,0.15);color:#fff}
+.qa i{font-size:16px}
+/* Widgets */
+.widgets{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+@media(max-width:900px){.widgets{grid-template-columns:1fr}}
+.widget{background:var(--bg3);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.widget-h{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.widget-h .badge{padding:1px 8px;border-radius:99px;font-size:9px;font-weight:700}
+.widget-b{padding:8px 0;max-height:300px;overflow-y:auto}
+.w-row{display:flex;align-items:center;padding:8px 16px;gap:10px;font-size:12px;border-bottom:1px solid rgba(255,255,255,0.03);transition:background .1s}
+.w-row:hover{background:rgba(255,255,255,0.02)}
+.w-row:last-child{border-bottom:none}
+.w-row .wn{flex:1;min-width:0;color:#e4e4e7;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.w-row .wv{font-weight:700;white-space:nowrap}
+.w-row .wl{font-size:10px;color:var(--muted)}
+.w-row .wa{display:flex;gap:4px}
+.w-row .wa button{padding:3px 8px;border-radius:6px;border:none;font-size:10px;font-weight:600;cursor:pointer}
+.btn-ap{background:rgba(34,197,94,0.1);color:#4ade80}
+.btn-dn{background:rgba(239,68,68,0.1);color:#f87171}
+/* Settings cards */
+.set-card{background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:12px;max-width:600px}
+.set-card h3{font-size:13px;font-weight:700;color:#e4e4e7;margin-bottom:4px}
+.set-card p{font-size:11px;color:var(--muted);margin-bottom:12px}
+.set-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+.set-row label{font-size:12px;color:#9ca3af;min-width:100px}
+.set-row input,.set-row select{padding:7px 10px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:#fff;font-size:12px;outline:none;font-family:inherit;max-width:180px}
+.set-row input:focus{border-color:rgba(0,229,255,0.3)}
+.set-row button{padding:7px 16px;border-radius:8px;border:none;font-size:11px;font-weight:600;cursor:pointer;transition:all .12s}
+.btn-sv{background:var(--grad);color:#fff}
+.btn-sv:hover{opacity:.85}
+/* Status */
+.st-badge{display:inline-flex;padding:1px 8px;border-radius:99px;font-size:10px;font-weight:700}
+.st-badge.ok{background:rgba(34,197,94,0.1);color:#4ade80}
+.st-badge.pending{background:rgba(234,179,8,0.1);color:#fbbf24}
+/* Chart container */
+.chart-wrap{background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px;max-width:500px}
+.chart-wrap h4{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px}
+/* Toast */
+.toast{position:fixed;bottom:20px;right:20px;padding:10px 18px;border-radius:10px;font-size:12px;font-weight:600;z-index:9999;display:none;background:rgba(0,229,255,0.9);color:#000;max-width:350px}
+.toast.err{background:rgba(239,68,68,0.9);color:#fff}
+.toast.show{display:block;animation:fadeIn .25s}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+
+{% if not is_admin %}
+<div class="main" style="align-items:center;justify-content:center;">
+  <div style="background:var(--bg3);border:1px solid var(--border);border-radius:18px;padding:32px;max-width:360px;width:90%;text-align:center;">
+    <h2 style="font-size:20px;font-weight:800;color:#fff;margin-bottom:6px;">Admin Login</h2>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">Enter the admin password to access the control panel.</p>
+    {% if error %}<div style="padding:8px 12px;border-radius:8px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);color:#f87171;font-size:12px;margin-bottom:12px;">{{ error }}</div>{% endif %}
+    {% if notice %}<div style="padding:8px 12px;border-radius:8px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);color:#4ade80;font-size:12px;margin-bottom:12px;">{{ notice }}</div>{% endif %}
+    <form method="post">
+      <input type="hidden" name="action" value="login">
+      <input type="password" name="password" placeholder="Admin password" style="width:100%;padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:#fff;font-size:13px;outline:none;margin-bottom:14px;box-sizing:border-box;">
+      <button type="submit" style="width:100%;padding:10px;border-radius:10px;border:none;background:var(--grad);color:#fff;font-weight:700;font-size:13px;cursor:pointer;">Login</button>
+    </form>
+  </div>
+</div>
+{% else %}
+
+<!-- Sidebar -->
+<div class="sb">
+  <div class="sb-logo"><i class="ri-shield-flash-line" style="color:var(--cyan);font-size:20px;"></i><span>Konvy Admin</span></div>
+  <div class="sb-nav">
+    <div class="sb-grp">Main</div>
+    <button class="sb-item active" data-page="dashboard"><i class="ri-dashboard-3-line"></i>Dashboard</button>
+    <button class="sb-item" data-page="support"><i class="ri-customer-service-2-line"></i>Support</button>
+    <button class="sb-item" data-page="topups"><i class="ri-funds-line"></i>Topups</button>
+    <button class="sb-item" data-page="users"><i class="ri-group-2-line"></i>Users</button>
+    <button class="sb-item" data-page="orders"><i class="ri-shopping-bag-3-line"></i>Orders</button>
+    <div class="sb-grp">Manage</div>
+    <button class="sb-item" data-page="blacklist"><i class="ri-forbid-2-line"></i>Blacklist</button>
+    <button class="sb-item" data-page="discounts"><i class="ri-percent-line"></i>Discounts</button>
+    <button class="sb-item" data-page="referrals"><i class="ri-link-m"></i>Referrals</button>
+    <button class="sb-item" data-page="loyalty"><i class="ri-trophy-line"></i>Loyalty</button>
+    <button class="sb-item" data-page="reviews"><i class="ri-star-s-line"></i>Reviews</button>
+    <button class="sb-item" data-page="fakereviews"><i class="ri-magic-line"></i>Fake Reviews</button>
+    <div class="sb-grp">System</div>
+    <button class="sb-item" data-page="analytics"><i class="ri-bar-chart-2-line"></i>Analytics</button>
+    <button class="sb-item" data-page="settings"><i class="ri-settings-3-line"></i>Settings</button>
+  </div>
+  <div class="sb-foot">
+    <form method="post" style="display:inline"><input type="hidden" name="action" value="logout"><button type="submit" class="sb-item" style="color:#f87171;"><i class="ri-logout-box-r-line"></i>Logout</button></form>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="main">
+  <div class="topbar">
+    <h2 id="page-title">Dashboard</h2>
+    <div class="r"><span id="topbar-time"></span></div>
+  </div>
+  <div class="content">
+
+<!-- ==================== DASHBOARD ==================== -->
+<div class="page active" id="page-dashboard">
+  <div class="stats" id="dash-stats">
+    <div class="stat stat-c1"><div class="si"><i class="ri-money-dollar-circle-line"></i></div><div><div class="sv" id="ds-revenue-today">$0</div><div class="sl">Today's Revenue</div></div></div>
+    <div class="stat stat-c2"><div class="si"><i class="ri-calendar-line"></i></div><div><div class="sv" id="ds-revenue-month">$0</div><div class="sl">Monthly Revenue</div></div></div>
+    <div class="stat stat-c3"><div class="si"><i class="ri-customer-service-2-line"></i></div><div><div class="sv" id="ds-tickets">0</div><div class="sl">Open Tickets</div></div></div>
+    <div class="stat stat-c4"><div class="si"><i class="ri-funds-line"></i></div><div><div class="sv" id="ds-topups">0</div><div class="sl">Pending Topups</div></div></div>
+    <div class="stat stat-c5"><div class="si"><i class="ri-group-2-line"></i></div><div><div class="sv" id="ds-users">0</div><div class="sl">Users</div></div></div>
+  </div>
+
+  <div class="qactions">
+    <a href="#" class="qa" onclick="switchPage('topups')"><i class="ri-funds-line" style="color:#fbbf24"></i> Review Topups</a>
+    <a href="#" class="qa" onclick="switchPage('support')"><i class="ri-customer-service-2-line" style="color:#f87171"></i> Support Tickets</a>
+    <a href="#" class="qa" onclick="switchPage('orders')"><i class="ri-shopping-bag-3-line" style="color:var(--cyan)"></i> View Orders</a>
+    <a href="#" class="qa" onclick="switchPage('users')"><i class="ri-group-2-line" style="color:var(--purple)"></i> Manage Users</a>
+    <a href="#" class="qa" onclick="switchPage('discounts')"><i class="ri-percent-line" style="color:#4ade80"></i> Create Discount</a>
+    <a href="#" class="qa" onclick="switchPage('blacklist')"><i class="ri-forbid-2-line" style="color:#f87171"></i> Blacklist</a>
+    <a href="#" class="qa" onclick="switchPage('settings')"><i class="ri-settings-3-line" style="color:#9ca3af"></i> Settings</a>
+  </div>
+
+  <div class="widgets">
+    <div class="widget">
+      <div class="widget-h">Recent Orders <span class="badge" style="background:rgba(0,229,255,0.1);color:var(--cyan);" id="wo-count">0</span></div>
+      <div class="widget-b" id="wo-list"><div style="padding:24px;text-align:center;font-size:12px;color:var(--muted);">No orders yet</div></div>
+    </div>
+    <div class="widget">
+      <div class="widget-h">Pending Topups <span class="badge" style="background:rgba(234,179,8,0.1);color:#fbbf24;" id="wt-count">0</span></div>
+      <div class="widget-b" id="wt-list"><div style="padding:24px;text-align:center;font-size:12px;color:var(--muted);">No pending topups</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SUPPORT ==================== -->
+<div class="page" id="page-support">
+  <div class="stats" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px;">
+    <div class="stat stat-c4"><div class="si"><i class="ri-customer-service-2-line"></i></div><div><div class="sv" id="sp-all">0</div><div class="sl">All Tickets</div></div></div>
+    <div class="stat stat-c3"><div class="si"><i class="ri-chat-1-line"></i></div><div><div class="sv" id="sp-needs">0</div><div class="sl">Needs Reply</div></div></div>
+    <div class="stat stat-c4"><div class="si"><i class="ri-time-line"></i></div><div><div class="sv" id="sp-waiting">0</div><div class="sl">Waiting</div></div></div>
+    <div class="stat stat-c2"><div class="si"><i class="ri-check-double-line"></i></div><div><div class="sv" id="sp-closed">0</div><div class="sl">Closed Today</div></div></div>
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+    <input type="text" id="ad-support-search" placeholder="Search tickets..." style="padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:#fff;font-size:12px;outline:none;flex:1;min-width:150px;max-width:300px;">
+    <button onclick="loadAdminSupport()" style="padding:7px 16px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:#9ca3af;font-size:11px;cursor:pointer;">Refresh</button>
+    <button onclick="closeAllTickets()" style="padding:7px 16px;border-radius:8px;border:1px solid rgba(239,68,68,0.3);background:rgba(239,68,68,0.08);color:#f87171;font-size:11px;cursor:pointer;">Close All</button>
+  </div>
+  <div style="display:grid;grid-template-columns:280px 1fr;gap:12px;">
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:12px;overflow:hidden;max-height:500px;display:flex;flex-direction:column;">
+      <div style="padding:8px;display:flex;gap:4px;border-bottom:1px solid var(--border);flex-wrap:wrap;">
+        <button class="sp-f-btn active" data-f="all" onclick="filterAdSupport('all',this)" style="padding:3px 10px;border-radius:6px;border:none;font-size:10px;font-weight:600;cursor:pointer;background:rgba(0,229,255,0.1);color:var(--cyan);">All</button>
+        <button class="sp-f-btn" data-f="needs" onclick="filterAdSupport('needs',this)" style="padding:3px 10px;border-radius:6px;border:none;font-size:10px;font-weight:600;cursor:pointer;background:transparent;color:#6b7280;">Needs</button>
+        <button class="sp-f-btn" data-f="waiting" onclick="filterAdSupport('waiting',this)" style="padding:3px 10px;border-radius:6px;border:none;font-size:10px;font-weight:600;cursor:pointer;background:transparent;color:#6b7280;">Waiting</button>
+        <button class="sp-f-btn" data-f="closed" onclick="filterAdSupport('closed',this)" style="padding:3px 10px;border-radius:6px;border:none;font-size:10px;font-weight:600;cursor:pointer;background:transparent;color:#6b7280;">Closed</button>
+      </div>
+      <div style="flex:1;overflow-y:auto;" id="ad-ticket-list"></div>
+    </div>
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;min-height:400px;max-height:500px;">
+      <div id="ad-convo-empty" style="flex:1;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--muted);">Select a ticket</div>
+      <div id="ad-convo-view" style="display:none;flex-direction:column;height:100%;">
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border);font-size:13px;font-weight:700;color:#e4e4e7;" id="ad-convo-title"></div>
+        <div style="flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:8px;font-size:13px;" id="ad-convo-msgs"></div>
+        <div style="padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:8px;">
+          <textarea id="ad-reply-input" rows="1" placeholder="Type a reply..." maxlength="2000" style="flex:1;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:#fff;font-size:12px;outline:none;resize:none;font-family:inherit;min-height:36px;"></textarea>
+          <button onclick="sendAdReply()" style="padding:8px 16px;border-radius:8px;border:none;background:var(--grad);color:#fff;font-weight:600;font-size:12px;cursor:pointer;">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== TOPUPS ==================== -->
+<div class="page" id="page-topups">
+  <div style="background:var(--bg3);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+    <div style="padding:14px 16px;border-bottom:1px solid var(--border);font-size:13px;font-weight:700;color:#e4e4e7;">Pending Topups</div>
+    <div id="ad-topups-list" style="padding:8px 0;"><div style="padding:24px;text-align:center;font-size:12px;color:var(--muted);">Loading...</div></div>
+  </div>
+</div>
+
+<!-- ==================== USERS ==================== -->
+<div class="page" id="page-users">
+  <div style="background:var(--bg3);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+    <div style="padding:14px 16px;border-bottom:1px solid var(--border);font-size:13px;font-weight:700;color:#e4e4e7;">All Users</div>
+    <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">
+      <thead><tr style="background:rgba(255,255,255,0.02);"><th style="padding:10px 14px;text-align:left;color:var(--muted);font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.04em;">User</th><th style="padding:10px 14px;text-align:left;color:var(--muted);font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.04em;">Balance</th><th style="padding:10px 14px;text-align:left;color:var(--muted);font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.04em;">Status</th><th style="padding:10px 14px;text-align:left;color:var(--muted);font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.04em;">Actions</th></tr></thead>
+      <tbody id="ad-users-tbody"><tr><td colspan="4" style="padding:24px;text-align:center;color:var(--muted);">Loading...</td></tr></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ==================== ORDERS ==================== -->
+<div class="page" id="page-orders">
+  <div style="background:var(--bg3);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+    <div style="padding:14px 16px;border-bottom:1px solid var(--border);font-size:13px;font-weight:700;color:#e4e4e7;">All Purchases</div>
+    <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">
+      <thead><tr style="background:rgba(255,255,255,0.02);"><th style="padding:10px 14px;text-align:left;color:var(--muted);font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.04em;">Customer</th><th style="padding:10px 14px;text-align:left;color:var(--muted);font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.04em;">Item</th><th style="padding:10px 14px;text-align:left;color:var(--muted);font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.04em;">Amount</th><th style="padding:10px 14px;text-align:left;color:var(--muted);font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.04em;">Date</th></tr></thead>
+      <tbody id="ad-orders-tbody"><tr><td colspan="4" style="padding:24px;text-align:center;color:var(--muted);">Loading...</td></tr></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ==================== BLACKLIST ==================== -->
+<div class="page" id="page-blacklist">
+  <div style="background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:12px;max-width:500px;">
+    <h3 style="font-size:13px;font-weight:700;color:#e4e4e7;margin-bottom:10px;">Add to Blacklist</h3>
+    <div style="display:flex;gap:8px;"><input type="text" id="bl-input" placeholder="Username" style="flex:1;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:#fff;font-size:12px;outline:none;"><button onclick="addBl()" style="padding:8px 16px;border-radius:8px;border:none;background:rgba(239,68,68,0.12);color:#f87171;font-weight:600;font-size:11px;cursor:pointer;">Blacklist</button></div>
+  </div>
+  <div style="background:var(--bg3);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+    <div style="padding:14px 16px;border-bottom:1px solid var(--border);font-size:13px;font-weight:700;color:#e4e4e7;">Blacklisted Users</div>
+    <div id="bl-list" style="padding:8px 0;"><div style="padding:24px;text-align:center;font-size:12px;color:var(--muted);">Loading...</div></div>
+  </div>
+</div>
+
+<!-- ==================== DISCOUNTS ==================== -->
+<div class="page" id="page-discounts">
+  <div class="set-card"><h3>Site-wide Discount</h3><p>Set a percentage discount on all prices.</p>
+    <div class="set-row"><label>Enabled</label><select id="disc-enabled" style="max-width:100px;"><option value="false">No</option><option value="true">Yes</option></select></div>
+    <div class="set-row"><label>Discount %</label><input type="number" id="disc-percent" min="0" max="100" value="0" style="max-width:80px;"></div>
+    <div class="set-row"><label>Start (unix ts)</label><input type="number" id="disc-start" placeholder="Optional" style="max-width:140px;"></div>
+    <div class="set-row"><label>End (unix ts)</label><input type="number" id="disc-end" placeholder="Optional" style="max-width:140px;"></div>
+    <div class="set-row"><button class="btn-sv" onclick="saveDiscount()">Save Discount</button><span id="disc-status" style="font-size:11px;color:var(--muted);"></span></div>
+  </div>
+</div>
+
+<!-- ==================== REFERRALS ==================== -->
+<div class="page" id="page-referrals">
+  <div class="set-card"><h3>Referral Program</h3><p>Credit given to users who refer others.</p>
+    <div class="set-row"><label>Credit (cents)</label><input type="number" id="ref-credit" min="0" value="500" style="max-width:100px;"></div>
+    <div class="set-row"><button class="btn-sv" onclick="saveReferral()">Save</button><span id="ref-status" style="font-size:11px;color:var(--muted);"></span></div>
+  </div>
+  <div style="background:var(--bg3);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+    <div style="padding:14px 16px;border-bottom:1px solid var(--border);font-size:13px;font-weight:700;color:#e4e4e7;">Referral Codes</div>
+    <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">
+      <thead><tr style="background:rgba(255,255,255,0.02);"><th style="padding:10px 14px;text-align:left;color:var(--muted);font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.04em;">User</th><th style="padding:10px 14px;text-align:left;color:var(--muted);font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.04em;">Code</th></tr></thead>
+      <tbody id="ref-tbody"><tr><td colspan="2" style="padding:24px;text-align:center;color:var(--muted);">Loading...</td></tr></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ==================== LOYALTY ==================== -->
+<div class="page" id="page-loyalty">
+  <div class="set-card"><h3>Loyalty Tiers</h3><p>Fee discount based on total spend.</p>
+    <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">
+      <thead><tr style="background:rgba(255,255,255,0.02);"><th style="padding:8px 12px;text-align:left;color:var(--muted);font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.04em;">Name</th><th style="padding:8px 12px;text-align:left;color:var(--muted);font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.04em;">Min Spend</th><th style="padding:8px 12px;text-align:left;color:var(--muted);font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.04em;">Fee Disc %</th><th style="padding:8px 12px;text-align:left;color:var(--muted);font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.04em;"></th></tr></thead>
+      <tbody id="loy-tbody"></tbody>
+    </table></div>
+    <div style="margin-top:10px;display:flex;gap:8px;"><button class="btn-sv" onclick="addLoyRow()" style="background:rgba(255,255,255,0.06);color:#9ca3af;">+ Add Tier</button><button class="btn-sv" onclick="saveLoyalty()">Save All</button><span id="loy-status" style="font-size:11px;color:var(--muted);"></span></div>
+  </div>
+</div>
+
+<!-- ==================== ANALYTICS ==================== -->
+<div class="page" id="page-analytics" style="overflow:hidden;">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;">
+    <div class="chart-wrap" style="max-height:220px;"><h4>Revenue (Last 30 Days)</h4><canvas id="chart-revenue" height="160"></canvas></div>
+    <div class="chart-wrap" style="max-height:220px;"><h4>Purchases Over Time</h4><canvas id="chart-orders" height="160"></canvas></div>
+  </div>
+  <div class="stats" style="grid-template-columns:repeat(4,1fr);margin-top:8px;">
+    <div class="stat stat-c1"><div class="si"><i class="ri-money-dollar-circle-line"></i></div><div><div class="sv" id="an-total-rev">$0</div><div class="sl">Total Revenue</div></div></div>
+    <div class="stat stat-c5"><div class="si"><i class="ri-shopping-bag-3-line"></i></div><div><div class="sv" id="an-total-purchases">0</div><div class="sl">Total Purchases</div></div></div>
+    <div class="stat stat-c2"><div class="si"><i class="ri-group-2-line"></i></div><div><div class="sv" id="an-unique-buyers">0</div><div class="sl">Unique Buyers</div></div></div>
+    <div class="stat stat-c4"><div class="si"><i class="ri-trophy-line"></i></div><div><div class="sv" id="an-top-acc">0</div><div class="sl">Top Account</div></div></div>
+  </div>
+  <div class="chart-wrap" style="max-width:100%;margin-top:12px;"><h4>Top Purchased Accounts</h4>
+    <div id="an-top-list" style="font-size:12px;color:var(--muted);">Loading...</div>
+  </div>
+</div>
+
+<!-- ==================== FAKE REVIEWS ==================== -->
+<div class="page" id="page-fakereviews">
+  <div class="set-card"><h3>🤖 Fake Review Generator</h3><p>Auto-post 5-star reviews from a list of usernames throughout each hour.</p>
+    <div class="set-row"><label>Enabled</label><select id="fr-enabled" style="max-width:100px;"><option value="false">No</option><option value="true">Yes</option></select></div>
+    <div class="set-row"><label>Reviews per hour</label><input type="number" id="fr-perhour" min="1" max="60" value="5" style="max-width:80px;"></div>
+    <div class="set-row" style="align-items:flex-start;"><label>Usernames<br><span style="font-size:10px;color:#52525b;">One per line</span></label><textarea id="fr-usernames" rows="6" style="flex:1;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:#fff;font-size:11px;outline:none;font-family:monospace;resize:vertical;min-width:200px;" placeholder="UserOne&#10;UserTwo&#10;UserThree"></textarea></div>
+    <div class="set-row" style="align-items:flex-start;"><label>Review texts<br><span style="font-size:10px;color:#52525b;">One per line,<br>randomly picked</span></label><textarea id="fr-texts" rows="6" style="flex:1;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:#fff;font-size:11px;outline:none;font-family:monospace;resize:vertical;min-width:200px;" placeholder="Great account, fast delivery!&#10;Exactly as described, thanks!&#10;Legit seller, recommend!"></textarea></div>
+    <div class="set-row"><button class="btn-sv" onclick="saveFakeReviews()">Save Config</button><button class="btn-sv" onclick="fireFakeReview()" style="background:rgba(0,229,255,0.1);color:var(--cyan);">⚡ Fire One Now</button><span id="fr-status" style="font-size:11px;color:var(--muted);"></span></div>
+  </div>
+</div>
+
+<!-- ==================== REVIEWS ==================== -->
+<div class="page" id="page-reviews">
+  <div style="background:var(--bg3);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+    <div style="padding:14px 16px;border-bottom:1px solid var(--border);font-size:13px;font-weight:700;color:#e4e4e7;">Customer Reviews</div>
+    <div id="ad-reviews-list" style="padding:8px 0;"><div style="padding:24px;text-align:center;font-size:12px;color:var(--muted);">Loading...</div></div>
+  </div>
+</div>
+
+<!-- ==================== SETTINGS ==================== -->
+<div class="page" id="page-settings">
+  {% if error %}<div style="padding:8px 14px;border-radius:10px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);color:#f87171;font-size:12px;margin-bottom:12px;max-width:600px;">{{ error }}</div>{% endif %}
+  {% if notice %}<div style="padding:8px 14px;border-radius:10px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);color:#4ade80;font-size:12px;margin-bottom:12px;max-width:600px;">{{ notice }}</div>{% endif %}
+  
+  <div class="set-card"><h3 style="color:#f87171;">⚠️ Danger Zone</h3><p>Wipe all site data except your owner account. Irreversible.</p>
+    <div class="set-row"><button onclick="wipeAllData()" style="padding:8px 20px;border-radius:8px;border:1px solid rgba(239,68,68,0.3);background:rgba(239,68,68,0.1);color:#f87171;font-weight:600;font-size:12px;cursor:pointer;">💣 Wipe All Data</button><span id="wipe-status" style="font-size:11px;color:var(--muted);"></span></div>
+  </div>
+  <div class="set-card"><h3>Price Multipliers</h3><p>Set markup multipliers for standard and OG accounts.</p>
+    <form method="post">
+      <input type="hidden" name="action" value="set_multiplier">
+      <div class="set-row"><label>LZT Multiplier</label><input type="number" name="multiplier" step="0.01" min="0.01" max="100" value="{{ current_multiplier }}"><button type="submit" class="btn-sv">Save</button></div>
+    </form>
+    <form method="post" style="margin-top:4px;">
+      <input type="hidden" name="action" value="set_og_multiplier">
+      <div class="set-row"><label>OG Multiplier</label><input type="number" name="og_multiplier" step="0.01" min="0.01" max="100" value="{{ current_og_multiplier }}"><button type="submit" class="btn-sv">Save</button></div>
+    </form>
+  </div>
+</div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<div class="toast" id="ad-toast"></div>
+
+<script>
+// ===================== PAGE SWITCHING =====================
+function switchPage(name){
+  document.querySelectorAll('.sb-item').forEach(b=>b.classList.remove('active'));
+  document.querySelector(`.sb-item[data-page="${name}"]`)?.classList.add('active');
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+name)?.classList.add('active');
+  document.getElementById('page-title').textContent=name.charAt(0).toUpperCase()+name.slice(1);
+  if(name==='support')loadAdminSupport();
+  if(name==='topups')loadTopups();
+  if(name==='users')loadUsers();
+  if(name==='orders')loadOrders();
+  if(name==='blacklist')loadBlacklist();
+  if(name==='discounts')loadDiscount();
+  if(name==='referrals')loadReferral();
+  if(name==='loyalty')loadLoyalty();
+  if(name==='analytics')loadAnalytics();
+  if(name==='reviews')loadAdminReviews();
+  if(name==='fakereviews')loadFakeReviewsCfg();
+}
+document.querySelectorAll('.sb-item').forEach(b=>b.addEventListener('click',()=>switchPage(b.dataset.page)));
+
+// Clock
+function updateClock(){const d=new Date();document.getElementById('topbar-time').textContent=d.toLocaleString()}
+updateClock();setInterval(updateClock,1000);
+
+function adToast(msg,err){const el=document.getElementById('ad-toast');el.textContent=msg;el.className='toast'+(err?' err':'')+' show';clearTimeout(el._timer);el._timer=setTimeout(()=>el.className='toast',3000)}
+
+// ===================== API HELPER =====================
+async function api(url,data){const r=await fetch(url,{method:data? 'POST':'GET',headers:data?{'Content-Type':'application/json'}:{},body:data?JSON.stringify(data):null});return r.json()}
+
+// ===================== DASHBOARD STATS =====================
+async function loadDashboard(){
+  try{
+    const [sales, users, tickets, topups] = await Promise.all([
+      api('/api/admin/sales-dashboard'),
+      api('/api/admin/users'),
+      api('/api/support/tickets'),
+      api('/api/admin/pending-topups'),
+    ]);
+    const d=new Date();const y=d.getFullYear();const m=d.getMonth();
+    const todayStart=Math.floor(new Date(y,m,d.getDate()) /1000);
+    const monthStart=Math.floor(new Date(y,m,1)/1000);
+    let todayRev=0,monthRev=0;
+    (sales.top_accounts||[]).forEach(a=>{const amt=a.amount_cents||0;monthRev+=amt;if((a.timestamp||0)>=todayStart)todayRev+=amt});
+    document.getElementById('ds-revenue-today').textContent='$'+(todayRev/100).toFixed(2);
+    document.getElementById('ds-revenue-month').textContent='$'+(monthRev/100).toFixed(2);
+    const openTickets=(Array.isArray(tickets.tickets)?tickets.tickets:[]).filter(t=>t.status!=='closed').length;
+    document.getElementById('ds-tickets').textContent=openTickets;
+    const pTopups=Array.isArray(topups.pending)?topups.pending:[];
+    document.getElementById('ds-topups').textContent=pTopups.length;
+    document.getElementById('ds-users').textContent=Array.isArray(users.users)?users.users.length:0;
+    // Recent orders widget
+    const allPurchases=[]; // would need a separate API
+    // Pending topups widget
+    renderTopupWidget(pTopups);
+  }catch(e){}
+}
+
+function renderTopupWidget(topups){
+  const el=document.getElementById('wt-list');
+  const cnt=document.getElementById('wt-count');
+  if(!topups.length){el.innerHTML='<div style="padding:24px;text-align:center;font-size:12px;color:var(--muted);">No pending topups</div>';cnt.textContent='0';return}
+  cnt.textContent=topups.length;
+  el.innerHTML=topups.map(t=>'<div class="w-row"><span class="wn">'+escapeHtml(t.username||'')+'</span><span class="wv" style="color:#4ade80;">$'+(t.amount_cents/100).toFixed(2)+'</span><div class="wa"><button class="btn-ap" onclick="pendingAction(\''+t.id+'\',\'approve\')">Approve</button><button class="btn-dn" onclick="pendingAction(\''+t.id+'\',\'deny\')">Deny</button></div></div>').join('');
+}
+
+// ===================== SUPPORT =====================
+let adTickets=[],adSelectedTicket=null,adFilter='all';
+function escapeHtml(v){return String(v||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;')}
+function fd(ts){if(!ts)return'';return new Date(ts*1000).toLocaleString()}
+function ta(ts){if(!ts)return'';const s=Math.floor(Date.now()/1000-ts);if(s<60)return'just now';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago'}
+function adStatusHtml(t){
+  if(t.status==='closed')return'<span style="padding:1px 8px;border-radius:99px;font-size:10px;font-weight:700;background:rgba(107,114,128,0.1);border:1px solid rgba(107,114,128,0.2);color:#9ca3af;">Closed</span>';
+  if(t.needs_admin_response)return'<span style="padding:1px 8px;border-radius:99px;font-size:10px;font-weight:700;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:#f87171;">Needs Reply</span>';
+  return'<span style="padding:1px 8px;border-radius:99px;font-size:10px;font-weight:700;background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.2);color:#fbbf24;">Waiting</span>';
+}
+function filterAdSupport(f,btn){
+  adFilter=f;
+  document.querySelectorAll('.sp-f-btn').forEach(b=>{b.style.background='transparent';b.style.color='#6b7280'});
+  if(btn){btn.style.background='rgba(0,229,255,0.1)';btn.style.color='var(--cyan)'}
+  renderAdTickets();
+}
+async function loadAdminSupport(){
+  try{
+    const res=await fetch('/api/support/tickets');
+    const data=await res.json();
+    adTickets=Array.isArray(data.tickets)?data.tickets:[];
+    document.getElementById('sp-all').textContent=adTickets.length;
+    document.getElementById('sp-needs').textContent=adTickets.filter(t=>t.status!=='closed'&&t.needs_admin_response).length;
+    document.getElementById('sp-waiting').textContent=adTickets.filter(t=>t.status==='open'&&!t.needs_admin_response).length;
+    document.getElementById('sp-closed').textContent=adTickets.filter(t=>t.status==='closed').length;
+    if(adSelectedTicket&&!adTickets.some(t=>t.id===adSelectedTicket)){adSelectedTicket=null;document.getElementById('ad-convo-view').style.display='none';document.getElementById('ad-convo-empty').style.display='flex'}
+    renderAdTickets();
+    if(adSelectedTicket){const t=adTickets.find(x=>x.id===adSelectedTicket);if(t)adSelectTicket(adSelectedTicket)}
+  }catch(e){}
+}
+function renderAdTickets(){
+  const search=document.getElementById('ad-support-search').value.toLowerCase().trim();
+  let filtered=adTickets;
+  if(adFilter==='needs')filtered=filtered.filter(t=>t.status!=='closed'&&t.needs_admin_response);
+  else if(adFilter==='waiting')filtered=filtered.filter(t=>t.status==='open'&&!t.needs_admin_response);
+  else if(adFilter==='closed')filtered=filtered.filter(t=>t.status==='closed');
+  if(search)filtered=filtered.filter(t=>t.subject.toLowerCase().includes(search)||t.username.toLowerCase().includes(search));
+  const el=document.getElementById('ad-ticket-list');
+  if(!filtered.length){el.innerHTML='<div style="padding:24px;text-align:center;font-size:12px;color:var(--muted);">No tickets</div>';return}
+  el.innerHTML=filtered.map(t=>{
+    const accLink=t.linked_item_id?' · <a href="/account/'+t.linked_item_id+'" style="color:var(--cyan);text-decoration:none;" target="_blank">Acc#'+t.linked_item_id+'</a>':'';
+    return '<div class="w-row" style="cursor:pointer;'+(t.id===adSelectedTicket?'background:rgba(0,229,255,0.06);':'')+'" onclick="adSelectTicket(\''+t.id+'\')"><div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:600;color:#e4e4e7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+escapeHtml(t.subject)+'</div><div style="font-size:10px;color:var(--muted);margin-top:1px;">'+escapeHtml(t.username)+accLink+' · '+ta(t.updated_at)+'</div></div>'+adStatusHtml(t)+'</div>';
+  }).join('');
+}
+function adSelectTicket(id){
+  adSelectedTicket=id;
+  const t=adTickets.find(x=>x.id===id);
+  if(!t)return;
+  document.getElementById('ad-convo-empty').style.display='none';
+  document.getElementById('ad-convo-view').style.display='flex';
+  const accInfo=t.linked_item_id?' <a href="/account/'+t.linked_item_id+'" style="color:var(--cyan);font-size:11px;font-weight:400;text-decoration:none;margin-left:8px;" target="_blank">View Account #'+t.linked_item_id+'</a>':'';
+  document.getElementById('ad-convo-title').innerHTML=t.subject+' — '+escapeHtml(t.username)+accInfo;
+  // Render messages
+  const msgs=Array.isArray(t.messages)?t.messages:[];
+  const el=document.getElementById('ad-convo-msgs');
+  if(!msgs.length){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);font-size:12px;">No messages</div>';return}
+  el.innerHTML=msgs.map(m=>{
+    const isAdmin=m.author_type==='admin';
+    return '<div style="display:flex;flex-direction:column;align-items:'+(isAdmin?'flex-start':'flex-end')+'">'+
+      '<div style="max-width:85%;padding:8px 12px;border-radius:'+(isAdmin?'0 12px 12px 12px':'12px 0 12px 12px')+';background:'+(isAdmin?'rgba(255,255,255,0.04)':'rgba(0,229,255,0.06)')+';border:1px solid '+(isAdmin?'rgba(255,255,255,0.06)':'rgba(0,229,255,0.1)')+'">'+
+      '<div style="font-size:10px;font-weight:600;color:'+(isAdmin?'var(--cyan)':'#9ca3af')+';margin-bottom:2px;">'+(isAdmin?'Admin':'User')+'</div>'+
+      '<div style="font-size:13px;color:#e4e4e7;line-height:1.4;word-break:break-word;">'+escapeHtml(m.message)+'</div>'+
+      '<div style="font-size:10px;color:var(--muted);margin-top:4px;text-align:right;">'+fd(m.timestamp)+'</div></div></div>';
+  }).join('');
+  el.scrollTop=el.scrollHeight;
+  renderAdTickets();
+}
+async function sendAdReply(){
+  if(!adSelectedTicket)return;
+  const input=document.getElementById('ad-reply-input');
+  const msg=input.value.trim();
+  if(!msg)return;
+  const fd=new FormData();fd.append('message',msg);
+  const res=await fetch('/api/support/tickets/'+encodeURIComponent(adSelectedTicket)+'/reply',{method:'POST',body:fd});
+  const data=await res.json();
+  if(data.ok){input.value='';await loadAdminSupport()}
+  else adToast(data.error||'Failed',true);
+}
+document.getElementById('ad-reply-input')?.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendAdReply()}});
+document.getElementById('ad-support-search')?.addEventListener('input',renderAdTickets);
+
+// ===================== TOPUPS =====================
+async function loadTopups(){
+  const data=await api('/api/admin/pending-topups');
+  const list=Array.isArray(data.pending)?data.pending:[];
+  const el=document.getElementById('ad-topups-list');
+  if(!list.length){el.innerHTML='<div style="padding:24px;text-align:center;font-size:12px;color:var(--muted);">No pending topups</div>';return}
+  el.innerHTML='<table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr style="background:rgba(255,255,255,0.02);"><th style="padding:8px 14px;text-align:left;color:var(--muted);font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.04em;">User</th><th style="padding:8px 14px;text-align:left;color:var(--muted);font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.04em;">Amount</th><th style="padding:8px 14px;text-align:left;color:var(--muted);font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.04em;">Date</th><th style="padding:8px 14px;text-align:left;color:var(--muted);font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.04em;"></th></tr></thead><tbody>'+
+    list.map(t=>'<tr style="border-bottom:1px solid rgba(255,255,255,0.03);"><td style="padding:8px 14px;color:#e4e4e7;font-weight:500;">'+escapeHtml(t.username||'')+'</td><td style="padding:8px 14px;color:#4ade80;font-weight:700;">$'+(t.amount_cents/100).toFixed(2)+'</td><td style="padding:8px 14px;color:var(--muted);">'+(t.timestamp?fd(t.timestamp):'')+'</td><td style="padding:8px 14px;"><div style="display:flex;gap:4px;"><button class="btn-ap" onclick="pendingAction(\''+t.id+'\',\'approve\')">Approve</button><button class="btn-dn" onclick="pendingAction(\''+t.id+'\',\'deny\')">Deny</button></div></td></tr>').join('')+
+  '</tbody></table>';
+}
+async function pendingAction(id,action){
+  const res=await api('/api/admin/pending-topups',{action,id});
+  if(res.ok){adToast(res.message||'Done');loadTopups();loadDashboard()}
+  else adToast(res.error||'Error',true);
+}
+
+// ===================== USERS =====================
+async function loadUsers(){
+  const data=await api('/api/admin/users');
+  const list=Array.isArray(data.users)?data.users:[];
+  const el=document.getElementById('ad-users-tbody');
+  if(!list.length){el.innerHTML='<tr><td colspan="4" style="padding:24px;text-align:center;color:var(--muted);">No users</td></tr>';return}
+  el.innerHTML=list.map(u=>'<tr style="border-bottom:1px solid rgba(255,255,255,0.03);"><td style="padding:8px 14px;color:#e4e4e7;font-weight:500;">'+escapeHtml(u.username)+(u.is_blacklisted?' 🚫':'')+'</td><td style="padding:8px 14px;"><input type="number" value="'+u.balance.toFixed(2)+'" step="0.01" style="width:80px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:#fff;font-size:11px;outline:none;" class="ub-'+escapeHtml(u.username)+'"><button onclick="setUserBalance(\''+escapeHtml(u.username)+'\')" style="margin-left:4px;padding:4px 8px;border-radius:6px;border:none;background:rgba(0,229,255,0.1);color:var(--cyan);font-size:10px;cursor:pointer;">Set</button></td><td style="padding:8px 14px;"><span class="st-badge '+u.verification_status+'">'+u.verification_status+'</span></td><td style="padding:8px 14px;"><select style="padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:#fff;font-size:10px;outline:none;" class="vs-'+escapeHtml(u.username)+'"><option value="unverified" '+(u.verification_status==='unverified'?'selected':'')+'>unverified</option><option value="verified" '+(u.verification_status==='verified'?'selected':'')+'>verified</option><option value="verify_each" '+(u.verification_status==='verify_each'?'selected':'')+'>verify_each</option><option value="blacklisted" '+(u.verification_status==='blacklisted'?'selected':'')+'>blacklisted</option></select><button onclick="setUserStatus(\''+escapeHtml(u.username)+'\')" style="margin-left:4px;padding:4px 8px;border-radius:6px;border:none;background:rgba(255,255,255,0.06);color:#9ca3af;font-size:10px;cursor:pointer;">Apply</button></td></tr>').join('');
+}
+async function setUserBalance(u){const inp=document.querySelector('.ub-'+u);const v=parseFloat(inp?.value);if(isNaN(v))return;const r=await api('/api/admin/set-balance',{username:u,balance:v});if(r.ok){adToast('Balance set');loadUsers()}else adToast(r.error||'Error',true)}
+async function setUserStatus(u){const sel=document.querySelector('.vs-'+u);const s=sel?.value;if(!s)return;const r=await api('/api/admin/set-verification',{username:u,status:s});if(r.ok){adToast('Status updated');loadUsers()}else adToast(r.error||'Error',true)}
+
+// ===================== ORDERS =====================
+async function loadOrders(){
+  const data=await api('/api/admin/sales-dashboard');
+  const el=document.getElementById('ad-orders-tbody');
+  // For now show aggregated data - full orders API would need expanded backend
+  const top=(data.top_accounts||[]);
+  if(!top.length){el.innerHTML='<tr><td colspan="4" style="padding:24px;text-align:center;color:var(--muted);">No purchases yet</td></tr>';return}
+  el.innerHTML=top.map(a=>'<tr style="border-bottom:1px solid rgba(255,255,255,0.03);"><td style="padding:8px 14px;color:#e4e4e7;">—</td><td style="padding:8px 14px;color:#e4e4e7;">'+escapeHtml(a.title||'')+'</td><td style="padding:8px 14px;color:#4ade80;font-weight:700;">$0</td><td style="padding:8px 14px;color:var(--muted);">—</td></tr>').join('');
+}
+
+// ===================== BLACKLIST =====================
+async function loadBlacklist(){
+  const data=await api('/api/admin/blacklist');
+  const list=Array.isArray(data.blacklist)?data.blacklist:[];
+  const el=document.getElementById('bl-list');
+  if(!list.length){el.innerHTML='<div style="padding:24px;text-align:center;font-size:12px;color:var(--muted);">No blacklisted users</div>';return}
+  el.innerHTML=list.map(u=>'<div class="w-row"><span class="wn" style="color:#f87171;">'+escapeHtml(u)+'</span><button onclick="removeBl(\''+escapeHtml(u)+'\')" style="padding:4px 10px;border-radius:6px;border:none;background:rgba(255,255,255,0.06);color:#9ca3af;font-size:10px;cursor:pointer;">Remove</button></div>').join('');
+}
+async function addBl(){
+  const input=document.getElementById('bl-input');const u=input.value.trim();if(!u)return;
+  const r=await api('/api/admin/blacklist',{action:'add',username:u});
+  if(r.ok){input.value='';loadBlacklist()}else adToast(r.error||'Error',true)
+}
+async function removeBl(u){
+  const r=await api('/api/admin/blacklist',{action:'remove',username:u});
+  if(r.ok)loadBlacklist();else adToast(r.error||'Error',true)
+}
+
+// ===================== DISCOUNTS =====================
+async function loadDiscount(){
+  try{const r=await fetch('/api/admin/discount');const d=await r.json();document.getElementById('disc-enabled').value=d.enabled?'true':'false';document.getElementById('disc-percent').value=d.percent||0;document.getElementById('disc-start').value=d.start||'';document.getElementById('disc-end').value=d.end||''}catch(e){}
+}
+async function saveDiscount(){
+  const r=await api('/api/admin/discount',{enabled:document.getElementById('disc-enabled').value==='true',percent:parseInt(document.getElementById('disc-percent').value)||0,start:document.getElementById('disc-start').value?parseInt(document.getElementById('disc-start').value):null,end:document.getElementById('disc-end').value?parseInt(document.getElementById('disc-end').value):null});
+  const el=document.getElementById('disc-status');
+  if(r.ok)el.innerHTML='<span style="color:#4ade80;">Saved</span>';else el.innerHTML='<span style="color:#f87171;">'+escapeHtml(r.error||'Error')+'</span>';
+}
+
+// ===================== REFERRALS =====================
+async function loadReferral(){
+  try{const r=await fetch('/api/admin/referral');const d=await r.json();document.getElementById('ref-credit').value=d.referral_credit_cents||500;const codes=d.codes||{};const entries=Object.entries(codes);const el=document.getElementById('ref-tbody');el.innerHTML=entries.length?entries.map(([un,cd]) => '<tr style="border-bottom:1px solid rgba(255,255,255,0.03);"><td style="padding:8px 14px;color:#e4e4e7;">'+escapeHtml(un)+'</td><td style="padding:8px 14px;font-family:monospace;color:var(--cyan);">'+escapeHtml(cd)+'</td></tr>').join(''):'<tr><td colspan="2" style="padding:24px;text-align:center;color:var(--muted);">No codes</td></tr>'}catch(e){}
+}
+async function saveReferral(){
+  const v=parseInt(document.getElementById('ref-credit').value)||500;
+  const r=await api('/api/admin/referral',{referral_credit_cents:v});
+  const el=document.getElementById('ref-status');
+  if(r.ok){el.innerHTML='<span style="color:#4ade80;">Saved</span>';loadReferral()}else el.innerHTML='<span style="color:#f87171;">'+escapeHtml(r.error||'Error')+'</span>';
+}
+
+// ===================== LOYALTY =====================
+let loyData=[];
+async function loadLoyalty(){
+  try{const r=await fetch('/api/admin/loyalty');const d=await r.json();loyData=(d.tiers||[]).map(t=>({...t}));renderLoyalty()}catch(e){}
+}
+function renderLoyalty(){
+  const el=document.getElementById('loy-tbody');
+  if(!loyData.length){el.innerHTML='<tr><td colspan="4" style="padding:16px;text-align:center;color:var(--muted);">No tiers</td></tr>';return}
+  el.innerHTML=loyData.map((t,i)=>'<tr style="border-bottom:1px solid rgba(255,255,255,0.03);"><td style="padding:6px 12px;"><input type="text" value="'+escapeHtml(t.name||'')+'" data-idx="'+i+'" class="loy-n" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:#fff;font-size:11px;outline:none;width:100px;"></td><td style="padding:6px 12px;"><input type="number" value="'+(t.min_spend_cents||0)+'" data-idx="'+i+'" class="loy-m" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:#fff;font-size:11px;outline:none;width:80px;"></td><td style="padding:6px 12px;"><input type="number" value="'+(t.fee_discount||0)+'" data-idx="'+i+'" class="loy-d" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:#fff;font-size:11px;outline:none;width:60px;"></td><td style="padding:6px 12px;"><button onclick="loyData.splice('+i+',1);renderLoyalty()" style="padding:4px 8px;border-radius:6px;border:none;background:rgba(239,68,68,0.1);color:#f87171;font-size:10px;cursor:pointer;">X</button></td></tr>').join('');
+}
+function addLoyRow(){loyData.push({name:'New Tier',min_spend_cents:0,fee_discount:0});renderLoyalty()}
+async function saveLoyalty(){
+  const tiers=[];document.querySelectorAll('#loy-tbody tr').forEach((row,i)=>{
+    const n=row.querySelector('.loy-n')?.value||'Tier';const m=parseInt(row.querySelector('.loy-m')?.value)||0;const d=parseInt(row.querySelector('.loy-d')?.value)||0;tiers.push({name:n,min_spend_cents:m,fee_discount:d})
+  });
+  const r=await api('/api/admin/loyalty',{tiers});
+  const el=document.getElementById('loy-status');
+  if(r.ok){el.innerHTML='<span style="color:#4ade80;">Saved</span>';loadLoyalty()}else el.innerHTML='<span style="color:#f87171;">'+escapeHtml(r.error||'Error')+'</span>';
+}
+
+// ===================== CLOSE ALL TICKETS =====================
+async function closeAllTickets(){
+  if(!confirm('Close ALL open tickets?'))return;
+  const r=await api('/api/support/close-all',{});
+  if(r.ok){adToast(r.message);loadAdminSupport()}else adToast(r.error||'Error',true)
+}
+
+// ===================== ANALYTICS =====================
+let chartRevenue=null,chartOrders=null;
+async function loadAnalytics(){
+  const data=await api('/api/admin/sales-dashboard');
+  document.getElementById('an-total-rev').textContent='$'+(data.total_revenue||0).toLocaleString();
+  document.getElementById('an-total-purchases').textContent=data.total_purchases||0;
+  document.getElementById('an-unique-buyers').textContent=data.total_users_with_purchases||0;
+  const top=data.top_accounts||[];
+  document.getElementById('an-top-acc').textContent=top.length;
+  const el=document.getElementById('an-top-list');
+  if(!top.length){el.textContent='No purchases yet';return}
+  el.innerHTML=top.map((a,i)=>'<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:12px;"><span>'+(i+1)+'. '+escapeHtml(a.title||'Account')+'</span><span style="color:#e4e4e7;font-weight:600;">'+a.count+'x</span></div>').join('');
+  // Charts
+  const ctx1=document.getElementById('chart-revenue')?.getContext('2d');
+  if(ctx1){
+    if(chartRevenue)chartRevenue.destroy();
+    const days=Array.from({length:30},(_,i)=>{const d=new Date();d.setDate(d.getDate()-29+i);return d.toLocaleDateString([],{month:'short',day:'numeric'})});
+    chartRevenue=new Chart(ctx1,{type:'line',data:{labels:days,datasets:[{label:'Revenue',data:Array.from({length:30},()=>Math.floor(Math.random()*5000+500)),borderColor:'#00E5FF',backgroundColor:'rgba(0,229,255,0.05)',fill:true,tension:.3,pointRadius:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:'#6b7280',font:{size:10}}},y:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'#6b7280',font:{size:10}}}}}});
+  }
+  const ctx2=document.getElementById('chart-orders')?.getContext('2d');
+  if(ctx2){
+    if(chartOrders)chartOrders.destroy();
+    chartOrders=new Chart(ctx2,{type:'bar',data:{labels:Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);return d.toLocaleDateString([],{weekday:'short'})}),datasets:[{label:'Orders',data:Array.from({length:7},()=>Math.floor(Math.random()*20+2)),backgroundColor:'rgba(124,92,255,0.4)',borderColor:'#7C5CFF',borderWidth:1,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:'#6b7280',font:{size:10}}},y:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'#6b7280',font:{size:10}}}}}});
+  }
+}
+
+// ===================== REVIEWS =====================
+let adminReviews = [];
+async function loadAdminReviews(){
+  try{const r=await fetch('/api/reviews');const d=await r.json();adminReviews=Array.isArray(d.reviews)?d.reviews:[];renderAdminReviews()}catch(e){}
+}
+function renderAdminReviews(){
+  const el=document.getElementById('ad-reviews-list');
+  if(!adminReviews.length){el.innerHTML='<div style="padding:24px;text-align:center;font-size:12px;color:var(--muted);">No reviews</div>';return}
+  el.innerHTML=adminReviews.map(r=>{
+    const statusColor={pending:'#fbbf24',approved:'#4ade80',denied:'#f87171',hold:'#a78bfa'};
+    return '<div class="w-row"><div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:600;color:#e4e4e7;">'+escapeHtml(r.username)+' <span style="font-size:11px;color:#fbbf24;">'+'⭐'.repeat(r.rating)+'</span></div><div style="font-size:11px;color:var(--muted);margin-top:2px;">'+escapeHtml(r.text||'').substring(0,120)+'</div></div><span style="padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;background:rgba(255,255,255,0.05);color:'+(statusColor[r.status]||'#6b7280')+';border:1px solid rgba(255,255,255,0.06);margin:0 8px;">'+r.status+'</span><div style="display:flex;gap:4px;">'+
+      (r.status!=='approved'?'<button onclick="reviewAction(\''+r.id+'\',\'approve\')" style="padding:4px 10px;border-radius:6px;border:none;background:rgba(34,197,94,0.1);color:#4ade80;font-size:10px;cursor:pointer;">Approve</button>':'')+
+      (r.status!=='denied'?'<button onclick="reviewAction(\''+r.id+'\',\'deny\')" style="padding:4px 10px;border-radius:6px;border:none;background:rgba(239,68,68,0.1);color:#f87171;font-size:10px;cursor:pointer;">Deny</button>':'')+
+      (r.status!=='hold'?'<button onclick="reviewAction(\''+r.id+'\',\'hold\')" style="padding:4px 10px;border-radius:6px;border:none;background:rgba(124,92,255,0.1);color:#a78bfa;font-size:10px;cursor:pointer;">Hold</button>':'')+
+    '</div></div>'
+  }).join('');
+}
+async function reviewAction(id,action){
+  const r=await api('/api/admin/reviews/manage',{id,action});
+  if(r.ok)loadAdminReviews();else adToast(r.error||'Error',true)
+}
+
+// ===================== FAKE REVIEWS =====================
+async function loadFakeReviewsCfg(){
+  try{const r=await fetch('/api/admin/fake-reviews');const d=await r.json();document.getElementById('fr-enabled').value=d.enabled?'true':'false';document.getElementById('fr-perhour').value=d.per_hour||5;document.getElementById('fr-usernames').value=(d.usernames||[]).join('\n');document.getElementById('fr-texts').value=(d.texts||[]).join('\n')}catch(e){}
+}
+async function saveFakeReviews(){
+  const usernames=document.getElementById('fr-usernames').value.split('\n').map(u=>u.trim()).filter(Boolean);
+  const texts=document.getElementById('fr-texts').value.split('\n').map(t=>t.trim()).filter(Boolean);
+  const r=await api('/api/admin/fake-reviews',{enabled:document.getElementById('fr-enabled').value==='true',usernames,per_hour:parseInt(document.getElementById('fr-perhour').value)||5,texts});
+  const el=document.getElementById('fr-status');
+  if(r.ok){el.innerHTML='<span style="color:#4ade80;">Saved</span>';loadFakeReviewsCfg()}else el.innerHTML='<span style="color:#f87171;">'+escapeHtml(r.error||'Error')+'</span>';
+}
+async function fireFakeReview(){
+  const r=await api('/api/admin/fake-reviews/fire-one',{});
+  if(r.ok){adToast(r.message);loadFakeReviewsCfg()}else adToast(r.error||'Error',true);
+}
+
+// ===================== WIPE DATA =====================
+async function wipeAllData(){
+  if(!confirm('⚠️ Wipe ALL site data? This cannot be undone!'))return;
+  if(!confirm('Really? All tickets, purchases, topups, balances, reviews, chat, everything will be gone.'))return;
+  const r=await api('/api/admin/wipe-all',{});
+  if(r.ok)adToast(r.message);else adToast(r.error||'Error',true);
+}
+
+// ===================== INIT =====================
+loadDashboard();
+loadAdminSupport();
+setInterval(loadDashboard,15000);
+setInterval(loadAdminSupport,8000);
+</script>
+{% endif %}
+</body>
+</html>

@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}Register — Konvy Accounts{% endblock %}
+
+{% block extra_styles %}
+<style>
+  .auth-page-wrap {
+    position: relative;
+    min-height: calc(100vh - 180px);
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+  }
+  .auth-page-wrap::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 15% 25%, rgba(0,200,255,0.18), transparent 42%),
+      radial-gradient(circle at 82% 18%, rgba(139,92,246,0.15), transparent 42%),
+      radial-gradient(circle at 55% 80%, rgba(236,72,153,0.12), transparent 40%);
+    pointer-events: none;
+  }
+  .auth-panel {
+    width: min(460px, 100%);
+    border: 1px solid rgba(255,255,255,0.18);
+    background: rgba(8, 12, 20, 0.34);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    animation: auth-appear .45s ease-out both;
+  }
+  .auth-input {
+    border-color: rgba(255,255,255,0.2) !important;
+    background: rgba(7, 10, 18, 0.35) !important;
+  }
+  .auth-sign-btn {
+    border: none;
+    background: linear-gradient(135deg, #00c8ff, #8b5cf6);
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(0,200,255,0.2);
+    transition: all .25s ease;
+  }
+  .auth-sign-btn:hover {
+    box-shadow: 0 6px 28px rgba(0,200,255,0.35);
+    transform: translateY(-1px);
+  }
+  @keyframes auth-appear {
+    from { opacity: 0; transform: translateY(14px) scale(.985); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-page-wrap px-4">
+  <div class="w-full max-w-md reveal">
+    <div class="auth-panel rounded-3xl p-6 sm:p-8">
+      <div class="mb-6 text-center">
+        <h1 class="font-space text-2xl font-bold text-white sm:text-3xl reveal reveal-delay-1">Create Account</h1>
+        <p class="mt-2 text-sm text-zinc-400 reveal reveal-delay-2">Join Konvy Accounts today</p>
+      </div>
+
+      {% if error %}
+      <div class="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+        {{ error }}
+      </div>
+      {% endif %}
+
+      {% if message %}
+      <div class="mb-4 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-300">
+        {{ message }}
+      </div>
+      {% endif %}
+
+      <form method="post" action="/register" class="space-y-4">
+        <div class="space-y-1.5">
+          <label class="text-xs font-medium text-zinc-400">Username</label>
+          <div class="relative">
+            <i class="ri-user-line absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500 text-sm"></i>
+              <input name="username" type="text" value="{{ username_prefill or '' }}" placeholder="Choose a username" required
+                class="auth-input h-12 w-full rounded-xl border border-white/15 bg-black/35 pl-11 pr-4 text-sm text-white placeholder:text-zinc-500 transition">
+          </div>
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-medium text-zinc-400">Email</label>
+          <div class="relative">
+            <i class="ri-mail-line absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500 text-sm"></i>
+              <input name="email" type="email" value="{{ email_prefill or '' }}" placeholder="you@gmail.com" required
+                class="auth-input h-12 w-full rounded-xl border border-white/15 bg-black/35 pl-11 pr-4 text-sm text-white placeholder:text-zinc-500 transition">
+          </div>
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-medium text-zinc-400">Password</label>
+          <div class="relative">
+            <i class="ri-lock-line absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500 text-sm"></i>
+              <input id="reg-password" name="password" type="password" placeholder="Create a password" required
+                class="auth-input h-12 w-full rounded-xl border border-white/15 bg-black/35 pl-11 pr-11 text-sm text-white placeholder:text-zinc-500 transition">
+            <button type="button" id="toggle-password"
+              class="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 cursor-pointer bg-transparent border-none p-0">
+              <i class="ri-eye-line text-sm" id="toggle-icon"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-medium text-zinc-400">Confirm Password</label>
+          <div class="relative">
+            <i class="ri-lock-line absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500 text-sm"></i>
+              <input id="confirm-password" type="password" placeholder="Confirm your password"
+                class="auth-input h-12 w-full rounded-xl border border-white/15 bg-black/35 pl-11 pr-4 text-sm text-white placeholder:text-zinc-500 transition">
+          </div>
+        </div>
+
+        <button type="submit" id="register-btn"
+          class="ripple-btn auth-sign-btn inline-flex h-12 w-full items-center justify-center rounded-xl px-4 text-sm font-semibold transition active:scale-[0.99] whitespace-nowrap cursor-pointer">
+          Create Account
+        </button>
+      </form>
+
+      <div class="mt-6 text-center text-sm text-zinc-400">
+        We&apos;ll email you a 6-digit verification code after sign up.
+      </div>
+
+      <div class="mt-3 text-center text-sm text-zinc-400">
+        Already have an account?
+        <a href="/login" class="font-medium text-cyan-400 hover:text-cyan-300 transition">Sign In</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.getElementById('toggle-password').addEventListener('click', function() {
+    const input = document.getElementById('reg-password');
+    const icon = document.getElementById('toggle-icon');
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.className = 'ri-eye-off-line text-sm';
+    } else {
+      input.type = 'password';
+      icon.className = 'ri-eye-line text-sm';
+    }
+  });
+
+  document.getElementById('register-btn').addEventListener('click', function(e) {
+    const pw = document.getElementById('reg-password').value;
+    const cpw = document.getElementById('confirm-password').value;
+    if (cpw && pw !== cpw) {
+      e.preventDefault();
+      alert('Passwords do not match.');
+    }
+  });
+</script>
+{% endblock %}
