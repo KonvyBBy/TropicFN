@@ -523,6 +523,12 @@ userLoadTickets();userPollTimer=setInterval(userLoadTickets,4000);
 {% elif logged_in and is_support_admin %}
 <script>
 // ===================== ADMIN SUPPORT PANEL =====================
+function embedVideo(text){
+  const embeds=[];
+  text.replace(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/g,function(m,id){embeds.push('<iframe width="100%" height="200" src="https://www.youtube.com/embed/'+id+'" frameborder="0" allowfullscreen style="border-radius:10px;margin-top:6px;"></iframe>');return ''});
+  text.replace(/https?:\/\/(?:www\.)?vimeo\.com\/(\d+)/g,function(m,id){embeds.push('<iframe width="100%" height="200" src="https://player.vimeo.com/video/'+id+'" frameborder="0" allowfullscreen style="border-radius:10px;margin-top:6px;"></iframe>');return ''});
+  return embeds.join('');
+}
 let ticketsCache = [];
 let selectedTicketId = null;
 let currentFilter = 'needs';
