@@ -540,10 +540,10 @@ def get_lzt_balance_cents() -> int:
             # The response has "from" -> "balance" -> objects with "convertedBalance"
             balances = data.get("from", {})
             main_balance_obj = balances.get("balance", {})
-            bal_str = main_balance_obj.get("balance", "0")
-            # Convert from decimal string (e.g. "1234.56") to cents
+            # Use convertedBalance (USD) instead of raw balance string
+            bal_float = main_balance_obj.get("convertedBalance", 0)
             try:
-                cents = int(float(bal_str) * 100)
+                cents = int(float(bal_float) * 100)
             except (TypeError, ValueError):
                 cents = 0
             _lzt_balance_cache = {"cents": cents, "time": now}

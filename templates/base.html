@@ -195,11 +195,10 @@
         const topups=Array.isArray(pr.pending)?pr.pending:[];
         const total=tNeeds.length+rPending.length+topups.length;
         // Update navbar badge
-        const wrap=document.getElementById('admin-pending-wrap');
         const cnt=document.getElementById('admin-pending-count');
-        if(wrap&&cnt){
-          if(total>0){wrap.style.display='inline-block';cnt.textContent=total>9?'9+':total}
-          else wrap.style.display='none'
+        if(cnt){
+          if(total>0){cnt.textContent=total>9?'9+':total;cnt.style.display='flex'}
+          else cnt.style.display='none'
         }
         const bar=document.getElementById('admin-alert-bar');
         if(!bar)return;
@@ -634,8 +633,8 @@
         </a>
         <div class="notif-bell-wrapper">
           <button class="notif-bell-btn" id="notif-bell-btn" title="Notifications"><i class="ri-notification-3-line"></i><span class="notif-badge" id="notif-badge"></span></button>
-          <div class="notif-bell-wrapper" id="admin-pending-wrap" style="display:none;">
-            <button class="notif-bell-btn" id="admin-pending-btn" title="Pending actions" onclick="toggleAdminPanel()" style="border-color:rgba(239,68,68,0.2);background:rgba(239,68,68,0.04);"><i class="ri-shield-flash-line" style="color:#f87171;"></i><span class="notif-badge" id="admin-pending-count" style="display:flex;background:#f87171;">0</span></button>
+          <div class="notif-bell-wrapper" id="admin-pending-wrap" style="display:inline-block;">
+            <button class="notif-bell-btn" id="admin-pending-btn" title="Pending actions" onclick="toggleAdminPanel(event)" style="border-color:rgba(239,68,68,0.2);background:rgba(239,68,68,0.04);"><i class="ri-shield-flash-line" style="color:#f87171;"></i><span class="notif-badge" id="admin-pending-count" style="display:flex;background:#f87171;">0</span></button>
           </div>
           <div class="notif-dropdown" id="notif-dropdown">
             <div class="notif-dropdown-header"><h3>Notifications</h3><button class="notif-mark-all" id="notif-mark-all">Mark all read</button></div>
