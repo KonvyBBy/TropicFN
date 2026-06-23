@@ -1581,7 +1581,8 @@ def dismiss_notification(username: str, notif_id: str) -> bool:
 
 SUPPORT_TICKET_SUBJECT_MAX_LENGTH = 120
 SUPPORT_TICKET_MESSAGE_MAX_LENGTH = 2000
-TICKET_UPLOAD_MAX_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB per file
+TICKET_UPLOAD_MAX_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB per file for images/docs
+TICKET_UPLOAD_MAX_VIDEO_SIZE_BYTES = 100 * 1024 * 1024  # 100 MB per video file
 TICKET_UPLOAD_MAX_FILES_PER_MESSAGE = 5
 TICKET_UPLOAD_ALLOWED_EXTENSIONS = {
     "jpg", "jpeg", "png", "gif", "webp",
@@ -1627,8 +1628,12 @@ def _save_ticket_attachments(ticket_id: str, files) -> Tuple[list, Optional[str]
         f.seek(0, 2)
         size = f.tell()
         f.seek(0)
-        if size > TICKET_UPLOAD_MAX_SIZE_BYTES:
-            return [], f"File too large (max {TICKET_UPLOAD_MAX_SIZE_BYTES // (1024 * 1024)} MB): {original_name}"
+        ext_check = original_name.rsplit('.', 1)[-1].lower() if '.' in original_name else ''
+        is_video = ext_check in ('mp4', 'mov', 'avi', 'webm', 'mkv', 'flv')
+        max_size = TICKET_UPLOAD_MAX_VIDEO_SIZE_BYTES if is_video else TICKET_UPLOAD_MAX_SIZE_BYTES
+        if size > max_size:
+            limit_mb = max_size // (1024 * 1024)
+            return [], f"File too large (max {limit_mb} MB): {original_name}"
         safe = secure_filename(original_name) or "file"
         stored_name = f"{secrets.token_hex(8)}_{safe}"
         dest = os.path.join(resolved, stored_name)

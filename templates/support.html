@@ -203,10 +203,12 @@
         <div style="display:flex;gap:8px;align-items:flex-end;">
           <textarea id="user-reply-input" rows="1" placeholder="Type a message..." maxlength="2000" style="flex:1;padding:10px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:#fff;font-size:14px;outline:none;resize:none;min-height:44px;max-height:100px;font-family:inherit;"></textarea>
           <div style="display:flex;gap:4px;flex-wrap:wrap;">
-            <button type="button" onclick="document.getElementById('user-file-input').click()" style="padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:#9ca3af;font-size:16px;cursor:pointer;" title="Attach image/video">📎</button>
-            <input type="file" id="user-file-input" style="display:none" multiple accept=".jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.avi,.webm,.zip,.pdf">
-            <input type="text" id="user-video-link" placeholder="Paste video link (YouTube, etc)" maxlength="500" style="width:100%;margin-top:4px;padding:7px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#fff;font-size:11px;outline:none;box-sizing:border-box;display:none;">
-            <button type="button" onclick="document.getElementById('user-video-link').style.display=document.getElementById('user-video-link').style.display==='none'?'block':'none'" style="padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:#9ca3af;font-size:14px;cursor:pointer;" title="Add video link">🎬</button>
+            <button type="button" onclick="document.getElementById('user-img-input').click()" style="padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:#9ca3af;font-size:12px;cursor:pointer;" title="Upload image">🖼</button>
+            <input type="file" id="user-img-input" style="display:none" accept=".jpg,.jpeg,.png,.gif,.webp">
+            <button type="button" onclick="document.getElementById('user-vid-input').click()" style="padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:#9ca3af;font-size:12px;cursor:pointer;" title="Upload video">🎥</button>
+            <input type="file" id="user-vid-input" style="display:none" accept=".mp4,.mov,.avi,.webm,.mkv">
+            <input type="text" id="user-video-link" placeholder="Paste video link (YouTube, etc)" maxlength="500" style="flex:1;min-width:120px;padding:7px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.04);color:#fff;font-size:11px;outline:none;display:none;">
+            <button type="button" onclick="var l=document.getElementById('user-video-link');l.style.display=l.style.display==='none'?'block':'none';if(l.style.display!='none')l.focus()" style="padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:#9ca3af;font-size:12px;cursor:pointer;" title="Add video link">🔗</button>
             <span id="user-file-status" style="font-size:11px;color:#6b7280;display:flex;align-items:center;width:100%;"></span>
             <button type="button" id="user-send-btn" onclick="userSendReply()" style="padding:10px 20px;border-radius:10px;background:var(--neon-cyan);color:#000;font-weight:700;border:none;font-size:14px;cursor:pointer;margin-left:auto;">Send</button>
           </div>
@@ -265,8 +267,10 @@
         <div class="reply-row">
           <textarea id="sp-reply-input" rows="1" placeholder="Type a message..." maxlength="2000"></textarea>
           <div class="reply-actions">
-            <button class="btn-attach" onclick="document.getElementById('sp-file-input').click()" title="Attach file">📎</button>
-            <input type="file" id="sp-file-input" style="display:none" multiple accept=".jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.avi,.webm,.zip,.pdf">
+            <button onclick="document.getElementById('sp-img-input').click()" style="padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:#9ca3af;font-size:16px;cursor:pointer;" title="Upload image">🖼</button>
+            <input type="file" id="sp-img-input" style="display:none" accept=".jpg,.jpeg,.png,.gif,.webp">
+            <button onclick="document.getElementById('sp-vid-input').click()" style="padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:#9ca3af;font-size:16px;cursor:pointer;" title="Upload video">🎥</button>
+            <input type="file" id="sp-vid-input" style="display:none" accept=".mp4,.mov,.avi,.webm,.mkv">
             <button class="btn-send" onclick="sendSpReply()"><i class="ri-send-plane-fill" style="font-size:16px;"></i></button>
           </div>
         </div>
@@ -449,32 +453,43 @@ async function userLoadTickets(){
   }catch(e){}
 }
 
-// File input visual feedback
-document.getElementById('user-file-input')?.addEventListener('change', function(){
-  const status=document.getElementById('user-file-status');
-  if(this.files?.length) status.textContent='✅ '+this.files.length+' file'+(this.files.length>1?'s':'')+' attached';
-  else status.textContent='';
+// File inputs visual feedback
+['user-img-input','user-vid-input'].forEach(function(id){
+  document.getElementById(id)?.addEventListener('change', function(){
+    const status=document.getElementById('user-file-status');
+    const labels={img:'image',vid:'video',imginput:'image'};
+    const type=id.includes('img')?'image':'video';
+    const files=[];
+    ['user-img-input','user-vid-input'].forEach(function(i){const el=document.getElementById(i);if(el&&el.files?.length){for(let f of el.files)files.push(f)}});
+    if(files.length) status.textContent='✅ '+files.length+' file'+(files.length>1?'s':'')+' ('+type+')';
+    else status.textContent='';
+  });
 });
 
 async function userSendReply(){
   if(!userActiveTicketId)return;
   const input=document.getElementById('user-reply-input');
-  const fileInput=document.getElementById('user-file-input');
+  const imgInput=document.getElementById('user-img-input');
+  const vidInput=document.getElementById('user-vid-input');
   const videoInput=document.getElementById('user-video-link');
   const msg=input.value.trim();
   const videoLink=(videoInput?.value||'').trim();
-  const hasFiles=fileInput?.files?.length>0;
+  // Collect files from both inputs
+  const allFiles=[];
+  if(imgInput?.files?.length){for(const f of imgInput.files)allFiles.push(f)}
+  if(vidInput?.files?.length){for(const f of vidInput.files)allFiles.push(f)}
+  const hasFiles=allFiles.length>0;
   if(!msg&&!hasFiles&&!videoLink)return;
   const fd=new FormData();
-  // Combine message with video link if provided
   const fullMsg = msg + (videoLink ? '\n\nVideo: ' + videoLink : '');
   fd.append('message',fullMsg);
-  if(hasFiles){for(const f of fileInput.files)fd.append('files[]',f)}
+  if(hasFiles){for(const f of allFiles)fd.append('files[]',f)}
   const res=await fetch('/api/support/tickets/'+encodeURIComponent(userActiveTicketId)+'/reply',{method:'POST',body:fd});
   const data=await res.json();
   if(data.ok){
     input.value='';
-    if(fileInput)fileInput.value='';
+    if(document.getElementById('user-img-input'))document.getElementById('user-img-input').value='';
+    if(document.getElementById('user-vid-input'))document.getElementById('user-vid-input').value='';
     const st=document.getElementById('user-file-status');if(st)st.textContent='';
     const vl=document.getElementById('user-video-link');if(vl){vl.value='';vl.style.display='none'}
     document.getElementById('user-notif-banner').style.display='none';
@@ -681,18 +696,23 @@ function renderMessages(ticket){
 // ---- Send reply ----
 async function sendSpReply(){
   const input=document.getElementById('sp-reply-input');
-  const fileInput=document.getElementById('sp-file-input');
+  const imgI=document.getElementById('sp-img-input');
+  const vidI=document.getElementById('sp-vid-input');
   const msg=input.value.trim();
-  const hasFiles=fileInput?.files?.length>0;
+  const allFiles=[];
+  if(imgI?.files?.length){for(const f of imgI.files)allFiles.push(f)}
+  if(vidI?.files?.length){for(const f of vidI.files)allFiles.push(f)}
+  const hasFiles=allFiles.length>0;
   if(!msg&&!hasFiles)return;
   const fd=new FormData();
   fd.append('message',msg);
-  if(hasFiles){for(const f of fileInput.files)fd.append('files[]',f)}
+  if(hasFiles){for(const f of allFiles)fd.append('files[]',f)}
   const res=await fetch('/api/support/tickets/'+encodeURIComponent(selectedTicketId)+'/reply',{method:'POST',body:fd});
   const data=await res.json();
   if(data.ok){
     input.value='';
-    if(fileInput)fileInput.value='';
+    if(document.getElementById('sp-img-input'))document.getElementById('sp-img-input').value='';
+    if(document.getElementById('sp-vid-input'))document.getElementById('sp-vid-input').value='';
     await loadAllTickets();
     selectTicket(selectedTicketId);
   }else{spToast(data.error||'Failed to send',true)}
