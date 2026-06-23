@@ -202,10 +202,13 @@
       <div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,0.06);background:rgba(0,0,0,0.15);">
         <div style="display:flex;gap:8px;align-items:flex-end;">
           <textarea id="user-reply-input" rows="1" placeholder="Type a message..." maxlength="2000" style="flex:1;padding:10px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:#fff;font-size:14px;outline:none;resize:none;min-height:44px;max-height:100px;font-family:inherit;"></textarea>
-          <div style="display:flex;gap:4px;">
-            <button type="button" onclick="document.getElementById('user-file-input').click()" style="padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:#9ca3af;font-size:16px;cursor:pointer;">📎</button>
+          <div style="display:flex;gap:4px;flex-wrap:wrap;">
+            <button type="button" onclick="document.getElementById('user-file-input').click()" style="padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:#9ca3af;font-size:16px;cursor:pointer;" title="Attach image/video">📎</button>
             <input type="file" id="user-file-input" style="display:none" multiple accept=".jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.avi,.webm,.zip,.pdf">
-            <button type="button" id="user-send-btn" onclick="userSendReply()" style="padding:10px 20px;border-radius:10px;background:var(--neon-cyan);color:#000;font-weight:700;border:none;font-size:14px;cursor:pointer;">Send</button>
+            <input type="text" id="user-video-link" placeholder="Paste video link (YouTube, etc)" maxlength="500" style="width:100%;margin-top:4px;padding:7px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#fff;font-size:11px;outline:none;box-sizing:border-box;display:none;">
+            <button type="button" onclick="document.getElementById('user-video-link').style.display=document.getElementById('user-video-link').style.display==='none'?'block':'none'" style="padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:#9ca3af;font-size:14px;cursor:pointer;" title="Add video link">🎬</button>
+            <span id="user-file-status" style="font-size:11px;color:#6b7280;display:flex;align-items:center;width:100%;"></span>
+            <button type="button" id="user-send-btn" onclick="userSendReply()" style="padding:10px 20px;border-radius:10px;background:var(--neon-cyan);color:#000;font-weight:700;border:none;font-size:14px;cursor:pointer;margin-left:auto;">Send</button>
           </div>
         </div>
       </div>
@@ -332,6 +335,15 @@ function userStatusHtml(t){
   if(t.last_message_from_admin)return'<span style="padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700;background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.2);color:var(--neon-cyan);">🔴 Support Replied</span>';
   return'<span style="padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700;background:rgba(234,179,8,0.08);border:1px solid rgba(234,179,8,0.2);color:#fbbf24;">🟢 Waiting For Support</span>';
 }
+function embedVideo(text){
+  const embeds=[];
+  // YouTube
+  text.replace(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/g,function(m,id){embeds.push('<iframe width="100%" height="200" src="https://www.youtube.com/embed/'+id+'" frameborder="0" allowfullscreen style="border-radius:10px;margin-top:6px;"></iframe>');return ''});
+  // Vimeo
+  text.replace(/https?:\/\/(?:www\.)?vimeo\.com\/(\d+)/g,function(m,id){embeds.push('<iframe width="100%" height="200" src="https://player.vimeo.com/video/'+id+'" frameborder="0" allowfullscreen style="border-radius:10px;margin-top:6px;"></iframe>');return ''});
+  return embeds.join('');
+}
+
 function renderAttachHtml(attachments,ticketId){
   if(!Array.isArray(attachments)||!attachments.length)return'';
   return attachments.map(a=>{
@@ -377,17 +389,17 @@ function renderUserMessages(ticket){
         html+='<div class="cb-first">'+
           '<img src="/static/default-avatar.svg" alt="" class="cb-avatar" onerror="this.src=\'/static/default-avatar.svg\'">'+
           '<div class="cb-body"><div class="cb-header"><span class="cb-name">Konvy Support</span><span class="cb-badge '+(m.message&&m.message.toLowerCase().includes('escalated')?'escalated':'support')+'">'+(m.message&&m.message.toLowerCase().includes('escalated')?'Konvy is responding':'Support')+'</span><span class="cb-time">'+timeStr+'</span></div>'+
-          '<div class="cb-bubble admin">'+(m.message?esc(m.message):'')+attachHtml+'</div></div></div>';
+          '<div class="cb-bubble admin">'+(m.message?esc(m.message):'')+(m.message?embedVideo(m.message):'')+attachHtml+'</div></div></div>';
       }else{
         html+='<div class="cb-first" style="flex-direction:row-reverse;">'+
           '<img src="'+userAvatar+'" alt="" class="cb-avatar" onerror="this.src=\'/static/default-avatar.svg\'">'+
           '<div class="cb-body"><div class="cb-header" style="flex-direction:row-reverse;"><span class="cb-name">You</span><span class="cb-time">'+timeStr+'</span></div>'+
-          '<div class="cb-bubble user" style="margin-left:auto;">'+(m.message?esc(m.message):'')+attachHtml+'</div></div></div>';
+          '<div class="cb-bubble user" style="margin-left:auto;">'+(m.message?esc(m.message):'')+(m.message?embedVideo(m.message):'')+attachHtml+'</div></div></div>';
       }
     }else{
       html+='<div style="padding-left:46px;'+(!isAdmin?';display:flex;flex-direction:column;align-items:flex-end':'')+'">'+
         '<div class="cb-bubble '+(isAdmin?'admin':'user')+' follow'+(isAdmin?'':' style="margin-left:auto;"')+'">'+
-        (m.message?esc(m.message):'')+attachHtml+'</div></div>';
+        (m.message?esc(m.message):'')+(m.message?embedVideo(m.message):'')+attachHtml+'</div></div>';
     }
   });
   el.innerHTML=html;el.scrollTop=el.scrollHeight;
@@ -437,21 +449,34 @@ async function userLoadTickets(){
   }catch(e){}
 }
 
+// File input visual feedback
+document.getElementById('user-file-input')?.addEventListener('change', function(){
+  const status=document.getElementById('user-file-status');
+  if(this.files?.length) status.textContent='✅ '+this.files.length+' file'+(this.files.length>1?'s':'')+' attached';
+  else status.textContent='';
+});
+
 async function userSendReply(){
   if(!userActiveTicketId)return;
   const input=document.getElementById('user-reply-input');
   const fileInput=document.getElementById('user-file-input');
+  const videoInput=document.getElementById('user-video-link');
   const msg=input.value.trim();
+  const videoLink=(videoInput?.value||'').trim();
   const hasFiles=fileInput?.files?.length>0;
-  if(!msg&&!hasFiles)return;
+  if(!msg&&!hasFiles&&!videoLink)return;
   const fd=new FormData();
-  fd.append('message',msg);
+  // Combine message with video link if provided
+  const fullMsg = msg + (videoLink ? '\n\nVideo: ' + videoLink : '');
+  fd.append('message',fullMsg);
   if(hasFiles){for(const f of fileInput.files)fd.append('files[]',f)}
   const res=await fetch('/api/support/tickets/'+encodeURIComponent(userActiveTicketId)+'/reply',{method:'POST',body:fd});
   const data=await res.json();
   if(data.ok){
     input.value='';
     if(fileInput)fileInput.value='';
+    const st=document.getElementById('user-file-status');if(st)st.textContent='';
+    const vl=document.getElementById('user-video-link');if(vl){vl.value='';vl.style.display='none'}
     document.getElementById('user-notif-banner').style.display='none';
     await userLoadTickets();
   }else{
@@ -620,6 +645,7 @@ function renderMessages(ticket){
           '<div class="cb-header"><span class="cb-name">Konvy Support</span><span class="cb-badge '+(m.message&&m.message.toLowerCase().includes('escalated')?'escalated':'support')+'">'+(m.message&&m.message.toLowerCase().includes('escalated')?'Konvy is responding':'Support')+'</span><span class="cb-time">'+timeStr+'</span></div>'+
           '<div class="cb-bubble admin">'+
           (m.message?escapeHtml(m.message):'')+
+          (m.message?embedVideo(m.message):'')+
           attachHtml+
           '</div></div></div>';
       }else{
@@ -629,6 +655,7 @@ function renderMessages(ticket){
           '<div class="cb-header"><span class="cb-name"><a href="/u/'+encodeURIComponent(ticket.username)+'" style="color:#e4e4e7;text-decoration:none;">'+custName+'</a></span><span class="cb-time">'+timeStr+'</span></div>'+
           '<div class="cb-bubble user">'+
           (m.message?escapeHtml(m.message):'')+
+          (m.message?embedVideo(m.message):'')+
           attachHtml+
           '</div></div></div>';
       }
@@ -636,6 +663,7 @@ function renderMessages(ticket){
       html+='<div style="padding-left:46px;">'+
         '<div class="cb-bubble '+(isAdmin?'admin':'user')+' follow">'+
         (m.message?escapeHtml(m.message):'')+
+        (m.message?embedVideo(m.message):'')+
         attachHtml+
         '</div></div>';
     }
