@@ -1415,6 +1415,7 @@ def create_user(username: str, password: str, email: str) -> bool:
         "bio": "",
         "profile_pic": "",
         "last_online": 0,
+        "online": False,
     }
     _save_users(users)
     return True
@@ -3170,8 +3171,8 @@ def _timestamp_to_date(ts: int) -> str:
 
 
 @app.template_filter("is_online")
-def _is_online(ts: int) -> bool:
-    return bool(ts) and (int(time.time()) - ts) < 300
+def _is_online(ts) -> bool:
+    return bool(ts) if isinstance(ts, bool) else (bool(ts) and (int(time.time()) - ts) < 300)
 
 
 @app.template_filter("email_login_url")
@@ -3207,7 +3208,9 @@ def _track_last_online():
     if username:
         users = _load_users()
         if username in users:
-            users[username]["last_online"] = int(time.time())
+            now = int(time.time())
+            users[username]["last_online"] = now
+            users[username]["online"] = True
             _save_users(users)
 
 
@@ -7206,6 +7209,7 @@ def _get_user_profile(username: str) -> dict:
         "bio": info.get("bio", ""),
         "profile_pic": info.get("profile_pic", ""),
         "last_online": info.get("last_online", 0),
+        "online": bool(info.get("online", False)),
         "email": info.get("email", ""),
     }
 
@@ -8008,8 +8012,8 @@ def api_user_status(username: str):
     for u in users:
         if u.lower() == username.lower():
             last_online = users[u].get("last_online", 0)
-            is_online = bool(last_online) and (int(time.time()) - last_online) < 300
-            return jsonify({"online": is_online, "last_online": last_online})
+            online = bool(users[u].get("online", False))
+            return jsonify({"online": online, "last_online": last_online})
     return jsonify({"online": False, "last_online": 0})
 
 # ===================== PING (online/offline) =====================
@@ -8023,14 +8027,17 @@ def api_ping():
         status = request.args.get("status", "online")
         users = _load_users()
         if username in users:
-            if status == "offline":
-                users[username]["last_online"] = 0
-                _save_users(users)
-                _push_activity("offline", username)
-            else:
-                users[username]["last_online"] = int(time.time())
-                _save_users(users)
-                _push_activity("online", username)
+            now = int(time.time())
+        if status == "offline":
+            users[username]["last_online"] = now
+            users[username]["online"] = False
+            _save_users(users)
+            _push_activity("offline", username)
+        else:
+            users[username]["last_online"] = now
+            users[username]["online"] = True
+            _save_users(users)
+            _push_activity("online", username)
     except Exception:
         pass
     return jsonify({"ok": True}), 200
