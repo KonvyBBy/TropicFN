@@ -3213,6 +3213,9 @@ def _track_last_online():
             now = int(time.time())
             users[username]["last_online"] = now
             users[username]["online"] = True
+            # Track current page (truncated for privacy)
+            path = request.path[:80] if request.path else "/"
+            users[username]["current_page"] = path
             _save_users(users)
 
 
@@ -8072,10 +8075,31 @@ def api_users_online():
         role = udata.get("role", "user")
         if uname.lower() == "konvy" or (udata.get("email") or "").lower() == "konvyvip@gmail.com":
             role = "owner"
+        current_page = udata.get("current_page", "")
+        # Make page names human-readable
+        page_names = {
+            "/dashboard": "Browsing marketplace",
+            "/support": "In support",
+            "/reviews": "Viewing reviews",
+            "/customer-section": "In customer section",
+            "/chat": "In chat",
+            "/balance": "Viewing balance",
+            "/my-accounts": "Viewing accounts",
+            "/how-it-works": "Reading how it works",
+            "/admin123": "In admin panel",
+        }
+        page_label = page_names.get(current_page, "")
+        if not page_label and current_page.startswith("/account/"):
+            page_label = f"Viewing account #{current_page.split('/')[-1]}"
+        elif not page_label and current_page.startswith("/u/"):
+            page_label = f"Viewing profile"
+        elif not page_label:
+            page_label = f"On {current_page}" if current_page else "Browsing"
         result.append({
             "username": uname,
             "online": online,
             "role": role,
+            "current_page": page_label if online else "",
             "last_online": udata.get("last_online", 0),
             "profile_pic": udata.get("profile_pic", "") or "",
         })
