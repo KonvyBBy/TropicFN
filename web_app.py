@@ -523,24 +523,22 @@ market_headers = {
 # LZT balance cache for owner account
 _lzt_balance_cache = {"cents": 0, "time": 0}
 
-def get_lzt_balance_cents() -> int:
+def get_lzt_balance_cents(force: bool = False) -> int:
     """Fetch the LZT marketplace balance for the owner."""
     global _lzt_balance_cache
     now = int(time.time())
-    if now - _lzt_balance_cache["time"] < 60:
+    if not force and now - _lzt_balance_cache["time"] < 300:
         return _lzt_balance_cache["cents"]
     try:
         resp = requests.get(
             "https://prod-api.lzt.market/balance/exchange",
             headers=market_headers,
-            timeout=10,
+            timeout=4,
         )
         if resp.status_code == 200:
             data = resp.json()
-            # The response has "from" -> "balance" -> objects with "convertedBalance"
             balances = data.get("from", {})
             main_balance_obj = balances.get("balance", {})
-            # Use convertedBalance (USD) instead of raw balance string
             bal_float = main_balance_obj.get("convertedBalance", 0)
             try:
                 cents = int(float(bal_float) * 100)
@@ -1097,11 +1095,7 @@ USERS_FILE = os.path.join(DATA_DIR, "users.json")
 from balances_file import get_balance as _file_get_balance, add_balance  # uses balances.json
 
 def get_balance(username: str) -> int:
-    """Return balance for user. Owner gets their LZT marketplace balance."""
-    if username and is_admin_user(username):
-        lzt = get_lzt_balance_cents()
-        if lzt > 0:
-            return lzt
+    """Return balance for user."""
     return _file_get_balance(username)
 
 
@@ -8034,6 +8028,17 @@ def api_activity():
 @app.route("/activity")
 def activity_page():
     return redirect(url_for("dashboard"))
+
+# ===================== LZT BALANCE REFRESH =====================
+
+@app.route("/api/balance/lzt", methods=["POST"])
+@login_required_api
+def api_balance_lzt():
+    username = session["username"]
+    if not is_admin_user(username):
+        return jsonify({"error": "Unauthorized"}), 403
+    cents = get_lzt_balance_cents(force=True)
+    return jsonify({"balance": cents / 100})
 
 # ===================== ACCOUNT GIFTING =====================
 

@@ -543,11 +543,11 @@
       <!-- Right: Wallet + Notifs + Profile -->
       <div class="flex items-center gap-2">
         {% if logged_in %}
-        <a href="/balance" class="wallet-pill">
+        <a href="/balance" class="wallet-pill" id="wallet-pill" onclick="{% if is_konvy_admin %}refreshLztBalance();return false;{% endif %}">
           <i class="ri-wallet-3-line w-icon"></i>
           <div>
             <div class="w-label">Wallet</div>
-            <div class="w-balance">${{ balance }}</div>
+            <div class="w-balance" id="wallet-balance">${{ balance }}</div>
           </div>
         </a>
         <div class="notif-bell-wrapper">
@@ -609,6 +609,18 @@
       pt.addEventListener('click',function(e){e.stopPropagation();pd.classList.toggle('open');if(pc)pc.style.transform=pd.classList.contains('open')?'rotate(180deg)':'rotate(0deg)';});
       document.addEventListener('click',function(){pd.classList.remove('open');if(pc)pc.style.transform='rotate(0deg)';});
     }
+    // LZT balance refresh for admin
+    window.refreshLztBalance = async function() {
+      const el = document.getElementById('wallet-balance');
+      if (!el) return;
+      el.textContent = '...';
+      try {
+        const r = await fetch('/api/balance/lzt', { method:'POST', headers:{'Content-Type':'application/json'} });
+        const d = await r.json();
+        if (d.balance !== undefined) el.textContent = '$' + parseFloat(d.balance).toFixed(2);
+      } catch(e) {}
+    };
+
     // Nav search - redirect to dashboard with skin search
     const ns=document.getElementById('nav-search-input');
     if(ns){
