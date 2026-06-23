@@ -645,7 +645,6 @@ CUSTOMER_NEWS_FILE = os.path.join(DATA_DIR, "customer_news.json")
 
 # --- Messages / chat ---
 MESSAGES_FILE = os.path.join(DATA_DIR, "messages.json")
-GLOBAL_CHAT_FILE = os.path.join(DATA_DIR, "global_chat.json")
 ADMINS_FILE = os.path.join(DATA_DIR, "admins.json")
 CHAT_BAN_FILE = os.path.join(DATA_DIR, "chat_bans.json")
 
@@ -7466,132 +7465,7 @@ def api_messages_with(other_user: str):
     _save_messages(all_msgs)
     return jsonify({"messages": all_msgs[key]})
 
-# ===================== GLOBAL CHAT =====================
 
-def _load_global_chat() -> list:
-    if not os.path.exists(GLOBAL_CHAT_FILE):
-        return []
-    try:
-        with open(GLOBAL_CHAT_FILE, "r", encoding="utf-8") as f:
-            return json.load(f) or []
-    except Exception:
-        return []
-
-def _save_global_chat(msgs: list) -> None:
-    with open(GLOBAL_CHAT_FILE, "w", encoding="utf-8") as f:
-        json.dump(msgs, f, indent=2)
-
-@app.route("/chat")
-def global_chat_page():
-    logged_in = "username" in session
-    my_username = session.get("username", "")
-    balance = "0.00"
-    if logged_in:
-        balance_cents = get_balance(my_username) or 0
-        balance = f"{balance_cents / 100:.2f}"
-    chat_msgs = _load_global_chat()
-    users = _load_users()
-    return render_template(
-        "global_chat.html",
-        logged_in=logged_in,
-        username=my_username,
-        balance=balance,
-        active_page="chat",
-        chat_msgs=chat_msgs,
-        users=users,
-        am_i_admin=is_admin_user(my_username) if my_username else False,
-    )
-
-@app.route("/api/chat", methods=["GET", "POST"])
-@login_required_api
-def api_global_chat():
-    username = session["username"]
-    if request.method == "POST":
-        user_ip = request.remote_addr or "unknown"
-        ban_reason = _is_chat_banned(username, user_ip)
-        if ban_reason:
-            return jsonify({"error": ban_reason}), 403
-        data = request.json or {}
-        content = (data.get("content") or "").strip()
-        if not content:
-            return jsonify({"error": "Message required"}), 400
-        msgs = _load_global_chat()
-        msgs.append({
-            "from": username,
-            "content": content,
-            "timestamp": int(time.time()),
-            "ip": user_ip,
-        })
-        _save_global_chat(msgs)
-        return jsonify({"ok": True})
-    after = request.args.get("after", 0, type=int)
-    msgs = _load_global_chat()
-    if after:
-        msgs = [m for m in msgs if m.get("timestamp", 0) > after]
-    return jsonify({"messages": msgs, "now": int(time.time())})
-
-# ===================== CHAT MODERATION =====================
-
-@app.route("/api/chat/delete", methods=["POST"])
-@login_required_api
-def api_chat_delete():
-    username = session["username"]
-    data = request.json or {}
-    idx = data.get("index")
-    if idx is None:
-        return jsonify({"error": "Message index required"}), 400
-    msgs = _load_global_chat()
-    if not (0 <= idx < len(msgs)):
-        return jsonify({"error": "Message not found"}), 404
-    msg = msgs[idx]
-    is_owner_or_admin = is_admin_user(username)
-    is_own_msg = msg.get("from", "").lower() == username.lower()
-    if not is_own_msg and not is_owner_or_admin:
-        return jsonify({"error": "You can only delete your own messages"}), 403
-    if not is_owner_or_admin and not is_own_msg:
-        return jsonify({"error": "You can only delete your own messages"}), 403
-    msgs.pop(idx)
-    _save_global_chat(msgs)
-    return jsonify({"ok": True})
-
-@app.route("/api/chat/timeout", methods=["POST"])
-@login_required_api
-def api_chat_timeout():
-    username = session["username"]
-    if not is_admin_user(username):
-        return jsonify({"error": "Only admins can timeout users"}), 403
-    data = request.json or {}
-    target = (data.get("username") or "").strip().lower()
-    minutes = int(data.get("minutes") or 5)
-    if not target:
-        return jsonify({"error": "Username required"}), 400
-    bans = _load_chat_bans()
-    bans.setdefault("timed_out_users", {})[target] = int(time.time()) + (minutes * 60)
-    _save_chat_bans(bans)
-    return jsonify({"ok": True, "message": f"{target} timed out for {minutes} minutes"})
-
-@app.route("/api/chat/ban", methods=["POST"])
-@login_required_api
-def api_chat_ban():
-    username = session["username"]
-    if not is_admin_user(username):
-        return jsonify({"error": "Only admins can ban users"}), 403
-    data = request.json or {}
-    target = (data.get("username") or "").strip().lower()
-    if not target:
-        return jsonify({"error": "Username required"}), 400
-    msgs = _load_global_chat()
-    target_ip = None
-    for m in msgs:
-        if m.get("from", "").lower() == target and m.get("ip"):
-            target_ip = m["ip"]
-            break
-    bans = _load_chat_bans()
-    if target_ip and target_ip not in bans.get("banned_ips", []):
-        bans.setdefault("banned_ips", []).append(target_ip)
-    bans.setdefault("timed_out_users", {})[target] = int(time.time()) + 999999999
-    _save_chat_bans(bans)
-    return jsonify({"ok": True, "message": f"{target} banned from chat"})
 
 # ===================== PROFILE SETTINGS =====================
 
@@ -8120,6 +7994,29 @@ def sitemap_xml():
         xml += f"  <url><loc>{u['loc']}</loc><priority>{u['priority']}</priority></url>\n"
     xml += "</urlset>"
     return Response(xml, mimetype="application/xml")
+
+# ===================== PING (online/offline) =====================
+
+@app.route("/api/ping", methods=["POST", "GET"])
+def api_ping():
+    username = session.get("username")
+    if not username:
+        return jsonify({"ok": False}), 200
+    try:
+        status = request.args.get("status", "online")
+        users = _load_users()
+        if username in users:
+            if status == "offline":
+                users[username]["last_online"] = 0
+                _save_users(users)
+                _push_activity("offline", username)
+            else:
+                users[username]["last_online"] = int(time.time())
+                _save_users(users)
+                _push_activity("online", username)
+    except Exception:
+        pass
+    return jsonify({"ok": True}), 200
 
 # ===================== WIPE ALL DATA =====================
 
