@@ -520,6 +520,38 @@ market_headers = {
     "authorization": f"Bearer {MARKET_API_TOKEN}",
 }
 
+# LZT balance cache for owner account
+_lzt_balance_cache = {"cents": 0, "time": 0}
+
+def get_lzt_balance_cents() -> int:
+    """Fetch the LZT marketplace balance for the owner."""
+    global _lzt_balance_cache
+    now = int(time.time())
+    if now - _lzt_balance_cache["time"] < 60:
+        return _lzt_balance_cache["cents"]
+    try:
+        resp = requests.get(
+            "https://prod-api.lzt.market/balance/exchange",
+            headers=market_headers,
+            timeout=10,
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            # The response has "from" -> "balance" -> objects with "convertedBalance"
+            balances = data.get("from", {})
+            main_balance_obj = balances.get("balance", {})
+            bal_str = main_balance_obj.get("balance", "0")
+            # Convert from decimal string (e.g. "1234.56") to cents
+            try:
+                cents = int(float(bal_str) * 100)
+            except (TypeError, ValueError):
+                cents = 0
+            _lzt_balance_cache = {"cents": cents, "time": now}
+            return cents
+    except Exception:
+        pass
+    return _lzt_balance_cache["cents"]
+
 # --- Shopify store (for topup link) ---
 SHOPIFY_STORE_DOMAIN = os.environ.get(
     "SHOPIFY_STORE_DOMAIN", "0dgkay-n6.myshopify.com"
@@ -1062,7 +1094,15 @@ USERS_FILE = os.path.join(DATA_DIR, "users.json")
 
 
 # --- Balances (reuse your balances_file) ---
-from balances_file import get_balance, add_balance  # uses balances.json
+from balances_file import get_balance as _file_get_balance, add_balance  # uses balances.json
+
+def get_balance(username: str) -> int:
+    """Return balance for user. Owner gets their LZT marketplace balance."""
+    if username and is_admin_user(username):
+        lzt = get_lzt_balance_cents()
+        if lzt > 0:
+            return lzt
+    return _file_get_balance(username)
 
 
 # ===================== USER HELPERS =====================
