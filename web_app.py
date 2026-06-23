@@ -7849,15 +7849,18 @@ def api_admin_user_manage():
 def reviews_page():
     logged_in = "username" in session
     my_username = session.get("username", "")
+    filter_user = request.args.get("user", "").strip().lower()
     reviews = _load_reviews()
     approved = [r for r in reviews if r.get("status") == "approved"]
+    if filter_user:
+        approved = [r for r in approved if r.get("username", "").lower() == filter_user]
     all_users = _load_users()
     owner_email = (all_users.get(my_username, {}).get("email") or "").lower() if my_username else ""
     return render_template("reviews.html", logged_in=logged_in, username=my_username,
         balance=f"{get_balance(my_username) / 100:.2f}" if logged_in else "0.00",
         active_page="reviews", reviews=approved,
         is_konvy_vip=owner_email == "konvyvip@gmail.com",
-        all_users=all_users)
+        all_users=all_users, filter_user=filter_user)
 
 @app.route("/api/reviews", methods=["GET", "POST"])
 @login_required_api

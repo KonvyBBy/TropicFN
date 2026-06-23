@@ -127,6 +127,7 @@
 .cb-name { font-size:13px;font-weight:700;color:#e4e4e7; }
 .cb-badge { font-size:10px;padding:1px 8px;border-radius:99px;font-weight:700; }
 .cb-badge.support { background:rgba(0,229,255,0.1);color:var(--neon-cyan);border:1px solid rgba(0,229,255,0.2); }
+.cb-badge.escalated { background:rgba(234,179,8,0.1);color:#fbbf24;border:1px solid rgba(234,179,8,0.25); }
 .cb-time { font-size:11px;color:#52525b; }
 .cb-bubble { padding:10px 16px;border-radius:14px;font-size:14px;line-height:1.55;word-break:break-word;max-width:90%;width:fit-content;margin-bottom:3px; }
 .cb-bubble.admin { background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.12);border-top-left-radius:4px;color:#e4e4e7; }
@@ -375,7 +376,7 @@ function renderUserMessages(ticket){
       if(isAdmin){
         html+='<div class="cb-first">'+
           '<img src="/static/default-avatar.svg" alt="" class="cb-avatar" onerror="this.src=\'/static/default-avatar.svg\'">'+
-          '<div class="cb-body"><div class="cb-header"><span class="cb-name">Konvy Support</span><span class="cb-badge support">Support</span><span class="cb-time">'+timeStr+'</span></div>'+
+          '<div class="cb-body"><div class="cb-header"><span class="cb-name">Konvy Support</span><span class="cb-badge '+(m.message&&m.message.toLowerCase().includes('escalated')?'escalated':'support')+'">'+(m.message&&m.message.toLowerCase().includes('escalated')?'Konvy is responding':'Support')+'</span><span class="cb-time">'+timeStr+'</span></div>'+
           '<div class="cb-bubble admin">'+(m.message?esc(m.message):'')+attachHtml+'</div></div></div>';
       }else{
         html+='<div class="cb-first" style="flex-direction:row-reverse;">'+
@@ -616,7 +617,7 @@ function renderMessages(ticket){
         html+='<div class="cb-first">'+
           '<img src="/static/default-avatar.svg" alt="" class="cb-avatar" onerror="this.src=\'/static/default-avatar.svg\'">'+
           '<div class="cb-body">'+
-          '<div class="cb-header"><span class="cb-name">Konvy Support</span><span class="cb-badge support">Support</span><span class="cb-time">'+timeStr+'</span></div>'+
+          '<div class="cb-header"><span class="cb-name">Konvy Support</span><span class="cb-badge '+(m.message&&m.message.toLowerCase().includes('escalated')?'escalated':'support')+'">'+(m.message&&m.message.toLowerCase().includes('escalated')?'Konvy is responding':'Support')+'</span><span class="cb-time">'+timeStr+'</span></div>'+
           '<div class="cb-bubble admin">'+
           (m.message?escapeHtml(m.message):'')+
           attachHtml+

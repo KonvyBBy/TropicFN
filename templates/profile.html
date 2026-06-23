@@ -230,7 +230,7 @@
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px;">
         <span style="font-size:12px;color:#9ca3af;min-width:80px;">Actions</span>
         <button onclick="adminAction('ban',{})" style="padding:6px 14px;border-radius:8px;border:1px solid rgba(239,68,68,0.25);background:rgba(239,68,68,0.08);color:#f87171;font-weight:600;font-size:11px;cursor:pointer;">🚫 Ban User</button>
-        <button onclick="adminAction('delete_reviews',{})" style="padding:6px 14px;border-radius:8px;border:1px solid rgba(239,68,68,0.1);background:rgba(239,68,68,0.04);color:#f87171;font-weight:600;font-size:11px;cursor:pointer;">🗑 Delete All Reviews</button>
+        <a href="/reviews?user={{ profile.username }}" style="padding:6px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#e4e4e7;font-weight:600;font-size:11px;cursor:pointer;text-decoration:none;">⭐ View Reviews</a>
         <span id="admin-act-status" style="font-size:11px;color:#6b7280;"></span>
       </div>
     </div>
@@ -308,12 +308,12 @@ async function adminSetBalance() {
   else { el.innerHTML = '<span style="color:#f87171;">'+escapeHtml(d.error||'Error')+'</span>'; }
 }
 async function adminAction(action, extra) {
-  const confirmMsgs = { ban:'Ban {{ profile.username }} from the site?', delete_reviews:'Delete ALL reviews by {{ profile.username }}? This cannot be undone.' };
+  const confirmMsgs = { ban:'Ban {{ profile.username }} from the site?' };
   if (confirmMsgs[action] && !confirm(confirmMsgs[action])) return;
   const body = { username:'{{ profile.username }}', action, ...extra };
   const r = await fetch('/api/admin/user-manage', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
   const d = await r.json();
-  const el = document.getElementById('admin-'+(action==='ban'||action==='delete_reviews'?'act':action==='set_role'?'role':'verif')+'-status');
+  const el = document.getElementById('admin-'+(action==='ban'?'act':action==='set_role'?'role':'verif')+'-status');
   if (d.ok) { el.innerHTML = '<span style="color:#4ade80;">'+escapeHtml(d.message||'Done')+'</span>'; setTimeout(()=>el.innerHTML='',4000); }
   else { el.innerHTML = '<span style="color:#f87171;">'+escapeHtml(d.error||'Error')+'</span>'; }
 }

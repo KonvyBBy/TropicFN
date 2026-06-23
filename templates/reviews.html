@@ -22,6 +22,12 @@
 <div style="max-width:700px;margin:0 auto;padding:0 8px;">
   <h1 style="font-size:22px;font-weight:800;color:#fff;margin:0 0 4px;">Reviews</h1>
   <p style="font-size:14px;color:#6b7280;margin:0 0 20px;">What our customers are saying</p>
+  {% if filter_user %}
+  <div style="margin-bottom:14px;padding:10px 14px;border-radius:10px;background:rgba(0,229,255,0.04);border:1px solid rgba(0,229,255,0.1);font-size:13px;color:#e4e4e7;display:flex;align-items:center;gap:8px;">
+    <span>👤 Reviews by <strong>{{ filter_user }}</strong></span>
+    <a href="/reviews" style="margin-left:auto;padding:4px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.08);color:#9ca3af;font-size:11px;text-decoration:none;">Clear filter</a>
+  </div>
+  {% endif %}
 
   {% if is_konvy_vip %}
   <div id="pr-section" style="margin-bottom:16px;background:rgba(234,179,8,0.03);border:1px solid rgba(234,179,8,0.1);border-radius:14px;padding:14px 16px;">
