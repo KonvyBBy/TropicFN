@@ -624,7 +624,7 @@ DISCORD_PURCHASE_THUMBNAIL_URL = (
 # --- Fortnite browse limits ---
 MAX_ACCOUNTS = 50
 MAX_PAGES = 10
-MARKET_API_TIMEOUT = 12
+MARKET_API_TIMEOUT = 10
 MAX_PREVIEW_COSMETICS = 8
 
 # --- Redeemed orders tracking ---
@@ -6701,7 +6701,7 @@ def api_fortnite_search():
             )
         except Exception as e:
             app.logger.error("Error fetching accounts: %s", e)
-            return jsonify({"error": "Error fetching accounts. Please try again."}), 500
+            return jsonify({"accounts": [], "error": "Marketplace is temporarily unavailable. Please try again."}), 200
 
         if not accounts:
             return jsonify({"accounts": [], "not_found": not_found})
