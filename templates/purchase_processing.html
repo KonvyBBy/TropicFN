@@ -149,6 +149,25 @@
     const itemId = Number({{ item_id|tojson }});
     const itemTitle = {{ item_title|tojson }};
 
+    // Check if already purchased before retrying
+    try {
+      const checkRes = await fetch('/api/fortnite/my-accounts', { method:'POST', headers:{'Content-Type':'application/json'} });
+      const checkData = await checkRes.json();
+      const existing = Array.isArray(checkData.accounts) ? checkData.accounts.find(a => {
+        const pr = a.purchase_result || {};
+        return (pr.item_id || pr.fortnite_item_id) == itemId;
+      }) : null;
+      if (existing) {
+        iconEl.className = 'purchase-success-ring mx-auto';
+        iconEl.innerHTML = '<i class="ri-check-line text-4xl text-cyan-300"></i>';
+        titleEl.textContent = 'Already purchased';
+        subtitleEl.textContent = 'This account was already delivered.';
+        messageEl.innerHTML = `<strong class="text-zinc-200">${itemTitle}</strong> (#${itemId}) is yours. Go to My Accounts.`;
+        actionsEl.classList.remove('hidden');
+        return;
+      }
+    } catch(e) {}
+
     for (let attempt = 1; attempt <= AUTO_RETRY_MAX_ATTEMPTS; attempt += 1) {
       try {
         await postJSON('/api/fortnite/buy', { item_id: itemId });

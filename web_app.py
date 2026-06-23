@@ -6842,6 +6842,19 @@ def api_fortnite_buy():
     if not item_id:
         return jsonify({"error": "item_id required"}), 400
 
+    # If already purchased by this user, return success immediately (handles retry after success)
+    user_purchases = get_purchases(username)
+    for p in user_purchases:
+        pr = p.get("purchase_result", {})
+        pid = pr.get("item_id") or (pr.get("fortnite_item_id"))
+        if pid and int(pid) == item_id:
+            return jsonify({
+                "message": "Purchase complete!",
+                "purchase_result": pr,
+                "owned_accounts": user_purchases,
+                "purchase_index": user_purchases.index(p),
+            })
+
     locked_purchase = get_purchase_lock()
     if locked_purchase and int(locked_purchase["item_id"]) != item_id:
         return _purchase_in_progress_response(waiting_for_other_item=True)
