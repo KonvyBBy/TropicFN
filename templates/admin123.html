@@ -10,12 +10,12 @@
 <style>
 :root{--bg:#06080f;--bg2:#0c0e17;--bg3:rgba(255,255,255,0.03);--border:rgba(255,255,255,0.06);--text:#f0f0f2;--muted:#6b7280;--cyan:#00E5FF;--purple:#7C5CFF;--grad:linear-gradient(135deg,#00E5FF,#7C5CFF)}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex}
+body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;}
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.06);border-radius:99px}
 /* Sidebar */
-.sb{width:220px;min-width:220px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;position:sticky;top:0;overflow-y:auto}
+.sb{width:220px;min-width:220px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100%;overflow-y:auto}
 .sb-logo{padding:18px 16px 14px;border-bottom:1px solid var(--border);font-size:15px;font-weight:800;display:flex;align-items:center;gap:10px}
 .sb-logo span{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .sb-nav{flex:1;padding:8px 8px}
@@ -109,7 +109,22 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--tex
 </div>
 {% else %}
 
-<!-- Sidebar -->
+<!-- Top nav -->
+<div style="display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg2);">
+  <a href="/dashboard" style="display:flex;align-items:center;gap:8px;text-decoration:none;flex-shrink:0;">
+    <span style="font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:800;"><span style="color:var(--cyan);">Konvy</span><span style="color:#fff;"> Accounts</span></span>
+  </a>
+  <div style="display:flex;gap:2px;margin-left:auto;">
+    <a href="/dashboard" style="padding:6px 12px;border-radius:8px;font-size:12px;font-weight:500;color:#6b7280;text-decoration:none;" onmouseover="this.style.color='#e4e4e7';this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.color='#6b7280';this.style.background='transparent'">Marketplace</a>
+    <a href="/support" style="padding:6px 12px;border-radius:8px;font-size:12px;font-weight:500;color:#6b7280;text-decoration:none;" onmouseover="this.style.color='#e4e4e7';this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.color='#6b7280';this.style.background='transparent'">Support</a>
+    <a href="/reviews" style="padding:6px 12px;border-radius:8px;font-size:12px;font-weight:500;color:#6b7280;text-decoration:none;" onmouseover="this.style.color='#e4e4e7';this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.color='#6b7280';this.style.background='transparent'">Reviews</a>
+    <a href="/chat" style="padding:6px 12px;border-radius:8px;font-size:12px;font-weight:500;color:#6b7280;text-decoration:none;" onmouseover="this.style.color='#e4e4e7';this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.color='#6b7280';this.style.background='transparent'">Chat</a>
+    <span style="padding:6px 12px;border-radius:8px;font-size:12px;font-weight:500;color:#fbbf24;background:rgba(255,255,255,0.04);">Admin</span>
+  </div>
+</div>
+
+<!-- Sidebar + Content -->
+<div style="display:flex;flex:1;overflow:hidden;">
 <div class="sb">
   <div class="sb-logo"><i class="ri-shield-flash-line" style="color:var(--cyan);font-size:20px;"></i><span>Konvy Admin</span></div>
   <div class="sb-nav">
@@ -348,7 +363,8 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--tex
 </div>
 
   </div><!-- /content -->
-</div><!-- /main -->
+  </div><!-- /main -->
+</div><!-- /flex container -->
 
 <div class="toast" id="ad-toast"></div>
 
