@@ -726,7 +726,7 @@
             if(tNeeds.length){
               html+='<div style="padding:6px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#f87171;background:rgba(239,68,68,0.04);">Tickets Needing Reply</div>';
               tNeeds.forEach(t=>{
-                html+='<div class="notif-item"><div class="notif-item-icon">🎫</div><div class="notif-item-body"><div class="notif-item-title">'+esc(t.subject||'')+'</div><div class="notif-item-desc">'+esc(t.username||'')+' — <a href="/admin123" style="color:var(--neon-cyan);">Reply</a></div></div></div>';
+                html+='<div class="notif-item"><div class="notif-item-icon">🎫</div><div class="notif-item-body"><div class="notif-item-title">'+esc(t.subject||'')+'</div><div class="notif-item-desc">'+esc(t.username||'')+' — <a href="/support" style="color:var(--neon-cyan);">Reply</a></div></div></div>';
               });
             }
           }
