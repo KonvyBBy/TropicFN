@@ -800,6 +800,7 @@
         });
         document.addEventListener('click',e=>{if(!uolDrop.contains(e.target)&&e.target!==uolBtn)uolDrop.classList.remove('open')});
       }
+      var _esc = window.esc || function(v){return String(v||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;')}
       async function loadOnlineUsers(){
         try{
           const r=await fetch('/api/users/online');const d=await r.json();
@@ -810,19 +811,17 @@
           let html='';
           if(online.length)html+='<div style="padding:4px 14px;font-size:9px;font-weight:700;text-transform:uppercase;color:#4ade80;">Online</div>';
           online.forEach(u=>{
-            const roleIcon=u.role==='owner'?'👑':u.role==='support'?'🔵':'';
-            html+='<a href="/u/'+encodeURIComponent(u.username)+'" class="notif-item" style="text-decoration:none;cursor:pointer;"><div class="notif-item-icon" style="background:rgba(34,197,94,0.1);border-color:rgba(34,197,94,0.2);font-size:12px;">🟢</div><div class="notif-item-body"><div class="notif-item-title">'+esc(u.username)+'</div><div class="notif-item-desc" style="color:'+(u.role==='support'?'#3b82f6':'#6b7280')+';font-weight:'+(u.role!=='user'?'600':'400')+';">'+(u.role==='owner'?'👑 Owner':u.role==='support'?'🔵 Support':'User')+'</div></div></a>';
+            html+='<a href="/u/'+encodeURIComponent(u.username)+'" class="notif-item" style="text-decoration:none;cursor:pointer;"><div class="notif-item-icon" style="background:rgba(34,197,94,0.1);border-color:rgba(34,197,94,0.2);font-size:12px;">🟢</div><div class="notif-item-body"><div class="notif-item-title">'+_esc(u.username)+'</div><div class="notif-item-desc" style="color:'+(u.role==='support'?'#3b82f6':'#6b7280')+';font-weight:'+(u.role!=='user'?'600':'400')+';">'+(u.role==='owner'?'👑 Owner':u.role==='support'?'🔵 Support':'User')+'</div></div></a>';
           });
           if(offline.length){
             html+='<div style="padding:4px 14px 0;font-size:9px;font-weight:700;text-transform:uppercase;color:#6b7280;margin-top:4px;">Offline</div>';
             offline.forEach(u=>{
-              html+='<a href="/u/'+encodeURIComponent(u.username)+'" class="notif-item" style="text-decoration:none;cursor:pointer;"><div class="notif-item-icon" style="background:rgba(107,114,128,0.1);border-color:rgba(107,114,128,0.15);font-size:12px;">🔴</div><div class="notif-item-body"><div class="notif-item-title" style="color:#9ca3af;">'+esc(u.username)+'</div><div class="notif-item-desc" style="color:#52525b;font-size:10px;">'+ta(u.last_online)+'</div></div></a>';
+              html+='<a href="/u/'+encodeURIComponent(u.username)+'" class="notif-item" style="text-decoration:none;cursor:pointer;"><div class="notif-item-icon" style="background:rgba(107,114,128,0.1);border-color:rgba(107,114,128,0.15);font-size:12px;">🔴</div><div class="notif-item-body"><div class="notif-item-title" style="color:#9ca3af;">'+_esc(u.username)+'</div><div class="notif-item-desc" style="color:#52525b;font-size:10px;">'+ta(u.last_online)+'</div></div></a>';
             });
           }
-          uolList.innerHTML=html;
-        }catch(e){}
+          document.getElementById('uol-list').innerHTML=html;
+        }catch(e){console.error('Online users error:',e)}
       }
-      const uolList=document.getElementById('uol-list');
       // Also update online count periodically
       setInterval(async()=>{
         try{const r=await fetch('/api/users/online');const d=await r.json();const users=Array.isArray(d.users)?d.users:[];document.getElementById('online-count').textContent=users.filter(u=>u.online).length}catch(e){}
