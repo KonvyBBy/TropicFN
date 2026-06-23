@@ -169,86 +169,7 @@
     .card-3d { transition: transform .3s ease; transform-style: preserve-3d; perspective: 1000px; }
     .card-3d:hover { transform: perspective(1000px) rotateX(2deg) rotateY(2deg); }
 
-  /* ── Admin Nav Badge + Dropdown ── */
-  (function(){
-    if (typeof window.KONVY_ADMIN === 'undefined' || !window.KONVY_ADMIN) return;
-    let panelOpen = false;
-    window.toggleAdminPanel = function(e) {
-      if(e)e.stopPropagation();
-      panelOpen = !panelOpen;
-      const bar = document.getElementById('admin-alert-bar');
-      if (!bar) return;
-      bar.style.display = panelOpen ? 'flex' : 'none';
-    };
-    function esc(v){return String(v||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');}
-    async function loadAdminPanel(){
-      try{
-        const [tr, rr, pr] = await Promise.all([
-          fetch('/api/support/tickets').then(r=>r.json()),
-          fetch('/api/reviews').then(r=>r.json()),
-          fetch('/api/admin/pending-topups').then(r=>r.json())
-        ]);
-        const tickets=Array.isArray(tr.tickets)?tr.tickets:[];
-        const tNeeds=tickets.filter(t=>t.status!=='closed'&&t.needs_admin_response);
-        const reviews=Array.isArray(rr.reviews)?rr.reviews:[];
-        const rPending=reviews.filter(r=>r.status==='pending');
-        const topups=Array.isArray(pr.pending)?pr.pending:[];
-        const total=tNeeds.length+rPending.length+topups.length;
-        // Update navbar badge
-        const cnt=document.getElementById('admin-pending-count');
-        if(cnt){
-          if(total>0){cnt.textContent=total>9?'9+':total;cnt.style.display='flex'}
-          else cnt.style.display='none'
-        }
-        const bar=document.getElementById('admin-alert-bar');
-        if(!bar)return;
-        if(!panelOpen)return;
-        let html='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><span style="font-size:13px;font-weight:700;color:#fff;">Quick Actions</span><button onclick="toggleAdminPanel(event)" style="background:none;border:none;color:#6b7280;font-size:16px;cursor:pointer;">✕</button></div>';
-        if(topups.length){
-          html+='<div style="font-size:11px;font-weight:700;color:#fbbf24;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em;">⏳ Topups ('+topups.length+')</div>';
-          topups.slice(0,3).forEach(t=>{
-            html+='<div style="display:flex;align-items:center;gap:6px;padding:4px 0;font-size:11px;border-bottom:1px solid rgba(255,255,255,0.03);">'+
-              '<span style="flex:1;color:#e4e4e7;">'+esc(t.username||'')+' <span style="color:#4ade80;">$'+(t.amount_cents/100).toFixed(2)+'</span></span>'+
-              '<button onclick="quickAction(\'/api/admin/pending-topups\',{action:\'approve\',id:\''+t.id+'\'})" style="padding:2px 8px;border-radius:4px;border:none;background:rgba(34,197,94,0.1);color:#4ade80;font-size:9px;cursor:pointer;">✓</button>'+
-              '<button onclick="quickAction(\'/api/admin/pending-topups\',{action:\'deny\',id:\''+t.id+'\'})" style="padding:2px 8px;border-radius:4px;border:none;background:rgba(239,68,68,0.1);color:#f87171;font-size:9px;cursor:pointer;">✕</button></div>';
-          });
-        }
-        if(tNeeds.length){
-          html+='<div style="font-size:11px;font-weight:700;color:#f87171;margin:6px 0 4px;text-transform:uppercase;letter-spacing:.04em;">🎫 Tickets ('+tNeeds.length+')</div>';
-          tNeeds.slice(0,3).forEach(t=>{
-            html+='<div style="display:flex;align-items:center;gap:6px;padding:4px 0;font-size:11px;border-bottom:1px solid rgba(255,255,255,0.03);">'+
-              '<span style="flex:1;color:#e4e4e7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(t.subject||'')+'</span>'+
-              '<a href="/admin123" style="padding:2px 8px;border-radius:4px;background:rgba(0,229,255,0.1);color:var(--cyan);font-size:9px;text-decoration:none;">Reply</a></div>';
-          });
-        }
-        if(rPending.length){
-          html+='<div style="font-size:11px;font-weight:700;color:#fbbf24;margin:6px 0 4px;text-transform:uppercase;letter-spacing:.04em;">⭐ Reviews ('+rPending.length+')</div>';
-          rPending.slice(0,3).forEach(r=>{
-            html+='<div style="display:flex;align-items:center;gap:6px;padding:4px 0;font-size:11px;border-bottom:1px solid rgba(255,255,255,0.03);">'+
-              '<span style="flex:1;color:#e4e4e7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(r.username||'')+' <span style="color:#fbbf24;">'+'⭐'.repeat(r.rating)+'</span></span>'+
-              '<button onclick="quickAction(\'/api/admin/reviews/manage\',{id:\''+r.id+'\',action:\'approve\'})" style="padding:2px 8px;border-radius:4px;border:none;background:rgba(34,197,94,0.1);color:#4ade80;font-size:9px;cursor:pointer;">✓</button>'+
-              '<button onclick="quickAction(\'/api/admin/reviews/manage\',{id:\''+r.id+'\',action:\'deny\'})" style="padding:2px 8px;border-radius:4px;border:none;background:rgba(239,68,68,0.1);color:#f87171;font-size:9px;cursor:pointer;">✕</button></div>';
-          });
-        }
-        if(total)html+='<div style="margin-top:6px;text-align:center;"><a href="/admin123" style="font-size:11px;color:#6b7280;text-decoration:none;">Open Admin Panel →</a></div>';
-        bar.innerHTML=html;
-        // Close dropdown when clicking outside
-        if(panelOpen)document.addEventListener('click',closeAdminDrop,{once:true});
-      }catch(e){}
-    }
-    function closeAdminDrop(e){
-      const bar=document.getElementById('admin-alert-bar');
-      const btn=document.getElementById('admin-pending-btn');
-      if(bar&&!bar.contains(e.target)&&(!btn||!btn.contains(e.target))){panelOpen=false;if(bar)bar.style.display='none'}
-    }
-    window.quickAction = async function(url, body) {
-      const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
-      const d = await r.json();
-      if (d.ok) loadAdminPanel();
-    };
-    loadAdminPanel();
-    setInterval(loadAdminPanel,15000);
-  })();
+  /* ── Admin items injected into notification dropdown above ── */
 
   /* ── Activity Toasts ── */
   (function(){
@@ -542,9 +463,6 @@
 <div class="particle-container" id="particles"></div>
 <div id="mouse-glow"></div>
 
-  <!-- Admin dropdown panel (toggled by navbar badge) -->
-  <div id="admin-alert-bar" style="display:none;position:fixed;top:60px;right:60px;z-index:999;background:rgba(17,19,30,0.98);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:14px;min-width:280px;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.5);backdrop-filter:blur(12px);flex-direction:column;gap:0;"></div>
-
   <!-- Activity toasts -->
   <div id="act-toast-container" style="position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column-reverse;gap:8px;pointer-events:none;"></div>
   <style>
@@ -633,9 +551,6 @@
         </a>
         <div class="notif-bell-wrapper">
           <button class="notif-bell-btn" id="notif-bell-btn" title="Notifications"><i class="ri-notification-3-line"></i><span class="notif-badge" id="notif-badge"></span></button>
-          <div class="notif-bell-wrapper" id="admin-pending-wrap" style="display:inline-block;">
-            <button class="notif-bell-btn" id="admin-pending-btn" title="Pending actions" onclick="toggleAdminPanel(event)" style="border-color:rgba(239,68,68,0.2);background:rgba(239,68,68,0.04);"><i class="ri-shield-flash-line" style="color:#f87171;"></i><span class="notif-badge" id="admin-pending-count" style="display:flex;background:#f87171;">0</span></button>
-          </div>
           <div class="notif-dropdown" id="notif-dropdown">
             <div class="notif-dropdown-header"><h3>Notifications</h3><button class="notif-mark-all" id="notif-mark-all">Mark all read</button></div>
             <div class="notif-list" id="notif-list"><div class="notif-empty">No new notifications</div></div>
@@ -769,28 +684,71 @@
           }
         }catch(e){}
       }
+      function esc(v){return String(v||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;')}
       async function loadNotifications(){
         try {
-          const res=await fetch('/api/user/notifications');
-          if(!res.ok)return;
-          const data=await res.json();
-          const notifs=data.notifications||[];
+          const [notifRes, adminTr, adminRr, adminPr] = await Promise.all([
+            fetch('/api/user/notifications'),
+            window.KONVY_ADMIN ? fetch('/api/support/tickets').then(r=>r.json()) : Promise.resolve({tickets:[]}),
+            window.KONVY_ADMIN ? fetch('/api/reviews').then(r=>r.json()) : Promise.resolve({reviews:[]}),
+            window.KONVY_ADMIN ? fetch('/api/admin/pending-topups').then(r=>r.json()) : Promise.resolve({pending:[]}),
+          ]);
+          if(!notifRes.ok)return;
+          const ndata=await notifRes.json();
+          const notifs=ndata.notifications||[];
           const badge=document.getElementById('notif-badge');
           const list=document.getElementById('notif-list');
           if(!badge||!list)return;
-          if(notifs.length>0){
-            badge.textContent=notifs.length>9?'9+':notifs.length;
+          let html='';
+          // Admin pending items
+          let adminTotal=0;
+          if(window.KONVY_ADMIN){
+            const tickets=Array.isArray(adminTr.tickets)?adminTr.tickets:[];
+            const tNeeds=tickets.filter(t=>t.status!=='closed'&&t.needs_admin_response);
+            const reviews=Array.isArray(adminRr.reviews)?adminRr.reviews:[];
+            const rPending=reviews.filter(r=>r.status==='pending');
+            const topups=Array.isArray(adminPr.pending)?adminPr.pending:[];
+            adminTotal=tNeeds.length+rPending.length+topups.length;
+            if(topups.length){
+              html+='<div style="padding:6px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#fbbf24;background:rgba(234,179,8,0.04);">Pending Topups</div>';
+              topups.forEach(t=>{
+                html+='<div class="notif-item" style="flex-wrap:wrap;"><div class="notif-item-icon">💰</div><div class="notif-item-body"><div class="notif-item-title">'+esc(t.username||'')+'</div><div class="notif-item-desc">$'+(t.amount_cents/100).toFixed(2)+' pending</div></div><div style="display:flex;gap:4px;width:100%;padding-top:4px;"><button onclick="quickAct(\'/api/admin/pending-topups\',{action:\'approve\',id:\''+t.id+'\'})" style="flex:1;padding:4px;border-radius:6px;border:none;background:rgba(34,197,94,0.1);color:#4ade80;font-size:10px;font-weight:600;cursor:pointer;">Approve</button><button onclick="quickAct(\'/api/admin/pending-topups\',{action:\'deny\',id:\''+t.id+'\'})" style="flex:1;padding:4px;border-radius:6px;border:none;background:rgba(239,68,68,0.1);color:#f87171;font-size:10px;font-weight:600;cursor:pointer;">Deny</button></div></div>';
+              });
+            }
+            if(rPending.length){
+              html+='<div style="padding:6px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#fbbf24;background:rgba(234,179,8,0.04);">Pending Reviews</div>';
+              rPending.forEach(r=>{
+                html+='<div class="notif-item" style="flex-wrap:wrap;"><div class="notif-item-icon">⭐</div><div class="notif-item-body"><div class="notif-item-title">'+esc(r.username||'')+'</div><div class="notif-item-desc">'+'⭐'.repeat(r.rating)+' '+(r.text||'').substring(0,60)+'</div></div><div style="display:flex;gap:4px;width:100%;padding-top:4px;"><button onclick="quickAct(\'/api/admin/reviews/manage\',{id:\''+r.id+'\',action:\'approve\'})" style="flex:1;padding:4px;border-radius:6px;border:none;background:rgba(34,197,94,0.1);color:#4ade80;font-size:10px;font-weight:600;cursor:pointer;">Approve</button><button onclick="quickAct(\'/api/admin/reviews/manage\',{id:\''+r.id+'\',action:\'deny\'})" style="flex:1;padding:4px;border-radius:6px;border:none;background:rgba(239,68,68,0.1);color:#f87171;font-size:10px;font-weight:600;cursor:pointer;">Deny</button></div></div>';
+              });
+            }
+            if(tNeeds.length){
+              html+='<div style="padding:6px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#f87171;background:rgba(239,68,68,0.04);">Tickets Needing Reply</div>';
+              tNeeds.forEach(t=>{
+                html+='<div class="notif-item"><div class="notif-item-icon">🎫</div><div class="notif-item-body"><div class="notif-item-title">'+esc(t.subject||'')+'</div><div class="notif-item-desc">'+esc(t.username||'')+' — <a href="/admin123" style="color:var(--neon-cyan);">Reply</a></div></div></div>';
+              });
+            }
+          }
+          // Regular notifications
+          notifs.forEach(n=>{
+            const amt='$'+(n.amount_cents/100).toFixed(2);
+            html+='<div class="notif-item" data-id="'+n.id+'"><div class="notif-item-icon">✅</div><div class="notif-item-body"><div class="notif-item-title">Top-Up Approved</div><div class="notif-item-desc">Your top-up of <strong style="color:#e2e8f0">'+amt+'</strong> was approved. Please refresh your balance to see it.</div></div><button class="notif-dismiss" data-id="'+n.id+'" title="Dismiss">✕</button></div>';
+          });
+          const totalCount=notifs.length+adminTotal;
+          if(totalCount>0){
+            badge.textContent=totalCount>9?'9+':totalCount;
             badge.classList.add('visible');
-            list.innerHTML=notifs.map(n=>{
-              const amt='$'+(n.amount_cents/100).toFixed(2);
-              return '<div class="notif-item" data-id="'+n.id+'"><div class="notif-item-icon">✅</div><div class="notif-item-body"><div class="notif-item-title">Top-Up Approved</div><div class="notif-item-desc">Your top-up of <strong style="color:#e2e8f0">'+amt+'</strong> was approved. Please refresh your balance to see it.</div></div><button class="notif-dismiss" data-id="'+n.id+'" title="Dismiss">✕</button></div>';
-            }).join('');
           }else{
             badge.classList.remove('visible');
-            list.innerHTML='<div class="notif-empty">No new notifications</div>';
+            html='<div class="notif-empty">No notifications</div>';
           }
+          list.innerHTML=html;
         }catch(e){}
       }
+      window.quickAct = async function(url, body) {
+        const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+        const d = await r.json();
+        if (d.ok) loadNotifications();
+      };
       async function dismissNotif(id){
         try{await fetch('/api/user/notifications/dismiss',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});await loadNotifications()}catch(e){}
       }
@@ -804,6 +762,7 @@
       document.getElementById('notif-mark-all')?.addEventListener('click',async()=>{try{await fetch('/api/user/notifications/dismiss-all',{method:'POST'});await loadNotifications()}catch(e){}});
       checkPendingTopups();
       loadNotifications();
+      setInterval(loadNotifications,8000);
     })();
   </script>
   {% endif %}

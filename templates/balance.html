@@ -101,7 +101,7 @@
     refreshBtn?.addEventListener('click', async () => {
       balanceResult.innerHTML = '<span class="text-cyan-400">Refreshing...</span>';
       try {
-        const res = await fetch('/api/user/balance');
+        const res = await fetch('/api/balance', { method:'POST', headers:{'Content-Type':'application/json'} });
         const data = await res.json();
         if (res.ok && data.balance !== undefined) {
           const amt = parseFloat(data.balance).toFixed(2);
