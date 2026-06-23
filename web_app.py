@@ -5874,6 +5874,7 @@ def admin123_page():
         notice=notice,
         og_skins=OG_SKINS,
         og_accounts=og_cfg.get("accounts", {}),
+        active_page="admin",
     )
 
 # ===================== ADMIN API ROUTES =====================
@@ -7278,6 +7279,15 @@ def user_profile_page(username: str):
     profile = _get_user_profile(username)
     purchases = get_purchases(username)
     purchase_count = len(purchases)
+    is_admin_viewer = is_admin_user(my_username) if my_username else False
+    # Extra data for admin viewers
+    target_balance = get_balance(username) / 100
+    target_topups = []
+    try:
+        hist = _load_topup_history()
+        target_topups = sorted(hist.get(username, []), key=lambda x: x.get("timestamp", 0), reverse=True)
+    except Exception:
+        pass
     return render_template(
         "profile.html",
         logged_in=logged_in,
@@ -7288,6 +7298,10 @@ def user_profile_page(username: str):
         is_owner=my_username.lower() == username.lower(),
         purchase_count=purchase_count,
         is_konvy_vip=profile.get("email", "").lower() == "konvyvip@gmail.com",
+        is_admin_viewer=is_admin_viewer,
+        target_purchases=purchases,
+        target_balance=target_balance,
+        target_topups=target_topups,
     )
 
 @app.route("/api/profile/update", methods=["POST"])

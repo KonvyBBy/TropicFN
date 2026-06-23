@@ -531,6 +531,7 @@
           <a href="/customer-section" class="nv-link {% if active_page == 'customer' %}active{% endif %}">Customer</a>
           <a href="/chat" class="nv-link {% if active_page == 'chat' %}active{% endif %}">Chat</a>
           <a href="/reviews" class="nv-link {% if active_page == 'reviews' %}active{% endif %}">Reviews</a>
+          {% if is_konvy_admin %}<a href="/admin123" class="nv-link {% if active_page == 'admin' %}active{% endif %}" style="color:#fbbf24;">Admin</a>{% endif %}
           {% endif %}
         </nav>
       </div>
@@ -594,6 +595,7 @@
       <a href="/my-accounts" class="shrink-0 px-3.5 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-white bg-white/3 transition">Purchases</a>
       <a href="/customer-section" class="shrink-0 px-3.5 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-white bg-white/3 transition">Customer</a>
       <a href="/chat" class="shrink-0 px-3.5 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-white bg-white/3 transition">Chat</a>
+      {% if is_konvy_admin %}<a href="/admin123" class="shrink-0 px-3.5 py-1.5 rounded-lg text-xs font-medium transition" style="color:#fbbf24;">Admin</a>{% endif %}
       {% endif %}
     </nav>
   </header>

@@ -93,6 +93,7 @@
     <button class="tab-btn-custom active" onclick="switchProfileTab('orders',this)">Orders</button>
     {% if is_owner %}<button class="tab-btn-custom" onclick="switchProfileTab('settings',this)">Settings</button>{% endif %}
     {% if not is_owner %}<button class="tab-btn-custom" onclick="switchProfileTab('chat',this)">Chat</button>{% endif %}
+    {% if is_admin_viewer and not is_owner %}<button class="tab-btn-custom" onclick="switchProfileTab('admin',this)" style="color:#fbbf24;">Admin</button>{% endif %}
   </div>
 
   <div id="profile-tab-orders">
@@ -176,6 +177,76 @@
     </div>
   </div>
   {% endif %}
+
+  {% if is_admin_viewer and not is_owner %}
+  <div id="profile-tab-admin" style="display:none;">
+    <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:18px;margin-bottom:14px;">
+      <h3 style="font-size:15px;font-weight:700;color:#fbbf24;margin:0 0 4px;">⚙️ User Management</h3>
+      <p style="font-size:12px;color:#6b7280;margin:0 0 14px;">Manage {{ profile.username }}'s account</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+        <div style="padding:12px 16px;background:rgba(255,255,255,0.02);border-radius:10px;border:1px solid rgba(255,255,255,0.04);min-width:100px;text-align:center;">
+          <div style="font-size:18px;font-weight:800;color:var(--neon-cyan);">${{ '%.2f'|format(target_balance) }}</div>
+          <div style="font-size:10px;color:#6b7280;">Balance</div>
+        </div>
+        <div style="padding:12px 16px;background:rgba(255,255,255,0.02);border-radius:10px;border:1px solid rgba(255,255,255,0.04);min-width:100px;text-align:center;">
+          <div style="font-size:18px;font-weight:800;color:#e4e4e7;">{{ purchase_count }}</div>
+          <div style="font-size:10px;color:#6b7280;">Purchases</div>
+        </div>
+        <div style="padding:12px 16px;background:rgba(255,255,255,0.02);border-radius:10px;border:1px solid rgba(255,255,255,0.04);min-width:100px;text-align:center;">
+          <div style="font-size:18px;font-weight:800;color:#e4e4e7;">{{ target_topups|length }}</div>
+          <div style="font-size:10px;color:#6b7280;">Topups</div>
+        </div>
+      </div>
+      <!-- Set Balance -->
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+        <span style="font-size:12px;color:#9ca3af;min-width:80px;">Set Balance</span>
+        <input type="number" id="admin-balance-input" value="{{ '%.2f'|format(target_balance) }}" step="0.01" style="flex:1;max-width:140px;padding:7px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#fff;font-size:12px;outline:none;">
+        <button onclick="adminSetBalance()" style="padding:7px 16px;border-radius:8px;border:none;background:var(--grad);color:#fff;font-weight:600;font-size:11px;cursor:pointer;">Save</button>
+        <span id="admin-bal-status" style="font-size:11px;color:#6b7280;"></span>
+      </div>
+      <!-- Blacklist -->
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+        <span style="font-size:12px;color:#9ca3af;min-width:80px;">Status</span>
+        <span id="admin-curr-status" style="font-size:12px;color:#e4e4e7;">{{ profile.email or 'No email set' }}</span>
+        <button onclick="adminBlacklist()" style="padding:7px 16px;border-radius:8px;border:1px solid rgba(239,68,68,0.25);background:rgba(239,68,68,0.08);color:#f87171;font-weight:600;font-size:11px;cursor:pointer;">🚫 Blacklist</button>
+        <span id="admin-bl-status" style="font-size:11px;color:#6b7280;"></span>
+      </div>
+    </div>
+    <!-- Topup History -->
+    {% if target_topups %}
+    <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px;overflow:hidden;margin-bottom:14px;">
+      <div style="padding:12px 14px;border-bottom:1px solid rgba(255,255,255,0.04);font-size:13px;font-weight:700;color:#e4e4e7;">Topup History</div>
+      <div style="max-height:200px;overflow-y:auto;">
+      {% for t in target_topups %}
+      <div style="display:flex;justify-content:space-between;padding:8px 14px;border-bottom:1px solid rgba(255,255,255,0.02);font-size:12px;">
+        <span style="color:#4ade80;">+${{ '%.2f'|format((t.amount_cents or 0)/100) }}</span>
+        <span style="color:#6b7280;">{{ t.status or 'completed' }}</span>
+        <span style="color:#52525b;">{{ t.timestamp | int | timestamp_to_date if t.timestamp else '' }}</span>
+      </div>
+      {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+    <!-- Purchased Accounts -->
+    {% if target_purchases %}
+    <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px;overflow:hidden;">
+      <div style="padding:12px 14px;border-bottom:1px solid rgba(255,255,255,0.04);font-size:13px;font-weight:700;color:#e4e4e7;">Purchased Accounts</div>
+      <div style="max-height:300px;overflow-y:auto;">
+      {% for p in target_purchases %}
+      {% set pr = p.get('purchase_result', {}) %}
+      {% set title = pr.get('title') or pr.get('title_en') or 'Account #' ~ (pr.get('item_id') or loop.index) %}
+      <div style="display:flex;justify-content:space-between;padding:8px 14px;border-bottom:1px solid rgba(255,255,255,0.02);font-size:12px;">
+        <a href="/account/{{ pr.get('item_id') or 0 }}" style="color:var(--neon-cyan);text-decoration:none;">{{ title }}</a>
+        <span style="color:#6b7280;">${{ '%.2f'|format((p.get('amount_cents') or 0)/100) }}</span>
+        <span style="color:#52525b;">{{ p.timestamp | int | timestamp_to_date if p.timestamp else '' }}</span>
+      </div>
+      {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
   {% else %}
   <div style="text-align:center;padding:40px 0;color:#6b7280;font-size:14px;">Log in to view orders and chat</div>
   {% endif %}
@@ -199,7 +270,26 @@ function switchProfileTab(tab, btn) {
   if (settingsTab) settingsTab.style.display = tab === 'settings' ? 'block' : 'none';
   const chatTab = document.getElementById('profile-tab-chat');
   if (chatTab) chatTab.style.display = tab === 'chat' ? 'block' : 'none';
+  const adminTab = document.getElementById('profile-tab-admin');
+  if (adminTab) adminTab.style.display = tab === 'admin' ? 'block' : 'none';
   if (tab === 'chat') { loadChat(); startChatPoll(); } else { stopChatPoll(); }
+}
+
+async function adminSetBalance() {
+  const val = parseFloat(document.getElementById('admin-balance-input').value);
+  if (isNaN(val)) return;
+  const r = await fetch('/api/admin/set-balance', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username:'{{ profile.username }}', balance:val}) });
+  const d = await r.json();
+  const el = document.getElementById('admin-bal-status');
+  if (d.ok) { el.innerHTML = '<span style="color:#4ade80;">Saved</span>'; setTimeout(()=>el.innerHTML='',3000); }
+  else { el.innerHTML = '<span style="color:#f87171;">'+escapeHtml(d.error||'Error')+'</span>'; }
+}
+async function adminBlacklist() {
+  if (!confirm('Blacklist {{ profile.username }}?')) return;
+  const r = await fetch('/api/admin/blacklist', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action:'add', username:'{{ profile.username }}'}) });
+  const d = await r.json();
+  const el = document.getElementById('admin-bl-status');
+  if (d.ok) { el.innerHTML = '<span style="color:#4ade80;">Blacklisted</span>'; } else { el.innerHTML = '<span style="color:#f87171;">'+escapeHtml(d.error||'Error')+'</span>'; }
 }
 
 // Settings
