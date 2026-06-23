@@ -204,12 +204,34 @@
         <button onclick="adminSetBalance()" style="padding:7px 16px;border-radius:8px;border:none;background:var(--grad);color:#fff;font-weight:600;font-size:11px;cursor:pointer;">Save</button>
         <span id="admin-bal-status" style="font-size:11px;color:#6b7280;"></span>
       </div>
-      <!-- Blacklist -->
+      <!-- Verification Status -->
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
-        <span style="font-size:12px;color:#9ca3af;min-width:80px;">Status</span>
-        <span id="admin-curr-status" style="font-size:12px;color:#e4e4e7;">{{ profile.email or 'No email set' }}</span>
-        <button onclick="adminBlacklist()" style="padding:7px 16px;border-radius:8px;border:1px solid rgba(239,68,68,0.25);background:rgba(239,68,68,0.08);color:#f87171;font-weight:600;font-size:11px;cursor:pointer;">🚫 Blacklist</button>
-        <span id="admin-bl-status" style="font-size:11px;color:#6b7280;"></span>
+        <span style="font-size:12px;color:#9ca3af;min-width:80px;">Verification</span>
+        <select id="admin-verif-select" style="padding:6px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#fff;font-size:11px;outline:none;">
+          <option value="unverified">Unverified</option>
+          <option value="verified">Verified</option>
+          <option value="verify_each">Verify Each</option>
+          <option value="blacklisted">Blacklisted</option>
+        </select>
+        <button onclick="adminAction('set_verification',{status:document.getElementById('admin-verif-select').value})" style="padding:6px 14px;border-radius:8px;border:none;background:var(--grad);color:#fff;font-weight:600;font-size:11px;cursor:pointer;">Set</button>
+        <span id="admin-verif-status" style="font-size:11px;color:#6b7280;"></span>
+      </div>
+      <!-- Role -->
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+        <span style="font-size:12px;color:#9ca3af;min-width:80px;">Role</span>
+        <select id="admin-role-select" style="padding:6px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#fff;font-size:11px;outline:none;">
+          <option value="user">User</option>
+          <option value="support">Support</option>
+        </select>
+        <button onclick="adminAction('set_role',{role:document.getElementById('admin-role-select').value})" style="padding:6px 14px;border-radius:8px;border:none;background:var(--grad);color:#fff;font-weight:600;font-size:11px;cursor:pointer;">Set</button>
+        <span id="admin-role-status" style="font-size:11px;color:#6b7280;"></span>
+      </div>
+      <!-- Ban & Delete Reviews -->
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px;">
+        <span style="font-size:12px;color:#9ca3af;min-width:80px;">Actions</span>
+        <button onclick="adminAction('ban',{})" style="padding:6px 14px;border-radius:8px;border:1px solid rgba(239,68,68,0.25);background:rgba(239,68,68,0.08);color:#f87171;font-weight:600;font-size:11px;cursor:pointer;">🚫 Ban User</button>
+        <button onclick="adminAction('delete_reviews',{})" style="padding:6px 14px;border-radius:8px;border:1px solid rgba(239,68,68,0.1);background:rgba(239,68,68,0.04);color:#f87171;font-weight:600;font-size:11px;cursor:pointer;">🗑 Delete All Reviews</button>
+        <span id="admin-act-status" style="font-size:11px;color:#6b7280;"></span>
       </div>
     </div>
     <!-- Topup History -->
@@ -279,18 +301,21 @@ function switchProfileTab(tab, btn) {
 async function adminSetBalance() {
   const val = parseFloat(document.getElementById('admin-balance-input').value);
   if (isNaN(val)) return;
-  const r = await fetch('/api/admin/set-balance', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username:'{{ profile.username }}', balance:val}) });
+  const r = await fetch('/api/admin/user-manage', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username:'{{ profile.username }}', action:'set_balance', balance:val}) });
   const d = await r.json();
   const el = document.getElementById('admin-bal-status');
   if (d.ok) { el.innerHTML = '<span style="color:#4ade80;">Saved</span>'; setTimeout(()=>el.innerHTML='',3000); }
   else { el.innerHTML = '<span style="color:#f87171;">'+escapeHtml(d.error||'Error')+'</span>'; }
 }
-async function adminBlacklist() {
-  if (!confirm('Blacklist {{ profile.username }}?')) return;
-  const r = await fetch('/api/admin/blacklist', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action:'add', username:'{{ profile.username }}'}) });
+async function adminAction(action, extra) {
+  const confirmMsgs = { ban:'Ban {{ profile.username }} from the site?', delete_reviews:'Delete ALL reviews by {{ profile.username }}? This cannot be undone.' };
+  if (confirmMsgs[action] && !confirm(confirmMsgs[action])) return;
+  const body = { username:'{{ profile.username }}', action, ...extra };
+  const r = await fetch('/api/admin/user-manage', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
   const d = await r.json();
-  const el = document.getElementById('admin-bl-status');
-  if (d.ok) { el.innerHTML = '<span style="color:#4ade80;">Blacklisted</span>'; } else { el.innerHTML = '<span style="color:#f87171;">'+escapeHtml(d.error||'Error')+'</span>'; }
+  const el = document.getElementById('admin-'+(action==='ban'||action==='delete_reviews'?'act':action==='set_role'?'role':'verif')+'-status');
+  if (d.ok) { el.innerHTML = '<span style="color:#4ade80;">'+escapeHtml(d.message||'Done')+'</span>'; setTimeout(()=>el.innerHTML='',4000); }
+  else { el.innerHTML = '<span style="color:#f87171;">'+escapeHtml(d.error||'Error')+'</span>'; }
 }
 
 // Settings

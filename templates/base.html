@@ -177,7 +177,7 @@
     let lastActTime = 0;
     const icons = { search:'🔍', view:'👁', purchase:'🛒', review:'⭐', online:'🟢', offline:'🔴', signup:'📝', gift:'🎁' };
     function ta(ts) { const s=Math.floor(Date.now()/1000-ts); if(s<60)return'just now'; if(s<3600)return Math.floor(s/60)+'m ago'; if(s<86400)return Math.floor(s/3600)+'h ago'; return Math.floor(s/86400)+'d ago'; }
-    function esc(v){return String(v||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;')}
+    window.esc=function(v){return String(v||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;')}
     function showActToast(html){const c=document.getElementById('act-toast-container');if(!c)return;const d=document.createElement('div');d.className='act-toast';d.innerHTML=html;c.appendChild(d);setTimeout(()=>{d.classList.add('out');setTimeout(()=>d.remove(),350)},5000)}
     async function pollActivity(){
       try{
@@ -551,6 +551,11 @@
         </a>
         <div class="notif-bell-wrapper">
           <button class="notif-bell-btn" id="notif-bell-btn" title="Notifications"><i class="ri-notification-3-line"></i><span class="notif-badge" id="notif-badge"></span></button>
+          {% if is_konvy_admin %}<button class="notif-bell-btn" id="users-online-btn" title="Online Users" style="border-color:rgba(34,197,94,0.15);background:rgba(34,197,94,0.04);"><i class="ri-group-2-line" style="color:#4ade80;"></i><span class="notif-badge" id="online-count" style="display:flex;background:#22c55e;font-size:8px;">0</span></button>{% endif %}
+          <div class="notif-dropdown" id="users-online-dropdown" style="width:260px;right:auto;left:0;">
+            <div class="notif-dropdown-header"><h3>Online Users</h3><span id="uol-count" style="font-size:11px;color:#6b7280;"></span></div>
+            <div class="notif-list" id="uol-list"><div class="notif-empty">Loading...</div></div>
+          </div>
           <div class="notif-dropdown" id="notif-dropdown">
             <div class="notif-dropdown-header"><h3>Notifications</h3><button class="notif-mark-all" id="notif-mark-all">Mark all read</button></div>
             <div class="notif-list" id="notif-list"><div class="notif-empty">No new notifications</div></div>
@@ -710,7 +715,6 @@
           }
         }catch(e){}
       }
-      function esc(v){return String(v||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;')}
       async function loadNotifications(){
         try {
           const [notifRes, adminTr, adminRr, adminPr] = await Promise.all([
@@ -784,6 +788,45 @@
         bellBtn.addEventListener('click',e=>{e.stopPropagation();dropdown.classList.toggle('open')});
         document.addEventListener('click',e=>{if(!dropdown.contains(e.target)&&e.target!==bellBtn)dropdown.classList.remove('open')});
       }
+      // Online users panel
+      function ta(ts){if(!ts)return'';const s=Math.floor(Date.now()/1000-ts);if(s<60)return'just now';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago'}
+      const uolBtn=document.getElementById('users-online-btn');
+      const uolDrop=document.getElementById('users-online-dropdown');
+      if(uolBtn&&uolDrop){
+        uolBtn.addEventListener('click',async e=>{
+          e.stopPropagation();
+          const isOpen=uolDrop.classList.toggle('open');
+          if(isOpen) await loadOnlineUsers();
+        });
+        document.addEventListener('click',e=>{if(!uolDrop.contains(e.target)&&e.target!==uolBtn)uolDrop.classList.remove('open')});
+      }
+      async function loadOnlineUsers(){
+        try{
+          const r=await fetch('/api/users/online');const d=await r.json();
+          const users=Array.isArray(d.users)?d.users:[];
+          const online=users.filter(u=>u.online);const offline=users.filter(u=>!u.online);
+          document.getElementById('uol-count').textContent=online.length+' online';
+          document.getElementById('online-count').textContent=online.length;
+          let html='';
+          if(online.length)html+='<div style="padding:4px 14px;font-size:9px;font-weight:700;text-transform:uppercase;color:#4ade80;">Online</div>';
+          online.forEach(u=>{
+            const roleIcon=u.role==='owner'?'👑':u.role==='support'?'🔵':'';
+            html+='<a href="/u/'+encodeURIComponent(u.username)+'" class="notif-item" style="text-decoration:none;cursor:pointer;"><div class="notif-item-icon" style="background:rgba(34,197,94,0.1);border-color:rgba(34,197,94,0.2);font-size:12px;">🟢</div><div class="notif-item-body"><div class="notif-item-title">'+esc(u.username)+'</div><div class="notif-item-desc" style="color:'+(u.role==='support'?'#3b82f6':'#6b7280')+';font-weight:'+(u.role!=='user'?'600':'400')+';">'+(u.role==='owner'?'👑 Owner':u.role==='support'?'🔵 Support':'User')+'</div></div></a>';
+          });
+          if(offline.length){
+            html+='<div style="padding:4px 14px 0;font-size:9px;font-weight:700;text-transform:uppercase;color:#6b7280;margin-top:4px;">Offline</div>';
+            offline.forEach(u=>{
+              html+='<a href="/u/'+encodeURIComponent(u.username)+'" class="notif-item" style="text-decoration:none;cursor:pointer;"><div class="notif-item-icon" style="background:rgba(107,114,128,0.1);border-color:rgba(107,114,128,0.15);font-size:12px;">🔴</div><div class="notif-item-body"><div class="notif-item-title" style="color:#9ca3af;">'+esc(u.username)+'</div><div class="notif-item-desc" style="color:#52525b;font-size:10px;">'+ta(u.last_online)+'</div></div></a>';
+            });
+          }
+          uolList.innerHTML=html;
+        }catch(e){}
+      }
+      const uolList=document.getElementById('uol-list');
+      // Also update online count periodically
+      setInterval(async()=>{
+        try{const r=await fetch('/api/users/online');const d=await r.json();const users=Array.isArray(d.users)?d.users:[];document.getElementById('online-count').textContent=users.filter(u=>u.online).length}catch(e){}
+      },15000);
       document.getElementById('notif-list')?.addEventListener('click',e=>{const btn=e.target.closest('.notif-dismiss');if(btn)dismissNotif(btn.dataset.id)});
       document.getElementById('notif-mark-all')?.addEventListener('click',async()=>{try{await fetch('/api/user/notifications/dismiss-all',{method:'POST'});await loadNotifications()}catch(e){}});
       checkPendingTopups();

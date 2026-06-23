@@ -1041,6 +1041,8 @@ def is_admin_user(username: str) -> bool:
     user_data = users.get(username, {})
     if (user_data.get("email") or "").lower() == "konvyvip@gmail.com":
         return True
+    if user_data.get("role") == "support":
+        return True
     admins = _load_admins()
     return username.lower() in [a.lower() for a in admins]
 
@@ -7793,6 +7795,54 @@ def verify_twofa():
     _push_activity("online", pending)
     return redirect(url_for("index"))
 
+# ===================== USER MANAGEMENT (OWNER) =====================
+
+@app.route("/api/admin/user-manage", methods=["POST"])
+@login_required_api
+def api_admin_user_manage():
+    username = session["username"]
+    users = _load_users()
+    viewer_data = users.get(username, {})
+    if (viewer_data.get("email") or "").lower() != "konvyvip@gmail.com":
+        return jsonify({"error": "Only the owner can manage users"}), 403
+    data = request.json or {}
+    target = (data.get("username") or "").strip()
+    action = data.get("action")
+    if not target or target not in users:
+        return jsonify({"error": "User not found"}), 404
+    if action == "set_balance":
+        try:
+            bal = float(data.get("balance", 0))
+            from balances_file import _load_balances, _save_balances
+            bals = _load_balances()
+            bals[target] = int(bal * 100)
+            _save_balances(bals)
+            return jsonify({"ok": True, "message": f"Balance set to ${bal:.2f}"})
+        except Exception as e:
+            return jsonify({"error": str(e)}), 400
+    elif action == "set_verification":
+        status = data.get("status", "unverified")
+        if status not in ("unverified", "verified", "verify_each", "blacklisted"):
+            return jsonify({"error": "Invalid status"}), 400
+        set_user_verification_status(target, status)
+        return jsonify({"ok": True, "message": f"Status set to {status}"})
+    elif action == "set_role":
+        role = data.get("role", "user")
+        if role not in ("user", "support"):
+            return jsonify({"error": "Invalid role"}), 400
+        users[target]["role"] = role
+        _save_users(users)
+        return jsonify({"ok": True, "message": f"Role set to {role}"})
+    elif action == "ban":
+        set_user_verification_status(target, "blacklisted")
+        return jsonify({"ok": True, "message": f"{target} banned"})
+    elif action == "delete_reviews":
+        reviews = _load_reviews()
+        reviews[:] = [r for r in reviews if r.get("username", "").lower() != target.lower()]
+        _save_reviews(reviews)
+        return jsonify({"ok": True, "message": f"Deleted all reviews by {target}"})
+    return jsonify({"error": "Invalid action"}), 400
+
 # ===================== REVIEWS =====================
 
 @app.route("/reviews")
@@ -8003,6 +8053,31 @@ def sitemap_xml():
         xml += f"  <url><loc>{u['loc']}</loc><priority>{u['priority']}</priority></url>\n"
     xml += "</urlset>"
     return Response(xml, mimetype="application/xml")
+
+# ===================== ONLINE USERS LIST =====================
+
+@app.route("/api/users/online")
+@login_required_api
+def api_users_online():
+    viewer = session["username"]
+    if not is_admin_user(viewer):
+        return jsonify({"error": "Unauthorized"}), 403
+    all_users = _load_users()
+    result = []
+    for uname, udata in all_users.items():
+        online = bool(udata.get("online", False))
+        role = udata.get("role", "user")
+        if uname.lower() == "konvy" or (udata.get("email") or "").lower() == "konvyvip@gmail.com":
+            role = "owner"
+        result.append({
+            "username": uname,
+            "online": online,
+            "role": role,
+            "last_online": udata.get("last_online", 0),
+            "profile_pic": udata.get("profile_pic", "") or "",
+        })
+    result.sort(key=lambda x: (not x["online"], x["username"].lower()))
+    return jsonify({"users": result})
 
 # ===================== ONLINE STATUS API =====================
 
