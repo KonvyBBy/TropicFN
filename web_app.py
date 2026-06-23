@@ -7257,7 +7257,13 @@ def user_profile_page(username: str):
     logged_in = "username" in session
     my_username = session.get("username", "")
     users = _load_users()
-    if username not in users:
+    # Case-insensitive username lookup
+    actual_username = None
+    for u in users:
+        if u.lower() == username.lower():
+            actual_username = u
+            break
+    if not actual_username:
         return render_template("profile.html",
             logged_in=logged_in,
             username=my_username,
@@ -7269,16 +7275,15 @@ def user_profile_page(username: str):
             is_konvy_vip=False,
             user_not_found=True,
         ), 404
-    profile = _get_user_profile(username)
-    purchases = get_purchases(username)
+    profile = _get_user_profile(actual_username)
+    purchases = get_purchases(actual_username)
     purchase_count = len(purchases)
     is_admin_viewer = is_admin_user(my_username) if my_username else False
-    # Extra data for admin viewers
-    target_balance = get_balance(username) / 100
+    target_balance = get_balance(actual_username) / 100
     target_topups = []
     try:
         hist = _load_topup_history()
-        target_topups = sorted(hist.get(username, []), key=lambda x: x.get("timestamp", 0), reverse=True)
+        target_topups = sorted(hist.get(actual_username, []), key=lambda x: x.get("timestamp", 0), reverse=True)
     except Exception:
         pass
     return render_template(
@@ -7288,7 +7293,7 @@ def user_profile_page(username: str):
         balance=f"{get_balance(my_username) / 100:.2f}" if logged_in else "0.00",
         active_page="profile",
         profile=profile,
-        is_owner=my_username.lower() == username.lower(),
+        is_owner=my_username.lower() == actual_username.lower(),
         purchase_count=purchase_count,
         is_konvy_vip=profile.get("email", "").lower() == "konvyvip@gmail.com",
         is_admin_viewer=is_admin_viewer,
@@ -7994,6 +7999,18 @@ def sitemap_xml():
         xml += f"  <url><loc>{u['loc']}</loc><priority>{u['priority']}</priority></url>\n"
     xml += "</urlset>"
     return Response(xml, mimetype="application/xml")
+
+# ===================== ONLINE STATUS API =====================
+
+@app.route("/api/status/<username>")
+def api_user_status(username: str):
+    users = _load_users()
+    for u in users:
+        if u.lower() == username.lower():
+            last_online = users[u].get("last_online", 0)
+            is_online = bool(last_online) and (int(time.time()) - last_online) < 300
+            return jsonify({"online": is_online, "last_online": last_online})
+    return jsonify({"online": False, "last_online": 0})
 
 # ===================== PING (online/offline) =====================
 

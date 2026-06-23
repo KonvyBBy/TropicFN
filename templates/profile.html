@@ -60,7 +60,7 @@
         {% if is_konvy_vip %}<span style="font-size:11px;padding:2px 10px;border-radius:99px;background:rgba(234,179,8,0.12);border:1px solid rgba(234,179,8,0.3);color:#eab308;font-weight:700;">OWNER</span>{% endif %}
       </div>
       <div style="display:flex;align-items:center;gap:16px;margin-top:6px;font-size:13px;color:#6b7280;flex-wrap:wrap;">
-        <span><span class="online-dot {% if profile.last_online | is_online %}online{% else %}offline{% endif %}"></span>{% if profile.last_online | is_online %}Online now{% elif profile.last_online > 0 %}Last seen {{ profile.last_online | int | timestamp_to_ago }}{% else %}Never online{% endif %}</span>
+        <span><span class="online-dot {% if profile.last_online | is_online %}online{% else %}offline{% endif %}" id="status-dot-init"></span><span id="status-text">{% if profile.last_online | is_online %}Online now{% elif profile.last_online > 0 %}Last seen {{ profile.last_online | int | timestamp_to_ago }}{% else %}Never online{% endif %}</span></span>
         <span>{{ purchase_count }} purchase{% if purchase_count != 1 %}s{% endif %}</span>
       </div>
       {% if is_owner %}
@@ -261,6 +261,7 @@
 let profileUsername = '{{ profile.username }}';
 let isOwner = {{ 'true' if is_owner else 'false' }};
 let chatPollTimer = null;
+let statusPollTimer = null;
 
 function switchProfileTab(tab, btn) {
   document.querySelectorAll('.tab-btn-custom').forEach(b => b.classList.remove('active'));
@@ -444,6 +445,26 @@ async function sendMessage() {
     else { showToast(data.error || 'Error sending message', true); }
   } catch(e) { showToast('Failed to send message', true); }
 }
+
+async function pollStatus() {
+  try {
+    const r = await fetch('/api/status/' + encodeURIComponent(profileUsername));
+    const d = await r.json();
+    const dot = document.getElementById('status-dot-init');
+    const text = document.getElementById('status-text');
+    if (!dot || !text) return;
+    if (d.online) {
+      dot.className = 'online-dot online';
+      text.textContent = 'Online now';
+    } else {
+      dot.className = 'online-dot offline';
+      text.textContent = d.last_online ? 'Last seen ' + ta(d.last_online) : 'Offline';
+    }
+  } catch(e) {}
+}
+function ta(ts) { if(!ts)return'never';const s=Math.floor(Date.now()/1000-ts);if(s<60)return'just now';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago'}
+statusPollTimer = setInterval(pollStatus, 3000);
+pollStatus();
 
 function startChatPoll() {
   stopChatPoll();
