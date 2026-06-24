@@ -168,20 +168,7 @@ select option { background:#161926; color:#e4e4e7; }
         <span style="font-size:12px;font-weight:600;color:#4ade80;">Online Now</span>
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;">
-      <div style="padding:10px 12px;background:rgba(255,255,255,0.02);border-radius:10px;border:1px solid rgba(255,255,255,0.04);">
-        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#6b7280;">Avg Response</div>
-        <div style="font-size:16px;font-weight:700;color:#e4e4e7;margin-top:2px;">~5 minutes</div>
-      </div>
-      <div style="padding:10px 12px;background:rgba(255,255,255,0.02);border-radius:10px;border:1px solid rgba(255,255,255,0.04);">
-        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#6b7280;">Open Tickets</div>
-        <div style="font-size:16px;font-weight:700;color:#e4e4e7;margin-top:2px;" id="user-ticket-count">0</div>
-      </div>
-      <div style="padding:10px 12px;background:rgba(255,255,255,0.02);border-radius:10px;border:1px solid rgba(255,255,255,0.04);">
-        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#6b7280;">Resolved Today</div>
-        <div style="font-size:16px;font-weight:700;color:#e4e4e7;margin-top:2px;" id="user-resolved-count">—</div>
-      </div>
-    </div>
+
   </div>
 
   <!-- 2. Quick Help Categories (only when no open ticket) -->
@@ -496,8 +483,7 @@ async function userLoadTickets(){
     userTickets=Array.isArray(data.tickets)?data.tickets:[];
     const open=userTickets.filter(t=>t.status!=='closed');
     const closed=userTickets.filter(t=>t.status==='closed');
-    document.getElementById('user-ticket-count').textContent=open.length;
-    document.getElementById('user-resolved-count').textContent=closed.length||'0';
+
     const hasOpen=open.length>0;
     document.getElementById('user-new-ticket-section').style.display=hasOpen?'none':'block';
     const catEl=document.getElementById('user-categories');
