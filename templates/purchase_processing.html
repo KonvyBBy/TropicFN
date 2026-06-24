@@ -158,6 +158,7 @@
         return (pr.item_id || pr.fortnite_item_id) == itemId;
       }) : null;
       if (existing) {
+        try { await postJSON('/api/fortnite/purchase-lock/release', { item_id: itemId }); } catch(e) {}
         iconEl.className = 'purchase-success-ring mx-auto';
         iconEl.innerHTML = '<i class="ri-check-line text-4xl text-cyan-300"></i>';
         titleEl.textContent = 'Already purchased';
@@ -170,7 +171,8 @@
 
     for (let attempt = 1; attempt <= AUTO_RETRY_MAX_ATTEMPTS; attempt += 1) {
       try {
-        await postJSON('/api/fortnite/buy', { item_id: itemId });
+        const buyResult = await postJSON('/api/fortnite/buy', { item_id: itemId });
+        try { await postJSON('/api/fortnite/purchase-lock/release', { item_id: itemId }); } catch(e) {}
         iconEl.className = 'purchase-success-ring mx-auto';
         iconEl.innerHTML = '<i class="ri-check-line text-4xl text-cyan-300"></i>';
         titleEl.textContent = 'Purchase complete';

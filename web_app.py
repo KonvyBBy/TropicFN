@@ -6848,6 +6848,7 @@ def api_fortnite_buy():
         pr = p.get("purchase_result", {})
         pid = pr.get("item_id") or (pr.get("fortnite_item_id"))
         if pid and int(pid) == item_id:
+            clear_purchase_lock()
             return jsonify({
                 "message": "Purchase complete!",
                 "purchase_result": pr,
