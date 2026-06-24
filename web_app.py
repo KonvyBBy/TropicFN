@@ -7438,60 +7438,7 @@ def api_customer_news_delete():
     _save_customer_news(news)
     return jsonify({"ok": True, "news": news})
 
-# ===================== MESSAGING ROUTES =====================
 
-@app.route("/api/messages/conversations", methods=["GET"])
-@login_required_api
-def api_messages_conversations():
-    username = session["username"].lower()
-    all_msgs = _load_messages()
-    convos = {}
-    for key, msgs in all_msgs.items():
-        parts = key.split("::")
-        if username in parts:
-            other = parts[0] if parts[1] == username else parts[1]
-            last_msg = msgs[-1] if msgs else None
-            unread = sum(1 for m in msgs if m.get("to", "").lower() == username and not m.get("read"))
-            convos[other] = {
-                "last_message": last_msg,
-                "unread": unread,
-                "updated_at": last_msg["timestamp"] if last_msg else 0,
-            }
-    sorted_convos = sorted(convos.items(), key=lambda x: -x[1]["updated_at"])
-    return jsonify({"conversations": [{"with": u, **d} for u, d in sorted_convos]})
-
-@app.route("/api/messages/<other_user>", methods=["GET", "POST"])
-@login_required_api
-def api_messages_with(other_user: str):
-    my_username = session["username"].lower()
-    other_lower = other_user.lower()
-    users = _load_users()
-    if other_lower not in users:
-        return jsonify({"error": "User not found"}), 404
-    key = _conversation_key(my_username, other_lower)
-    all_msgs = _load_messages()
-    if key not in all_msgs:
-        all_msgs[key] = []
-    if request.method == "POST":
-        data = request.json or {}
-        content = (data.get("content") or "").strip()
-        if not content:
-            return jsonify({"error": "Message content required"}), 400
-        all_msgs[key].append({
-            "from": my_username,
-            "to": other_lower,
-            "content": content,
-            "timestamp": int(time.time()),
-            "read": False,
-        })
-        _save_messages(all_msgs)
-        return jsonify({"ok": True})
-    # GET: mark messages as read
-    for m in all_msgs[key]:
-        if m.get("to", "").lower() == my_username:
-            m["read"] = True
-    _save_messages(all_msgs)
-    return jsonify({"messages": all_msgs[key]})
 
 
 

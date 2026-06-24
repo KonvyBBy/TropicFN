@@ -329,26 +329,28 @@ select option { background:#161926; color:#e4e4e7; }
   <div class="sp-col sp-col-right" id="sp-cust-col">
     <div class="sp-empty" id="sp-cust-empty"><div class="icon">👤</div>Select a ticket</div>
     <div id="sp-cust-view" style="display:none;flex-direction:column;height:100%;">
-      <div class="sp-cust-header">
-        <img id="sp-cust-avatar" src="/static/default-avatar.svg" alt="" class="c-avatar" onerror="this.src='/static/default-avatar.svg'">
-        <div class="c-name" id="sp-cust-name"></div>
-        <div class="c-status" id="sp-cust-status"></div>
+      <div class="sp-cust-header" style="padding:16px 14px;">
+        <img id="sp-cust-avatar" src="/static/default-avatar.svg" alt="" class="c-avatar" onerror="this.src='/static/default-avatar.svg'" style="width:52px;height:52px;border-radius:50%;object-fit:cover;margin:0 auto 8px;border:2px solid rgba(0,229,255,0.2);">
+        <div class="c-name" id="sp-cust-name" style="font-size:15px;font-weight:700;color:#fff;"></div>
+        <div class="c-status" id="sp-cust-status" style="font-size:11px;color:#6b7280;margin-top:2px;"></div>
       </div>
-      <div class="sp-cust-stats">
-        <div class="sp-cust-stat"><div class="val" id="sp-cust-orders">0</div><div class="lbl">Orders</div></div>
-        <div class="sp-cust-stat"><div class="val" id="sp-cust-spent">$0</div><div class="lbl">Spent</div></div>
-        <div class="sp-cust-stat"><div class="val" id="sp-cust-opentix">0</div><div class="lbl">Open Tix</div></div>
-        <div class="sp-cust-stat"><div class="val" id="sp-cust-totaltix">0</div><div class="lbl">Total Tix</div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px 14px;border-bottom:1px solid var(--sp-border);">
+        <div style="padding:8px;border-radius:8px;background:rgba(255,255,255,0.02);text-align:center;"><div style="font-size:16px;font-weight:700;color:#e4e4e7;" id="sp-cust-orders">0</div><div style="font-size:9px;color:#6b7280;margin-top:1px;text-transform:uppercase;letter-spacing:0.04em;">Orders</div></div>
+        <div style="padding:8px;border-radius:8px;background:rgba(255,255,255,0.02);text-align:center;"><div style="font-size:16px;font-weight:700;color:#4ade80;" id="sp-cust-spent">$0</div><div style="font-size:9px;color:#6b7280;margin-top:1px;text-transform:uppercase;letter-spacing:0.04em;">Spent</div></div>
+        <div style="padding:8px;border-radius:8px;background:rgba(255,255,255,0.02);text-align:center;"><div style="font-size:16px;font-weight:700;color:#e4e4e7;" id="sp-cust-opentix">0</div><div style="font-size:9px;color:#6b7280;margin-top:1px;text-transform:uppercase;letter-spacing:0.04em;">Open Tix</div></div>
+        <div style="padding:8px;border-radius:8px;background:rgba(255,255,255,0.02);text-align:center;"><div style="font-size:16px;font-weight:700;color:#e4e4e7;" id="sp-cust-totaltix">0</div><div style="font-size:9px;color:#6b7280;margin-top:1px;text-transform:uppercase;letter-spacing:0.04em;">Total Tix</div></div>
       </div>
-      <div class="sp-cust-body">
-        <div class="sp-cust-section"><h4>Actions</h4>
+      <div style="flex:1;overflow-y:auto;padding:10px 14px;">
+        <div style="margin-bottom:12px;">
+          <h4 style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 8px;">Quick Actions</h4>
           <button class="sp-action-btn" onclick="setPriority('high')">🔴 Mark High Priority</button>
-          <button class="sp-action-btn" onclick="setPriority('medium')">🟡 Mark Medium Priority</button>
-          <button class="sp-action-btn" onclick="setPriority('low')">🟢 Mark Low Priority</button>
+          <button class="sp-action-btn" onclick="setPriority('medium')">🟡 Mark Medium</button>
+          <button class="sp-action-btn" onclick="setPriority('low')">🟢 Mark Low</button>
           <button class="sp-action-btn success" onclick="closeSpTicket()">✅ Close Ticket</button>
           <button class="sp-action-btn danger" onclick="banSpUser()">🚫 Ban User</button>
         </div>
-        <div class="sp-cust-section"><h4>Internal Notes</h4>
+        <div>
+          <h4 style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 8px;">Internal Notes</h4>
           <div id="sp-notes-list"></div>
           <div class="sp-note-input-wrap">
             <input type="text" id="sp-note-input" placeholder="Add a note..." maxlength="500">

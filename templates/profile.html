@@ -92,7 +92,6 @@
   <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;">
     <button class="tab-btn-custom active" onclick="switchProfileTab('orders',this)">Orders</button>
     {% if is_owner %}<button class="tab-btn-custom" onclick="switchProfileTab('settings',this)">Settings</button>{% endif %}
-    {% if not is_owner %}<button class="tab-btn-custom" onclick="switchProfileTab('chat',this)">Chat</button>{% endif %}
     {% if is_admin_viewer and not is_owner %}<button class="tab-btn-custom" onclick="switchProfileTab('admin',this)" style="color:#fbbf24;">Admin</button>{% endif %}
   </div>
 
@@ -166,16 +165,6 @@
   </div>
   {% endif %}
 
-  {% if not is_owner %}
-  <div id="profile-tab-chat" style="display:none;">
-    <div class="chat-box" id="chat-box">
-      <div style="text-align:center;padding:20px;color:#6b7280;font-size:13px;">Loading messages...</div>
-    </div>
-    <div class="chat-input-wrap">
-      <input type="text" id="chat-input" placeholder="Type a message..." maxlength="1000" onkeydown="if(event.key==='Enter')sendMessage()">
-      <button onclick="sendMessage()">Send</button>
-    </div>
-  </div>
   {% endif %}
 
   {% if is_admin_viewer and not is_owner %}
@@ -282,7 +271,6 @@
 <script>
 let profileUsername = '{{ profile.username }}';
 let isOwner = {{ 'true' if is_owner else 'false' }};
-let chatPollTimer = null;
 let statusPollTimer = null;
 
 function switchProfileTab(tab, btn) {
@@ -295,7 +283,6 @@ function switchProfileTab(tab, btn) {
   if (chatTab) chatTab.style.display = tab === 'chat' ? 'block' : 'none';
   const adminTab = document.getElementById('profile-tab-admin');
   if (adminTab) adminTab.style.display = tab === 'admin' ? 'block' : 'none';
-  if (tab === 'chat') { loadChat(); startChatPoll(); } else { stopChatPoll(); }
 }
 
 async function adminSetBalance() {
@@ -491,22 +478,7 @@ function ta(ts) { if(!ts)return'never';const s=Math.floor(Date.now()/1000-ts);if
 statusPollTimer = setInterval(pollStatus, 3000);
 pollStatus();
 
-function startChatPoll() {
-  stopChatPoll();
-  chatPollTimer = setInterval(loadChat, 3000);
-}
-
-function stopChatPoll() {
-  if (chatPollTimer) { clearInterval(chatPollTimer); chatPollTimer = null; }
-}
-
 function escapeHtml(v) { return String(v||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;'); }
-
-function fmtTime(ts) {
-  if (!ts) return '';
-  const d = new Date(ts * 1000);
-  return d.toLocaleString();
-}
 
 function showToast(msg, isError) {
   const el = document.getElementById('msg-toast');
