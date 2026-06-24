@@ -115,6 +115,14 @@
 .sp-toast.error { background:rgba(239,68,68,0.9);color:#fff; }
 .sp-toast.show { display:block;animation:spFadeIn 0.25s; }
 @keyframes spFadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+/* Lightbox */
+.lightbox-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:99999;display:none;align-items:center;justify-content:center;backdrop-filter:blur(6px);cursor:zoom-out; }
+.lightbox-overlay.open { display:flex;animation:lbFadeIn .25s ease; }
+.lightbox-overlay img { max-width:92vw;max-height:90vh;border-radius:8px;box-shadow:0 20px 80px rgba(0,0,0,0.6);animation:lbZoomIn .3s cubic-bezier(.15,.75,.4,1); }
+.lightbox-overlay .lb-close { position:absolute;top:16px;right:20px;font-size:28px;color:#fff;cursor:pointer;opacity:.6;transition:opacity .15s;background:none;border:none; }
+.lightbox-overlay .lb-close:hover { opacity:1; }
+@keyframes lbFadeIn { from{opacity:0} to{opacity:1} }
+@keyframes lbZoomIn { from{opacity:0;transform:scale(0.85)} to{opacity:1;transform:scale(1)} }
 select, input, textarea { -webkit-appearance:none; appearance:none; }
 select option { background:#161926; color:#e4e4e7; }
 .priority-dot { width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px; }
@@ -176,27 +184,45 @@ select option { background:#161926; color:#e4e4e7; }
   <!-- 2. Quick Help Categories (only when no open ticket) -->
   <div id="user-categories" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:8px;margin-bottom:16px;"></div>
 
-  <!-- 3. Active ticket chat -->
+  <!-- 3. Active ticket chat layout -->
   <div id="user-active-ticket" style="display:none;margin-bottom:16px;">
-    <div class="glass-panel" style="border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,0.06);display:flex;flex-direction:column;">
-      <div style="padding:14px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
-        <div>
-          <div style="font-size:15px;font-weight:700;color:#fff;" id="user-active-subject"></div>
-          <div style="font-size:12px;color:#6b7280;margin-top:2px;"><span id="user-active-status-badge"></span> · <span id="user-active-updated"></span></div>
-        </div>
-        <button id="user-close-ticket-btn" type="button" style="padding:5px 12px;border-radius:8px;border:1px solid rgba(239,68,68,0.25);background:rgba(239,68,68,0.08);color:#f87171;font-size:11px;font-weight:600;cursor:pointer;">Close Ticket</button>
+    <div style="display:flex;gap:0;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,0.06);background:rgba(0,0,0,0.08);min-height:500px;">
+      <!-- Sidebar -->
+      <div style="width:200px;min-width:200px;border-right:1px solid rgba(255,255,255,0.04);background:rgba(0,0,0,0.1);display:none;" class="ticket-sidebar">
+        <div style="padding:14px 12px 8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#6b7280;">Tickets</div>
+        <div id="ticket-sidebar-list"></div>
       </div>
-      <div id="user-notif-banner" style="display:none;padding:10px 16px;background:rgba(0,229,255,0.08);border-bottom:1px solid rgba(0,229,255,0.15);font-size:13px;font-weight:600;color:var(--neon-cyan);">🔔 Support replied!</div>
-      <div id="user-msg-area" style="flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-height:300px;max-height:440px;"></div>
-      <div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,0.06);background:rgba(0,0,0,0.15);">
-        <div style="display:flex;gap:8px;align-items:flex-end;">
-          <textarea id="user-reply-input" rows="1" placeholder="Type a message..." maxlength="2000" style="flex:1;padding:10px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:#fff;font-size:14px;outline:none;resize:none;min-height:44px;max-height:100px;font-family:inherit;"></textarea>
-          <div style="display:flex;gap:4px;flex-wrap:wrap;">
-            <button type="button" onclick="document.getElementById('user-img-input').click()" style="padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:#9ca3af;font-size:12px;cursor:pointer;" title="Upload image">🖼</button>
-            <input type="file" id="user-img-input" style="display:none" accept=".jpg,.jpeg,.png,.gif,.webp">
-            <button type="button" onclick="window.open('https://streamable.com','_blank')" style="padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:#9ca3af;font-size:12px;cursor:pointer;" title="Upload video to Streamable">🎥</button>
-            <span id="user-file-status" style="font-size:11px;color:#6b7280;display:flex;align-items:center;width:100%;"></span>
-            <button type="button" id="user-send-btn" onclick="userSendReply()" style="padding:10px 20px;border-radius:10px;background:var(--neon-cyan);color:#000;font-weight:700;border:none;font-size:14px;cursor:pointer;margin-left:auto;">Send</button>
+      <!-- Chat column -->
+      <div style="flex:1;display:flex;flex-direction:column;min-width:0;">
+        <!-- Header -->
+        <div style="padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:rgba(0,0,0,0.05);">
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <h3 style="font-size:16px;font-weight:700;color:#fff;margin:0;" id="user-active-subject"></h3>
+              <span id="user-active-status-badge"></span>
+            </div>
+            <div style="font-size:11px;color:#52525b;margin-top:4px;">
+              <span id="user-active-created"></span>
+              <span id="user-active-updated" style="margin-left:8px;"></span>
+            </div>
+          </div>
+          <button id="user-close-ticket-btn" type="button" style="padding:5px 12px;border-radius:8px;border:1px solid rgba(239,68,68,0.2);background:rgba(239,68,68,0.06);color:#f87171;font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap;">Close</button>
+        </div>
+        <!-- Notification banner -->
+        <div id="user-notif-banner" style="display:none;padding:8px 16px;background:rgba(0,229,255,0.06);border-bottom:1px solid rgba(0,229,255,0.1);font-size:12px;font-weight:600;color:var(--neon-cyan);">🔔 Support replied — scroll down to see</div>
+        <!-- Messages -->
+        <div id="user-msg-area" style="flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:2px;min-height:340px;max-height:480px;"></div>
+        <!-- Reply -->
+        <div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,0.04);background:rgba(0,0,0,0.1);">
+          <div style="display:flex;gap:8px;align-items:flex-end;">
+            <textarea id="user-reply-input" rows="1" placeholder="Type a message..." maxlength="2000" style="flex:1;padding:12px 16px;border-radius:14px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);color:#fff;font-size:14px;outline:none;resize:none;min-height:48px;max-height:120px;font-family:inherit;line-height:1.4;"></textarea>
+            <div style="display:flex;gap:4px;">
+              <button type="button" onclick="document.getElementById('user-img-input').click()" style="padding:12px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:#9ca3af;font-size:16px;cursor:pointer;" title="Upload image">🖼</button>
+              <input type="file" id="user-img-input" style="display:none" accept=".jpg,.jpeg,.png,.gif,.webp">
+              <button type="button" onclick="window.open('https://streamable.com','_blank')" style="padding:12px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:#9ca3af;font-size:16px;cursor:pointer;" title="Upload video">🎥</button>
+              <span id="user-file-status" style="font-size:11px;color:#6b7280;display:flex;align-items:center;"></span>
+              <button type="button" id="user-send-btn" onclick="userSendReply()" style="padding:12px 22px;border-radius:12px;background:var(--neon-cyan);color:#000;font-weight:700;border:none;font-size:14px;cursor:pointer;margin-left:4px;">Send</button>
+            </div>
           </div>
         </div>
       </div>
@@ -363,6 +389,22 @@ select option { background:#161926; color:#e4e4e7; }
 </div>
 <div class="sp-toast" id="sp-toast"></div>
 {% endif %}
+
+<!-- Lightbox -->
+<div class="lightbox-overlay" id="lightbox" onclick="closeLightbox()">
+  <button class="lb-close" onclick="closeLightbox()">✕</button>
+  <img id="lightbox-img" src="" alt="">
+</div>
+<script>
+function openLightbox(src){const img=document.getElementById('lightbox-img');const ov=document.getElementById('lightbox');if(img&&ov){img.src=src;ov.classList.add('open')}}
+function closeLightbox(){document.getElementById('lightbox')?.classList.remove('open')}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeLightbox()});
+// Wire up all ticket image clicks to lightbox
+document.addEventListener('click',function(e){
+  const img=e.target.closest('img[data-lightbox]');
+  if(img){e.preventDefault();openLightbox(img.src)}
+});
+</script>
 {% endblock %}
 {% block scripts %}
 {% if logged_in and not is_support_admin %}
@@ -379,9 +421,9 @@ function esc(v){return String(v||'').replaceAll('&','&amp;').replaceAll('<','&lt
 function fd(ts){if(!ts)return'';return new Date(ts*1000).toLocaleString()}
 function ta(ts){if(!ts)return'';const s=Math.floor(Date.now()/1000-ts);if(s<60)return'just now';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago'}
 function userStatusHtml(t){
-  if(t.status==='closed')return'<span style="padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700;background:rgba(107,114,128,0.1);border:1px solid rgba(107,114,128,0.25);color:#9ca3af;">⚫ Closed</span>';
-  if(t.last_message_from_admin)return'<span style="padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700;background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.2);color:var(--neon-cyan);">🔴 Staff Replied</span>';
-  return'<span style="padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700;background:rgba(234,179,8,0.08);border:1px solid rgba(234,179,8,0.2);color:#fbbf24;">🟢 Waiting For Staff</span>';
+  if(t.status==='closed')return'<span style="padding:3px 12px;border-radius:99px;font-size:12px;font-weight:700;background:rgba(107,114,128,0.1);border:1px solid rgba(107,114,128,0.25);color:#9ca3af;">⚫ Closed</span>';
+  if(t.last_message_from_admin)return'<span style="padding:3px 12px;border-radius:99px;font-size:12px;font-weight:700;background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.2);color:var(--neon-cyan);">🔴 Staff Replied</span>';
+  return'<span style="padding:3px 12px;border-radius:99px;font-size:12px;font-weight:700;background:rgba(234,179,8,0.08);border:1px solid rgba(234,179,8,0.2);color:#fbbf24;">🟢 Waiting For Staff</span>';
 }
 
 // FAQ toggle
@@ -411,7 +453,7 @@ function renderAttachHtml(attachments,ticketId){
     const ext=(a.original_name||'').split('.').pop().toLowerCase();
     const url='/ticket-uploads/'+encodeURIComponent(ticketId)+'/'+encodeURIComponent(a.stored_name);
     const n=esc(a.original_name||a.stored_name);
-    if(IMG_X.has(ext))return'<div style="margin-top:6px;"><a href="'+url+'" target="_blank" rel="noopener"><img src="'+url+'" alt="'+n+'" style="max-height:160px;max-width:240px;border-radius:10px;object-fit:cover;border:1px solid rgba(255,255,255,0.08);cursor:pointer;"></a></div>';
+    if(IMG_X.has(ext))return'<div style="margin-top:6px;"><img src="'+url+'" alt="'+n+'" data-lightbox="1" style="max-height:160px;max-width:240px;border-radius:10px;object-fit:cover;border:1px solid rgba(255,255,255,0.08);cursor:zoom-in;"></div>';
     if(VID_X.has(ext))return'<div style="margin-top:6px;"><video src="'+url+'" controls style="max-height:160px;max-width:240px;border-radius:10px;"></video></div>';
     return'<div style="margin-top:6px;"><a href="'+url+'" target="_blank" rel="noopener" download style="display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);color:#d4d4d8;font-size:11px;text-decoration:none;">📎 '+n+'</a></div>';
   }).join('');
@@ -420,8 +462,9 @@ function renderAttachHtml(attachments,ticketId){
 function renderUserMessages(ticket){
   const el=document.getElementById('user-msg-area');
   const msgs=Array.isArray(ticket.messages)?ticket.messages:[];
-  if(!msgs.length){el.innerHTML='<div style="text-align:center;padding:40px;color:#52525b;font-size:13px;">No messages yet.</div>';return}
+  if(!msgs.length){el.innerHTML='<div style="text-align:center;padding:60px 20px;color:#52525b;"><div style="font-size:40px;margin-bottom:10px;opacity:0.2;">💬</div><div style="font-size:14px;font-weight:600;color:#6b7280;">No messages yet</div><div style="font-size:12px;color:#52525b;margin-top:4px;">Send a message to start the conversation.</div></div>';return}
   let html='';let lastDate='';let lastAuthor='';
+  const custName='{{ username }}';
   msgs.forEach((m,i)=>{
     const isAdmin=m.author_type==='admin';
     const authorKey=isAdmin?'__admin__':'__user__';
@@ -431,35 +474,38 @@ function renderUserMessages(ticket){
     if(dateStr!==lastDate){
       const today=new Date();const yest=new Date(Date.now()-86400000);
       const label=dateStr===today.toLocaleDateString()?'Today':dateStr===yest.toLocaleDateString()?'Yesterday':msgDate.toLocaleDateString([],{month:'long',day:'numeric',year:'numeric'});
-      html+='<div class="cb-date-sep">'+label+'</div>';lastDate=dateStr;lastAuthor='';
+      html+='<div style="text-align:center;font-size:11px;font-weight:600;color:#52525b;padding:16px 0 8px;position:relative;"><span style="background:rgba(0,0,0,0.2);padding:4px 14px;border-radius:99px;">'+label+'</span></div>';lastDate=dateStr;lastAuthor='';
     }
     const firstInGroup=authorKey!==lastAuthor;lastAuthor=authorKey;
     let attachHtml='';
     if(Array.isArray(m.attachments)&&m.attachments.length){
-      attachHtml='<div class="cb-attach">'+m.attachments.map(a=>{
+      attachHtml='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">'+m.attachments.map(a=>{
         const ext=(a.original_name||'').split('.').pop().toLowerCase();
         const url='/ticket-uploads/'+encodeURIComponent(ticket.id)+'/'+encodeURIComponent(a.stored_name);
         const nm=esc(a.original_name||a.stored_name);
-        if(IMG_X.has(ext))return'<a href="'+url+'" target="_blank" rel="noopener"><img src="'+url+'" alt="'+nm+'"></a>';
-        if(VID_X.has(ext))return'<a href="'+url+'" target="_blank" rel="noopener"><video src="'+url+'" controls></video></a>';
-        return'<a href="'+url+'" target="_blank" rel="noopener" download>📎 '+nm+'</a>';
+        if(IMG_X.has(ext))return'<img src="'+url+'" alt="'+nm+'" data-lightbox="1" style="max-height:200px;max-width:280px;border-radius:12px;object-fit:cover;border:1px solid rgba(255,255,255,0.06);cursor:zoom-in;transition:transform .15s;" onmouseover="this.style.transform=\'scale(1.02)\'" onmouseout="this.style.transform=\'scale(1)\'">';
+        if(VID_X.has(ext))return'<a href="'+url+'" target="_blank" rel="noopener"><video src="'+url+'" controls style="max-height:200px;max-width:280px;border-radius:12px;"></video></a>';
+        return'<a href="'+url+'" target="_blank" rel="noopener" download style="display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);color:#d4d4d8;font-size:11px;text-decoration:none;">📎 '+nm+'</a>';
       }).join('')+'</div>';
     }
+    const supportAv='https://api.dicebear.com/7.x/avataaars/svg?seed=KonvySupport&backgroundColor=00E5FF';
     if(firstInGroup){
       if(isAdmin){
-        html+='<div class="cb-first">'+
-          '<img src="/static/default-avatar.svg" alt="" class="cb-avatar" onerror="this.src=\'/static/default-avatar.svg\'">'+
-          '<div class="cb-body"><div class="cb-header"><span class="cb-name">Konvy Support</span><span class="cb-badge '+(m.message&&m.message.toLowerCase().includes('escalated')?'escalated':'support')+'">'+(m.message&&m.message.toLowerCase().includes('escalated')?'Konvy is responding':'Support')+'</span><span class="cb-time">'+timeStr+'</span></div>'+
-          '<div class="cb-bubble admin">'+(m.message?esc(m.message):'')+(m.message?embedVideo(m.message):'')+attachHtml+'</div></div></div>';
+        html+='<div style="display:flex;align-items:flex-start;gap:10px;margin-top:8px;">'+
+          '<img src="'+supportAv+'" alt="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;background:#00E5FF;" onerror="this.src=\'/static/default-avatar.svg\'">'+
+          '<div style="flex:1;min-width:0;"><div style="display:flex;align-items:baseline;gap:6px;margin-bottom:2px;"><span style="font-size:13px;font-weight:700;color:#e4e4e7;">Konvy Support</span><span style="font-size:10px;padding:1px 8px;border-radius:99px;background:rgba(0,229,255,0.08);color:var(--neon-cyan);font-weight:700;border:1px solid rgba(0,229,255,0.15);">'+(m.message&&m.message.toLowerCase().includes('escalated')?'Escalated':'Support')+'</span><span style="font-size:11px;color:#52525b;margin-left:auto;">'+timeStr+'</span></div>'+
+          '<div style="background:rgba(0,229,255,0.04);border:1px solid rgba(0,229,255,0.08);border-radius:4px 14px 14px 14px;padding:10px 16px;font-size:15px;line-height:1.55;color:#e4e4e7;max-width:90%;width:fit-content;">'+
+          (m.message?esc(m.message):'')+(m.message?embedVideo(m.message):'')+attachHtml+'</div></div></div>';
       }else{
-        html+='<div class="cb-first" style="flex-direction:row-reverse;">'+
-          '<img src="'+userAvatar+'" alt="" class="cb-avatar" onerror="this.src=\'/static/default-avatar.svg\'">'+
-          '<div class="cb-body"><div class="cb-header" style="flex-direction:row-reverse;"><span class="cb-name">You</span><span class="cb-time">'+timeStr+'</span></div>'+
-          '<div class="cb-bubble user" style="margin-left:auto;">'+(m.message?esc(m.message):'')+(m.message?embedVideo(m.message):'')+attachHtml+'</div></div></div>';
+        html+='<div style="display:flex;align-items:flex-start;gap:10px;margin-top:8px;flex-direction:row-reverse;">'+
+          '<img src="'+userAvatar+'" alt="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;" onerror="this.src=\'/static/default-avatar.svg\'">'+
+          '<div style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-end;"><div style="display:flex;align-items:baseline;gap:6px;margin-bottom:2px;flex-direction:row-reverse;"><span style="font-size:13px;font-weight:700;color:#e4e4e7;">You</span><span style="font-size:11px;color:#52525b;">'+timeStr+'</span></div>'+
+          '<div style="background:rgba(0,229,255,0.06);border:1px solid rgba(0,229,255,0.1);border-radius:14px 4px 14px 14px;padding:10px 16px;font-size:15px;line-height:1.55;color:#e4e4e7;max-width:90%;width:fit-content;">'+
+          (m.message?esc(m.message):'')+(m.message?embedVideo(m.message):'')+attachHtml+'</div></div></div>';
       }
     }else{
-      html+='<div style="padding-left:46px;'+(!isAdmin?';display:flex;flex-direction:column;align-items:flex-end':'')+'">'+
-        '<div class="cb-bubble '+(isAdmin?'admin':'user')+' follow'+(isAdmin?'':' style="margin-left:auto;"')+'">'+
+      const bubbleAdj=isAdmin?'margin-left:46px;':'display:flex;flex-direction:column;align-items:flex-end;';
+      html+='<div style="'+bubbleAdj+'"><div style="background:'+(isAdmin?'rgba(0,229,255,0.04)':'rgba(0,229,255,0.06)')+';border:1px solid '+(isAdmin?'rgba(0,229,255,0.08)':'rgba(0,229,255,0.1)')+';border-radius:14px;padding:10px 16px;font-size:15px;line-height:1.55;color:#e4e4e7;max-width:90%;width:fit-content;">'+
         (m.message?esc(m.message):'')+(m.message?embedVideo(m.message):'')+attachHtml+'</div></div>';
     }
   });
@@ -498,10 +544,27 @@ async function userLoadTickets(){
       userActiveTicketId=active.id;
       document.getElementById('user-active-subject').textContent=active.subject;
       document.getElementById('user-active-status-badge').innerHTML=userStatusHtml(active);
-      document.getElementById('user-active-updated').textContent='Last update: '+(active.updated_at?ta(active.updated_at):'');
+      const createdEl=document.getElementById('user-active-created');
+      if(createdEl)createdEl.textContent='Created '+ta(active.created_at);
+      document.getElementById('user-active-updated').textContent='Last reply '+ta(active.updated_at);
       const notifEl=document.getElementById('user-notif-banner');
       notifEl.style.display=active.last_message_from_admin?'block':'none';
       renderUserMessages(active);
+      // Render sidebar
+      const sbList=document.getElementById('ticket-sidebar-list');
+      if(sbList){
+        sbList.innerHTML=userTickets.filter(t=>t.status!=='closed').map(t=>{
+          const isActive=t.id===active.id;
+          const sl=t.needs_admin_response?'🔴':'🟢';
+          return '<div style="padding:8px 12px;cursor:pointer;border-radius:8px;margin-bottom:2px;background:'+(isActive?'rgba(0,229,255,0.06)':'transparent')+';border-left:2px solid '+(isActive?'var(--neon-cyan)':'transparent')+';" onclick="switchUserTicket(\''+t.id+'\')" onmouseover="this.style.background=\'rgba(255,255,255,0.03)\'" onmouseout="this.style.background='+(isActive?'\'rgba(0,229,255,0.06)\'':'\'transparent\'')+'"><div style="font-size:12px;font-weight:600;color:#e4e4e7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(t.subject)+'</div><div style="font-size:10px;color:#6b7280;margin-top:2px;">'+sl+' '+(t.needs_admin_response?'Waiting For Staff':'Staff Replied')+'</div></div>';
+        }).join('');
+        if(closed.length){
+          sbList.innerHTML+='<div style="padding:6px 12px;font-size:10px;color:#52525b;margin-top:6px;">Closed ('+closed.length+')</div>';
+          closed.slice(0,3).forEach(t=>{
+            sbList.innerHTML+='<div style="padding:6px 12px;font-size:11px;color:#6b7280;cursor:pointer;border-radius:6px;" onclick="switchUserTicket(\''+t.id+'\')" onmouseover="this.style.background=\'rgba(255,255,255,0.02)\'" onmouseout="this.style.background=\'transparent\'">⚫ '+esc(t.subject)+'</div>';
+          });
+        }
+      }
     }else{
       document.getElementById('user-active-ticket').style.display='none';
       userActiveTicketId=null;
@@ -510,6 +573,24 @@ async function userLoadTickets(){
     document.getElementById('prev-count').textContent='('+closed.length+')';
     document.getElementById('prev-tickets-list').innerHTML=closed.length?closed.map(renderPrevTicket).join(''):'<div style="text-align:center;padding:20px;color:#6b7280;font-size:12px;">No previous tickets</div>';
   }catch(e){}
+}
+
+function switchUserTicket(id){
+  const t=userTickets.find(x=>x.id===id);
+  if(!t)return;
+  userActiveTicketId=id;
+  document.getElementById('user-active-subject').textContent=t.subject;
+  document.getElementById('user-active-status-badge').innerHTML=userStatusHtml(t);
+  const ce=document.getElementById('user-active-created');if(ce)ce.textContent='Created '+ta(t.created_at);
+  document.getElementById('user-active-updated').textContent='Last reply '+ta(t.updated_at);
+  const ne=document.getElementById('user-notif-banner');if(ne)ne.style.display=t.last_message_from_admin?'block':'none';
+  renderUserMessages(t);
+  // Refresh sidebar highlight
+  if(document.getElementById('ticket-sidebar-list')){
+    document.querySelectorAll('#ticket-sidebar-list > div').forEach(d=>d.style.background='transparent');
+    // Re-run the load to re-render sidebar (simplest)
+    userLoadTickets();
+  }
 }
 
 document.getElementById('user-img-input')?.addEventListener('change', function(){
@@ -695,7 +776,7 @@ function renderMessages(ticket){
         const ext=(a.original_name||'').split('.').pop().toLowerCase();
         const url='/ticket-uploads/'+encodeURIComponent(ticket.id)+'/'+encodeURIComponent(a.stored_name);
         const nm=escapeHtml(a.original_name||a.stored_name);
-        if(IMAGE_EXTS_ADMIN.has(ext))return'<a href="'+url+'" target="_blank" rel="noopener"><img src="'+url+'" alt="'+nm+'"></a>';
+        if(IMAGE_EXTS_ADMIN.has(ext))return'<img src="'+url+'" alt="'+nm+'" data-lightbox="1" style="max-height:180px;max-width:260px;border-radius:10px;object-fit:cover;cursor:zoom-in;">';
         if(VIDEO_EXTS_ADMIN.has(ext))return'<a href="'+url+'" target="_blank" rel="noopener"><video src="'+url+'" controls></video></a>';
         return'<a href="'+url+'" target="_blank" rel="noopener" download>📎 '+nm+'</a>';
       }).join('')+'</div>';
