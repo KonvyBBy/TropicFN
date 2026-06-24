@@ -624,14 +624,13 @@
       } catch(e) {}
     };
 
-    // Online/offline tracking with tab visibility
+    // Online/offline tracking with heartbeat + tab visibility
     if (window.KONVY_LOGGED_IN) {
+      // Heartbeat every 60s — keeps online status fresh even if visibility events fail (mobile)
+      setInterval(() => { navigator.sendBeacon('/api/ping?status=online'); }, 60000);
+      // Tab visibility
       document.addEventListener('visibilitychange', () => {
-        if (document.hidden) {
-          navigator.sendBeacon('/api/ping?status=offline');
-        } else {
-          navigator.sendBeacon('/api/ping?status=online');
-        }
+        navigator.sendBeacon('/api/ping?status=' + (document.hidden ? 'offline' : 'online'));
       });
       window.addEventListener('beforeunload', () => {
         navigator.sendBeacon('/api/ping?status=offline');
