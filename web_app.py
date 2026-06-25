@@ -7990,12 +7990,12 @@ def api_giveaway_get():
         _save_giveaways(gws)
     real_count = len([e for e in gw.get("entries", []) if not e.get("boost_only")])
     base_public = gw.get("public_display_count", real_count)
-    # Dynamic boost calculation
+    boost_accumulated = gw.get("boost_accumulated", 0)
     boost_extra = 0
     if gw.get("boost_enabled") and gw.get("boost_rate", 0) > 0 and gw.get("boost_started_at"):
         elapsed = int(time.time()) - gw["boost_started_at"]
         boost_extra = int(elapsed / 60.0 * gw["boost_rate"])
-    public_count = max(base_public + boost_extra, real_count)
+    public_count = max(base_public + boost_accumulated + boost_extra, real_count)
     return jsonify({"giveaway": {
         "id": gw.get("id"),
         "title": gw.get("title", "Giveaway"),
