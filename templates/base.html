@@ -171,38 +171,6 @@
 
   /* ── Admin items injected into notification dropdown above ── */
 
-  /* ── Activity Toasts ── */
-  (function(){
-    if (typeof window.KONVY_LOGGED_IN === 'undefined' || !window.KONVY_LOGGED_IN) return;
-    let lastActTime = 0;
-    const icons = { search:'🔍', view:'👁', purchase:'🛒', review:'⭐', online:'🟢', offline:'🔴', signup:'📝', gift:'🎁' };
-    function ta(ts) { const s=Math.floor(Date.now()/1000-ts); if(s<60)return'just now'; if(s<3600)return Math.floor(s/60)+'m ago'; if(s<86400)return Math.floor(s/3600)+'h ago'; return Math.floor(s/86400)+'d ago'; }
-    window.esc=function(v){return String(v||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;')}
-    function showActToast(html){const c=document.getElementById('act-toast-container');if(!c)return;const d=document.createElement('div');d.className='act-toast';d.innerHTML=html;c.appendChild(d);setTimeout(()=>{d.classList.add('out');setTimeout(()=>d.remove(),350)},5000)}
-    async function pollActivity(){
-      try{
-        const r=await fetch('/api/activity?limit=5');const d=await r.json();const acts=Array.isArray(d.activity)?d.activity:[];
-        acts.forEach(a=>{
-          if(a.timestamp<=lastActTime)return;
-          lastActTime=Math.max(lastActTime,a.timestamp);
-          const dd=a.details||{};const user='<span class="at-user">'+esc(a.username)+'</span>';let txt='';
-          if(a.type==='online')txt=user+' came online';
-          else if(a.type==='offline')txt=user+' went offline';
-          else if(a.type==='signup')txt=user+' joined Konvy';
-          else if(a.type==='purchase')txt=user+' purchased an account';
-          else if(a.type==='search')txt=user+' searched for "'+esc((dd.query||'').substring(0,40))+'"';
-          else if(a.type==='view')txt=user+' viewed an account';
-          else if(a.type==='review')txt=user+' left a '+(dd.rating||'')+'-star review';
-          else if(a.type==='gift')txt=user+' gifted an account';
-          else return;
-          showActToast('<span class="at-icon">'+(icons[a.type]||'❓')+'</span> '+txt+'<div class="at-time">'+ta(a.timestamp)+'</div>');
-        });
-      }catch(e){}
-    }
-    pollActivity();
-    setInterval(pollActivity,6000);
-  })();
-
   /* ── Button Ripple ── */
     .ripple-btn { position: relative; overflow: hidden; }
     .ripple-btn .ripple-effect {
@@ -474,6 +442,38 @@
   .act-toast .at-user { font-weight:600; color:#e4e4e7; }
   .act-toast .at-time { font-size:10px; color:#52525b; margin-top:2px; }
   </style>
+  <script>
+  (function(){
+    if (typeof window.KONVY_LOGGED_IN === 'undefined' || !window.KONVY_LOGGED_IN) return;
+    let lastActTime = 0;
+    const icons = { search:'🔍', view:'👁', purchase:'🛒', review:'⭐', online:'🟢', offline:'🔴', signup:'📝', gift:'🎁' };
+    function ta(ts) { const s=Math.floor(Date.now()/1000-ts); if(s<60)return'just now'; if(s<3600)return Math.floor(s/60)+'m ago'; if(s<86400)return Math.floor(s/3600)+'h ago'; return Math.floor(s/86400)+'d ago'; }
+    if(typeof window.esc==='undefined'){window.esc=function(v){return String(v||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;')}}
+    function showActToast(html){const c=document.getElementById('act-toast-container');if(!c)return;const d=document.createElement('div');d.className='act-toast';d.innerHTML=html;c.appendChild(d);setTimeout(()=>{d.classList.add('out');setTimeout(()=>d.remove(),350)},5000)}
+    async function pollActivity(){
+      try{
+        const r=await fetch('/api/activity?limit=5');const d=await r.json();const acts=Array.isArray(d.activity)?d.activity:[];
+        acts.forEach(a=>{
+          if(a.timestamp<=lastActTime)return;
+          lastActTime=Math.max(lastActTime,a.timestamp);
+          const dd=a.details||{};const user='<span class="at-user">'+window.esc(a.username)+'</span>';let txt='';
+          if(a.type==='online')txt=user+' came online';
+          else if(a.type==='offline')txt=user+' went offline';
+          else if(a.type==='signup')txt=user+' joined Konvy';
+          else if(a.type==='purchase')txt=user+' purchased an account';
+          else if(a.type==='search')txt=user+' searched for "'+window.esc((dd.query||'').substring(0,40))+'"';
+          else if(a.type==='view')txt=user+' viewed an account';
+          else if(a.type==='review')txt=user+' left a '+(dd.rating||'')+'-star review';
+          else if(a.type==='gift')txt=user+' gifted an account';
+          else return;
+          showActToast('<span class="at-icon">'+(icons[a.type]||'❓')+'</span> '+txt+'<div class="at-time">'+ta(a.timestamp)+'</div>');
+        });
+      }catch(e){}
+    }
+    pollActivity();
+    setInterval(pollActivity,6000);
+  })();
+  </script>
 
   <!-- Pending topup banner -->
   <div id="pending-topup-banner">
@@ -716,11 +716,12 @@
       }
       async function loadNotifications(){
         try {
+          function sf(url,fb){return fetch(url).then(function(r){if(!r.ok)return fb;return r.json()}).catch(function(){return fb})}
           const [notifRes, adminTr, adminRr, adminPr] = await Promise.all([
             fetch('/api/user/notifications'),
-            window.KONVY_ADMIN ? fetch('/api/support/tickets').then(r=>r.json()) : Promise.resolve({tickets:[]}),
-            window.KONVY_ADMIN ? fetch('/api/reviews').then(r=>r.json()) : Promise.resolve({reviews:[]}),
-            window.KONVY_ADMIN ? fetch('/api/admin/pending-topups').then(r=>r.json()) : Promise.resolve({pending:[]}),
+            window.KONVY_ADMIN ? sf('/api/support/tickets',{tickets:[]}) : Promise.resolve({tickets:[]}),
+            window.KONVY_ADMIN ? sf('/api/reviews',{reviews:[]}) : Promise.resolve({reviews:[]}),
+            window.KONVY_ADMIN ? sf('/api/admin/pending-topups',{pending:[]}) : Promise.resolve({pending:[]}),
           ]);
           if(!notifRes.ok)return;
           const ndata=await notifRes.json();
