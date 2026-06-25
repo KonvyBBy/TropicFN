@@ -8066,6 +8066,7 @@ def api_admin_giveaway():
             "ended_at": 0,
             "entries": [],
             "public_display_count": 0,
+            "boost_accumulated": 0,
             "boost_enabled": False,
             "boost_rate": 0,
             "boost_started_at": 0,
@@ -8085,7 +8086,12 @@ def api_admin_giveaway():
         for g in gws:
             if g.get("id") == gw.get("id"):
                 g["status"] = "paused"
+                if g.get("boost_enabled"):
+                    elapsed = (int(time.time()) - g.get("boost_started_at", int(time.time()))) if g.get("boost_started_at") else 0
+                    extra = int(elapsed / 60.0 * g.get("boost_rate", 0))
+                    g["boost_accumulated"] = g.get("boost_accumulated", 0) + max(0, extra)
                 g["boost_enabled"] = False
+                g["boost_started_at"] = 0
         _save_giveaways(gws)
         return jsonify({"ok": True, "message": "Giveaway paused"})
 
@@ -8106,6 +8112,10 @@ def api_admin_giveaway():
             if g.get("id") == gw.get("id"):
                 g["status"] = "ended"
                 g["ended_at"] = int(time.time())
+                if g.get("boost_enabled"):
+                    elapsed = (int(time.time()) - g.get("boost_started_at", int(time.time()))) if g.get("boost_started_at") else 0
+                    extra = int(elapsed / 60.0 * g.get("boost_rate", 0))
+                    g["boost_accumulated"] = g.get("boost_accumulated", 0) + max(0, extra)
                 g["boost_enabled"] = False
                 winner = _pick_winner(g.get("entries", []))
                 if winner:
@@ -8150,6 +8160,11 @@ def api_admin_giveaway():
         if boost_enabled and not gw.get("boost_started_at"):
             gw["boost_started_at"] = int(time.time())
         elif not boost_enabled:
+            # Save accumulated boost before clearing timer
+            elapsed = (int(time.time()) - gw.get("boost_started_at", int(time.time()))) if gw.get("boost_started_at") else 0
+            extra = int(elapsed / 60.0 * gw.get("boost_rate", 0))
+            current_accumulated = gw.get("boost_accumulated", 0)
+            gw["boost_accumulated"] = current_accumulated + max(0, extra)
             gw["boost_started_at"] = 0
         _save_giveaways(gws)
         return jsonify({"ok": True, "message": "Boost updated"})
@@ -8159,6 +8174,7 @@ def api_admin_giveaway():
         for g in gws:
             if g.get("status") in ("active", "paused"):
                 g["public_display_count"] = len([e for e in g.get("entries", []) if not e.get("boost_only")])
+                g["boost_accumulated"] = 0
                 g["boost_started_at"] = 0
         _save_giveaways(gws)
         return jsonify({"ok": True, "message": "Boost reset"})
