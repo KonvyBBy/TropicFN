@@ -302,7 +302,10 @@ select option { background:#161926; color:#e4e4e7; }
   <div class="sp-col sp-col-left" id="sp-ticket-list-wrap">
     <div class="sp-header" style="display:flex;align-items:center;justify-content:space-between;">
       <h2>Support Tickets</h2>
-      <button onclick="closeAllTickets()" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(239,68,68,0.3);background:rgba(239,68,68,0.1);color:#f87171;font-size:10px;font-weight:600;cursor:pointer;">Close All</button>
+      <div style="display:flex;gap:4px;">
+        <button onclick="adminCreateTicket()" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(34,197,94,0.3);background:rgba(34,197,94,0.1);color:#4ade80;font-size:10px;font-weight:600;cursor:pointer;">+ Create Ticket</button>
+        <button onclick="closeAllTickets()" style="padding:4px 10px;border-radius:8px;border:1px solid rgba(239,68,68,0.3);background:rgba(239,68,68,0.1);color:#f87171;font-size:10px;font-weight:600;cursor:pointer;">Close All</button>
+      </div>
     </div>
     <div class="sp-counters">
       <div class="sp-counter cnt-all"><div class="num" id="sp-cnt-all">0</div><div class="label">Open</div></div>
@@ -388,6 +391,32 @@ select option { background:#161926; color:#e4e4e7; }
   </div>
 </div>
 <div class="sp-toast" id="sp-toast"></div>
+
+<!-- Admin Create Ticket Modal -->
+<div id="admin-ct-modal" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.82);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:16px;">
+  <div style="background:#0c0e17;border:1px solid rgba(255,255,255,0.06);border-radius:16px;width:100%;max-width:460px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.5);animation:spFadeIn .2s ease;">
+    <h3 style="font-size:16px;font-weight:700;color:#fff;margin:0 0 4px;">Create Support Ticket</h3>
+    <p style="font-size:12px;color:#6b7280;margin:0 0 14px;">Create a ticket on behalf of a user.</p>
+    <div style="position:relative;margin-bottom:12px;">
+      <label style="font-size:11px;color:#6b7280;display:block;margin-bottom:4px;">User</label>
+      <input id="act-user" type="text" placeholder="Search by username or email..." style="width:100%;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);color:#fff;font-size:13px;outline:none;box-sizing:border-box;">
+      <div id="act-user-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:#1a1d2e;border:1px solid rgba(255,255,255,0.08);border-radius:10px;max-height:200px;overflow-y:auto;z-index:10;box-shadow:0 10px 40px rgba(0,0,0,0.5);"></div>
+    </div>
+    <div style="margin-bottom:8px;">
+      <label style="font-size:11px;color:#6b7280;display:block;margin-bottom:4px;">Reason</label>
+      <div style="display:flex;gap:4px;margin-bottom:6px;flex-wrap:wrap;">
+        <button onclick="actFillFraud()" style="padding:4px 12px;border-radius:8px;border:1px solid rgba(239,68,68,0.2);background:rgba(239,68,68,0.06);color:#f87171;font-size:10px;font-weight:600;cursor:pointer;">🛡️ Fraud</button>
+      </div>
+      <textarea id="act-message" rows="5" placeholder="Enter the reason for this ticket..." style="width:100%;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);color:#fff;font-size:13px;outline:none;resize:vertical;font-family:inherit;box-sizing:border-box;"></textarea>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="actSubmit()" style="flex:1;padding:10px;border-radius:10px;border:none;background:var(--grad);color:#fff;font-size:13px;font-weight:700;cursor:pointer;">Create Ticket</button>
+      <button onclick="document.getElementById('admin-ct-modal').style.display='none'" style="flex:1;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:#6b7280;font-size:13px;cursor:pointer;">Cancel</button>
+    </div>
+    <span id="act-status" style="font-size:11px;color:#6b7280;margin-top:8px;display:block;text-align:center;"></span>
+  </div>
+</div>
+
 {% endif %}
 
 <!-- Lightbox -->
@@ -881,6 +910,53 @@ async function banSpUser(){
   const data=await res.json();
   if(data.ok)spToast(data.message);else spToast(data.error||'Error',true);
 }
+// ---- Admin create ticket ----
+var actUsers = [];
+function adminCreateTicket(){
+  document.getElementById('admin-ct-modal').style.display='flex';
+  document.getElementById('act-status').textContent='';
+  document.getElementById('act-user').value='';
+  document.getElementById('act-message').value='';
+  document.getElementById('act-user-dropdown').style.display='none';
+  fetch('/api/admin/users').then(function(r){return r.json()}).then(function(d){
+    actUsers=Array.isArray(d.users)?d.users.map(function(u){return {username:u.username,email:u.email||''}}):[];
+  }).catch(function(){});
+}
+document.getElementById('act-user')?.addEventListener('input',function(){
+  var val=this.value.trim().toLowerCase();
+  var dd=document.getElementById('act-user-dropdown');
+  if(!val||!actUsers.length){dd.style.display='none';return}
+  var matches=actUsers.filter(function(u){return u.username.toLowerCase().includes(val)||u.email.toLowerCase().includes(val)}).slice(0,8);
+  if(!matches.length){dd.style.display='none';return}
+  dd.innerHTML=matches.map(function(u){return '<div onclick="actSelect(\''+u.username.replace(/'/g,"\\'")+'\')" style="padding:9px 12px;cursor:pointer;font-size:12px;color:#d4d4d8;border-bottom:1px solid rgba(255,255,255,0.03);" onmouseover="this.style.background=\'rgba(255,255,255,0.04)\'" onmouseout="this.style.background=\'transparent\'">'+esc(u.username)+' <span style="color:#52525b;font-size:10px;">'+esc(u.email)+'</span></div>'}).join('');
+  dd.style.display='block';
+});
+function actSelect(name){
+  document.getElementById('act-user').value=name;
+  document.getElementById('act-user-dropdown').style.display='none';
+}
+function actFillFraud(){
+  document.getElementById('act-message').value='Your top-up has not been approved because it has been flagged as potential fraud. Please upload a screen recording (not a picture) from your banking app showing the charge. This allows us to verify that you are the owner of the bank account used for the transaction. Once we receive and review the recording, we will continue with the verification process.';
+}
+async function actSubmit(){
+  var user=document.getElementById('act-user').value.trim();
+  var msg=document.getElementById('act-message').value.trim();
+  var st=document.getElementById('act-status');
+  if(!user){st.textContent='Please select a user';return}
+  if(!msg){st.textContent='Please enter a reason';return}
+  st.textContent='Creating...';
+  try{
+    var r=await fetch('/api/admin/support-tickets',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:user,message:msg})});
+    var d=await r.json();
+    if(d.ok){
+      st.textContent='Ticket created!';
+      document.getElementById('admin-ct-modal').style.display='none';
+      await loadAllTickets();
+      if(typeof selectTicket==='function'&&d.ticket)selectTicket(d.ticket.id);
+    }else{st.textContent=d.error||'Failed'}
+  }catch(e){st.textContent='Error creating ticket'}
+}
+
 async function closeAllTickets(){
   if(!confirm('Close ALL open tickets?'))return;
   const res=await fetch('/api/support/close-all',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});

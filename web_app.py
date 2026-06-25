@@ -6011,12 +6011,86 @@ def serve_ticket_upload(ticket_id: str, filename: str):
     return send_from_directory(resolved_dir, filename)
 
 
-@app.route("/api/admin/support-tickets", methods=["GET"])
+@app.route("/api/admin/support-tickets", methods=["GET", "POST"])
 def api_admin_support_tickets():
     if not is_admin_user(session.get("username", "")):
         return jsonify({"error": "Unauthorized"}), 403
+    if request.method == "POST":
+        return api_admin_support_create_ticket()
     tickets = _sort_support_tickets(_load_support_tickets())
     return jsonify({"tickets": [_serialize_ticket_for_user(t, with_internal_notes=True) for t in tickets]})
+
+def api_admin_support_create_ticket():
+    data = request.json or {}
+    target = (data.get("username") or "").strip()
+    message = (data.get("message") or "").strip()
+    if not target or not message:
+        return jsonify({"error": "Username and message are required"}), 400
+    users = _load_users()
+    actual = None
+    for u in users:
+        if u.lower() == target.lower():
+            actual = u
+            break
+    if not actual:
+        return jsonify({"error": f"User '{target}' not found"}), 404
+    subject = "Support Request"
+    # Check existing open ticket — append message or create new
+    tickets_data = _load_support_tickets()
+    existing = next((t for t in tickets_data if str(t.get("username") or "") == actual and str(t.get("status") or "") == "open"), None)
+    if existing:
+        ok, _ = _append_ticket_message(existing, "admin", "Konvy Support", message)
+        existing["updated_at"] = int(time.time())
+        _save_support_tickets(_sort_support_tickets(tickets_data))
+        ticket = existing
+    else:
+        ok, err, ticket = create_support_ticket(actual, subject, message)
+        if not ok:
+            now = int(time.time())
+            ticket = {
+                "id": f"tkt_{secrets.token_hex(6)}",
+                "username": actual,
+                "subject": subject,
+                "status": "open",
+                "priority": "medium",
+                "internal_notes": [],
+                "linked_item_id": None,
+                "created_at": now,
+                "updated_at": now,
+                "closed_at": 0,
+                "closed_by": "",
+                "messages": [{
+                    "id": secrets.token_hex(8),
+                    "author_type": "admin",
+                    "author": "Konvy Support",
+                    "message": message,
+                    "attachments": [],
+                    "timestamp": now,
+                }],
+            }
+            tickets_data = _load_support_tickets()
+            tickets_data.append(ticket)
+            _save_support_tickets(_sort_support_tickets(tickets_data))
+    # Send email notification
+    recipient = users.get(actual, {}).get("email", "")
+    if recipient:
+        site_url = request.url_root.rstrip("/") + "/support"
+        ticket_link = site_url
+        email_subject = "Support Ticket Created — Konvy Accounts"
+        email_body = (
+            f"Hello {actual},\n\n"
+            f"A support ticket has been opened for your account.\n\n"
+            f"Reason:\n{message}\n\n"
+            f"View your ticket: {ticket_link}\n\n"
+            f"Thank you,\nKonvy Support Team"
+        )
+        email_html = f"""<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Support Ticket Created</title></head><body style="margin:0;padding:0;background:#0d0d0d;font-family:'Segoe UI',Arial,sans-serif;"><table width="100%" cellpadding="0" cellspacing="0" style="background:#0d0d0d;"><tr><td align="center" style="padding:40px 16px;"><table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;"><tr><td align="center" style="padding-bottom:28px;"><span style="font-family:'Segoe UI',Arial,sans-serif;font-size:26px;font-weight:900;letter-spacing:-0.5px;"><span style="color:#00c8ff;">Konvy</span><span style="color:#ffffff;"> Accounts</span></span></td></tr><tr><td style="background:#161616;border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:36px 32px;"><p style="margin:0 0 6px;font-size:22px;font-weight:700;color:#ffffff;">Support Ticket Created</p><p style="margin:0 0 20px;font-size:14px;color:#a1a1aa;line-height:1.55;">A support ticket has been opened for your account. Our team will assist you shortly.</p><div style="background:#0d0d0d;border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:16px;margin-bottom:20px;"><p style="margin:0 0 6px;font-size:12px;color:#71717a;text-transform:uppercase;letter-spacing:.04em;">Reason</p><p style="margin:0;font-size:14px;color:#e4e4e7;line-height:1.6;">{message.replace(chr(10), '<br>')}</p></div><table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center"><a href="{ticket_link}" style="display:inline-block;padding:14px 32px;border-radius:12px;background:linear-gradient(135deg,#00c8ff,#7c5cff);color:#fff;font-size:15px;font-weight:700;text-decoration:none;">View Ticket</a></td></tr></table></td></tr><tr><td align="center" style="padding-top:24px;"><p style="margin:0;font-size:12px;color:#3f3f46;">&copy; 2026 Konvy Accounts</p></td></tr></table></td></tr></table></body></html>"""
+        threading.Thread(
+            target=_send_email_message,
+            args=(recipient, email_subject, email_body, email_html),
+            daemon=True,
+        ).start()
+    return jsonify({"ok": True, "ticket": {"id": ticket.get("id", "")}})
 
 
 @app.route("/api/admin/support-tickets/<ticket_id>/reply", methods=["POST"])
