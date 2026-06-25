@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}Giveaway — Konvy Accounts{% endblock %}
+{% block extra_styles %}
+<style>
+:root{--cbg:#090B14;--ccard:#111827;--cborder:rgba(255,255,255,0.06);--cprimary:#22D3EE;--caccent:#3B82F6}
+.gw-wrap{max-width:640px;margin:0 auto;padding:24px 16px 40px;animation:gwFade .3s ease}
+@keyframes gwFade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.gw-card{background:var(--ccard);border:1px solid var(--cborder);border-radius:18px;padding:28px 24px;box-shadow:0 4px 24px rgba(0,0,0,0.2);margin-bottom:16px;text-align:center}
+.gw-icon{font-size:48px;margin-bottom:8px;opacity:.15}
+.gw-title{font-size:24px;font-weight:800;color:#fff;margin:0 0 4px;letter-spacing:-.02em}
+.gw-prize{font-size:36px;font-weight:800;background:linear-gradient(135deg,#22D3EE,#3B82F6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin:8px 0}
+.gw-label{font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.gw-count{font-size:28px;font-weight:800;color:#fff;margin:4px 0}
+.gw-stat{display:inline-block;padding:0 16px}
+.gw-stats{display:flex;justify-content:center;gap:8px;margin:16px 0;flex-wrap:wrap}
+.gw-progress{height:4px;background:rgba(255,255,255,0.04);border-radius:99px;overflow:hidden;margin:16px 0 8px}
+.gw-progress-fill{height:100%;background:linear-gradient(135deg,#22D3EE,#3B82F6);border-radius:99px;transition:width 1s ease;width:0%}
+.gw-timer{font-size:32px;font-weight:800;color:#fff;font-family:monospace;margin:8px 0}
+.gw-enter-btn{display:inline-flex;align-items:center;gap:8px;padding:14px 36px;border-radius:14px;border:none;background:linear-gradient(135deg,#22D3EE,#3B82F6);color:#fff;font-size:15px;font-weight:800;cursor:pointer;transition:all .15s;margin:12px 0}
+.gw-enter-btn:hover{transform:scale(1.04);box-shadow:0 6px 24px rgba(34,211,238,0.2)}
+.gw-enter-btn:disabled{opacity:.4;cursor:default;transform:none;box-shadow:none}
+.gw-entered{display:inline-flex;align-items:center;gap:6px;padding:10px 24px;border-radius:12px;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.1);color:#4ade80;font-size:13px;font-weight:600;margin:12px 0}
+.gw-winner-box{display:inline-flex;align-items:center;gap:10px;padding:14px 28px;border-radius:14px;background:rgba(34,211,238,0.06);border:1px solid rgba(34,211,238,0.1);margin:12px 0}
+.gw-winner-avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#22D3EE,#3B82F6);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#fff}
+.gw-winner-name{font-size:16px;font-weight:700;color:#fff}
+.gw-winner-label{font-size:11px;color:#6b7280}
+.gw-ended{color:#6b7280;font-size:14px;margin:12px 0;line-height:1.5}
+.gw-ended-msg{padding:14px;border-radius:12px;background:rgba(107,114,128,0.06);border:1px solid var(--cborder);color:#9ca3af;font-size:13px;margin:12px 0}
+</style>
+{% endblock %}
+{% block content %}
+<div class="gw-wrap" id="gw-app">
+  <div class="gw-card">
+    <div id="gw-loading" style="padding:40px 0;color:#6b7280;font-size:14px;">Loading giveaway...</div>
+    <div id="gw-content" style="display:none;">
+      <div class="gw-icon">🎉</div>
+      <div class="gw-title" id="gw-title"></div>
+      <div class="gw-prize" id="gw-prize"></div>
+      <div class="gw-stats">
+        <div class="gw-stat"><div class="gw-label">Entries</div><div class="gw-count" id="gw-entries">0</div></div>
+        <div class="gw-stat"><div class="gw-label">Status</div><div class="gw-count" style="font-size:16px;" id="gw-status"></div></div>
+      </div>
+      <div class="gw-progress"><div class="gw-progress-fill" id="gw-progress"></div></div>
+      <div id="gw-timer-section">
+        <div class="gw-label">Ends In</div>
+        <div class="gw-timer" id="gw-timer">--:--:--</div>
+      </div>
+      <div id="gw-action-area"></div>
+      <div id="gw-ended-section" style="display:none;"></div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  var gwTimer = null;
+  var gwEntered = false;
+  function gws(t){return String(t||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;')}
+  function fmt(n){return n.toString().padStart(2,'0')}
+  function updateTimer(et){
+    var now=Math.floor(Date.now()/1000);var diff=Math.max(0,et-now);
+    var h=Math.floor(diff/3600);var m=Math.floor((diff%3600)/60);var s=diff%60;
+    document.getElementById('gw-timer').textContent=fmt(h)+':'+fmt(m)+':'+fmt(s);
+    if(diff<=0){clearInterval(gwTimer);gwTimer=null}
+  }
+  async function loadGw(){
+    try{
+      var r=await fetch('/api/giveaway');var d=await r.json();var gw=d.giveaway;
+      document.getElementById('gw-loading').style.display='none';
+      var c=document.getElementById('gw-content');c.style.display='block';
+      if(!gw){document.getElementById('gw-title').textContent='No Active Giveaway';document.getElementById('gw-prize').textContent='';document.getElementById('gw-entries').textContent='0';document.getElementById('gw-status').textContent='—';document.getElementById('gw-timer-section').style.display='none';document.getElementById('gw-action-area').innerHTML='<div class="gw-ended-msg">There is no giveaway running right now. Check back later!</div>';return}
+      document.getElementById('gw-title').textContent=gws(gw.title);
+      document.getElementById('gw-prize').textContent='$'+(gw.prize_cents/100).toFixed(2);
+      document.getElementById('gw-entries').textContent=gw.public_entries;
+      var st=document.getElementById('gw-status');
+      if(gw.status==='active'){st.textContent='Live';st.style.color='#4ade80'}
+      else if(gw.status==='paused'){st.textContent='Paused';st.style.color='#fbbf24'}
+      else{st.textContent='Ended';st.style.color='#6b7280'}
+      // Progress
+      if(gw.end_time&&gw.status!=='ended'){
+        var total=gw.end_time-(gw._created||Math.floor(Date.now()/1000)-86400);
+        var elapsed=gw.end_time-Math.floor(Date.now()/1000);
+        var pct=Math.min(100,Math.max(0,100-(elapsed/total*100)));
+        document.getElementById('gw-progress').style.width=pct+'%';
+        document.getElementById('gw-timer-section').style.display='block';
+        if(gwTimer)clearInterval(gwTimer);
+        updateTimer(gw.end_time);
+        gwTimer=setInterval(function(){updateTimer(gw.end_time)},1000);
+      }else{
+        document.getElementById('gw-timer-section').style.display='none';
+      }
+      // Action area
+      var aa=document.getElementById('gw-action-area');
+      if(gw.winner&&gw.winner_username){
+        aa.innerHTML='<div class="gw-winner-box"><div class="gw-winner-avatar">K</div><div><div class="gw-winner-label">Winner</div><div class="gw-winner-name">'+gws(gw.winner_username)+'</div></div></div>';
+        document.getElementById('gw-ended-section').style.display='block';
+      }else if(gw.status==='ended'){
+        aa.innerHTML='<div class="gw-ended">Giveaway ended with no eligible entries.</div>';
+        document.getElementById('gw-ended-section').style.display='block';
+      }else if(gw.status==='active'||gw.status==='paused'){
+        {% if logged_in %}
+        aa.innerHTML='<div id="gw-btn-area"><button class="gw-enter-btn" id="gw-enter-btn" onclick="enterGw()">Enter Giveaway</button></div>';
+        {% else %}
+        aa.innerHTML='<a href="/login" class="gw-enter-btn">Log in to Enter</a>';
+        {% endif %}
+      }
+    }catch(e){}
+  }
+  window.enterGw=async function(){
+    if(gwEntered)return;gwEntered=true;
+    var btn=document.getElementById('gw-enter-btn');if(btn){btn.textContent='Entering...';btn.disabled=true}
+    try{
+      var r=await fetch('/api/giveaway/enter',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+      var d=await r.json();
+      if(d.ok||d.already_entered){
+        document.getElementById('gw-btn-area').innerHTML='<div class="gw-entered">You have entered this giveaway!</div>';
+        if(d.ok)loadGw();
+      }else{
+        if(btn){btn.textContent='Enter Giveaway';btn.disabled=false;gwEntered=false}
+        if(d.already_entered){
+          document.getElementById('gw-btn-area').innerHTML='<div class="gw-entered">You have entered this giveaway!</div>';
+        }
+      }
+    }catch(e){if(btn){btn.textContent='Enter Giveaway';btn.disabled=false;gwEntered=false}}
+  };
+  loadGw();setInterval(loadGw,10000);
+})();
+</script>
+{% endblock %}

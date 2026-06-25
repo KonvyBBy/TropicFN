@@ -640,6 +640,36 @@ PENDING_TOPUPS_FILE = os.path.join(DATA_DIR, "pending_topups.json")
 # --- Topup notifications (approved topups shown to user) ---
 TOPUP_NOTIFICATIONS_FILE = os.path.join(DATA_DIR, "topup_notifications.json")
 
+# --- Giveaways ---
+GIVEAWAYS_FILE = os.path.join(DATA_DIR, "giveaways.json")
+
+def _load_giveaways() -> list:
+    if not os.path.exists(GIVEAWAYS_FILE):
+        return []
+    try:
+        with open(GIVEAWAYS_FILE, "r", encoding="utf-8") as f:
+            return json.load(f) or []
+    except Exception:
+        return []
+
+def _save_giveaways(giveaways: list) -> None:
+    with open(GIVEAWAYS_FILE, "w", encoding="utf-8") as f:
+        json.dump(giveaways, f, indent=2)
+
+def _get_active_giveaway() -> Optional[dict]:
+    gws = _load_giveaways()
+    for g in reversed(gws):
+        if g.get("status") in ("active", "paused"):
+            return g
+    return None
+
+def _pick_winner(entries: list) -> Optional[str]:
+    import random
+    real = [e for e in entries if not e.get("boost_only")]
+    if not real:
+        return None
+    return random.choice(real)["username"]
+
 # --- Customer news ---
 CUSTOMER_NEWS_FILE = os.path.join(DATA_DIR, "customer_news.json")
 
@@ -7916,6 +7946,225 @@ def api_admin_reviews_manage():
             _save_reviews(reviews)
             return jsonify({"ok": True, "reviews": reviews})
     return jsonify({"error": "Review not found"}), 404
+
+# ===================== GIVEAWAY =====================
+
+@app.route("/giveaway")
+def giveaway_page():
+    logged_in = "username" in session
+    username = session.get("username", "")
+    balance = f"{get_balance(username) / 100:.2f}" if logged_in else "0.00"
+    return render_template("giveaway.html", logged_in=logged_in, username=username, balance=balance, active_page="giveaway")
+
+
+@app.route("/api/giveaway", methods=["GET"])
+def api_giveaway_get():
+    gw = _get_active_giveaway()
+    if not gw:
+        gws = _load_giveaways()
+        last = gws[-1] if gws else None
+        if last:
+            return jsonify({"giveaway": {
+                "title": last.get("title", "Giveaway"),
+                "prize_cents": last.get("prize_cents", 0),
+                "status": last.get("status", "ended"),
+                "end_time": last.get("end_time", 0),
+                "winner": last.get("winner"),
+                "winner_username": last.get("winner_username"),
+                "real_entries": len([e for e in last.get("entries", []) if not e.get("boost_only")]),
+                "public_entries": last.get("public_display_count", len([e for e in last.get("entries", []) if not e.get("boost_only")])),
+            }})
+        return jsonify({"giveaway": None})
+    now_ts = int(time.time())
+    if gw.get("end_time") and now_ts >= gw["end_time"] and gw.get("status") == "active":
+        gw["status"] = "ended"
+        winner = _pick_winner(gw.get("entries", []))
+        if winner:
+            gw["winner"] = True
+            gw["winner_username"] = winner
+        gw["ended_at"] = now_ts
+        gws = _load_giveaways()
+        for g in gws:
+            if g.get("id") == gw.get("id"):
+                g.update(gw)
+        _save_giveaways(gws)
+    real_count = len([e for e in gw.get("entries", []) if not e.get("boost_only")])
+    base_public = gw.get("public_display_count", real_count)
+    # Dynamic boost calculation
+    boost_extra = 0
+    if gw.get("boost_enabled") and gw.get("boost_rate", 0) > 0 and gw.get("boost_started_at"):
+        elapsed = int(time.time()) - gw["boost_started_at"]
+        boost_extra = int(elapsed / 60.0 * gw["boost_rate"])
+    public_count = max(base_public + boost_extra, real_count)
+    return jsonify({"giveaway": {
+        "id": gw.get("id"),
+        "title": gw.get("title", "Giveaway"),
+        "prize_cents": gw.get("prize_cents", 0),
+        "status": gw.get("status"),
+        "end_time": gw.get("end_time", 0),
+        "winner": gw.get("winner", False),
+        "winner_username": gw.get("winner_username"),
+        "real_entries": real_count,
+        "public_entries": public_count,
+        "boost_enabled": gw.get("boost_enabled", False),
+        "boost_rate": gw.get("boost_rate", 0),
+    }})
+
+
+@app.route("/api/giveaway/enter", methods=["POST"])
+@login_required_api
+def api_giveaway_enter():
+    username = session["username"]
+    gw = _get_active_giveaway()
+    if not gw or gw.get("status") != "active":
+        return jsonify({"error": "No active giveaway"}), 400
+    gws = _load_giveaways()
+    for g in gws:
+        if g.get("id") == gw.get("id"):
+            gw = g
+            break
+    for e in gw.get("entries", []):
+        if e.get("username") == username and not e.get("boost_only"):
+            return jsonify({"error": "Already entered", "already_entered": True}), 400
+    if gw.get("end_time") and int(time.time()) >= gw["end_time"]:
+        return jsonify({"error": "Giveaway has ended"}), 400
+    if "entries" not in gw:
+        gw["entries"] = []
+    gw["entries"].append({"username": username, "boost_only": False, "entered_at": int(time.time())})
+    real_count = len([e for e in gw["entries"] if not e.get("boost_only")])
+    if gw.get("public_display_count", 0) < real_count:
+        gw["public_display_count"] = real_count
+    _save_giveaways(gws)
+    _push_activity("giveaway_enter", username)
+    return jsonify({"ok": True, "message": "You have entered this giveaway!"})
+
+
+@app.route("/api/admin/giveaway", methods=["GET", "POST"])
+def api_admin_giveaway():
+    if not is_admin_user(session.get("username", "")):
+        return jsonify({"error": "Unauthorized"}), 403
+    if request.method == "GET":
+        gws = _load_giveaways()
+        return jsonify({"giveaways": gws})
+    data = request.json or {}
+    action = data.get("action")
+
+    if action == "create":
+        title = (data.get("title") or "").strip()
+        prize_cents = int(float(data.get("prize_cents", 0)))
+        end_hours = float(data.get("end_hours", 24))
+        if not title or prize_cents <= 0:
+            return jsonify({"error": "Title and prize amount required"}), 400
+        end_time = int(time.time()) + int(end_hours * 3600)
+        gw = {
+            "id": f"gw_{secrets.token_hex(6)}",
+            "title": title,
+            "prize_cents": prize_cents,
+            "status": "active",
+            "created_at": int(time.time()),
+            "end_time": end_time,
+            "ended_at": 0,
+            "entries": [],
+            "public_display_count": 0,
+            "boost_enabled": False,
+            "boost_rate": 0,
+            "boost_started_at": 0,
+            "winner": False,
+            "winner_username": None,
+        }
+        gws = _load_giveaways()
+        gws.append(gw)
+        _save_giveaways(gws)
+        return jsonify({"ok": True, "giveaway": gw})
+
+    elif action == "pause":
+        gw = _get_active_giveaway()
+        if not gw:
+            return jsonify({"error": "No active giveaway"}), 400
+        gws = _load_giveaways()
+        for g in gws:
+            if g.get("id") == gw.get("id"):
+                g["status"] = "paused"
+                g["boost_enabled"] = False
+        _save_giveaways(gws)
+        return jsonify({"ok": True, "message": "Giveaway paused"})
+
+    elif action == "resume":
+        gws = _load_giveaways()
+        for g in gws:
+            if g.get("status") == "paused":
+                g["status"] = "active"
+        _save_giveaways(gws)
+        return jsonify({"ok": True, "message": "Giveaway resumed"})
+
+    elif action == "end":
+        gw = _get_active_giveaway()
+        if not gw:
+            return jsonify({"error": "No active giveaway"}), 400
+        gws = _load_giveaways()
+        for g in gws:
+            if g.get("id") == gw.get("id"):
+                g["status"] = "ended"
+                g["ended_at"] = int(time.time())
+                g["boost_enabled"] = False
+                winner = _pick_winner(g.get("entries", []))
+                if winner:
+                    g["winner"] = True
+                    g["winner_username"] = winner
+        _save_giveaways(gws)
+        return jsonify({"ok": True, "message": "Giveaway ended"})
+
+    elif action == "roll_winner":
+        gws = _load_giveaways()
+        gw_id = data.get("id")
+        gw = None
+        for g in gws:
+            if g.get("id") == gw_id:
+                gw = g
+                break
+        if not gw:
+            return jsonify({"error": "Giveaway not found"}), 404
+        winner = _pick_winner(gw.get("entries", []))
+        if not winner:
+            return jsonify({"error": "No real entries found"}), 400
+        gw["winner"] = True
+        gw["winner_username"] = winner
+        gw["status"] = "ended"
+        _save_giveaways(gws)
+        return jsonify({"ok": True, "winner": winner})
+
+    elif action == "boost":
+        gws = _load_giveaways()
+        gw_id = data.get("id")
+        gw = None
+        for g in gws:
+            if g.get("id") == gw_id:
+                gw = g
+                break
+        if not gw:
+            return jsonify({"error": "Giveaway not found"}), 404
+        boost_enabled = data.get("boost_enabled", False)
+        boost_rate = int(data.get("boost_rate", 0))
+        gw["boost_enabled"] = boost_enabled
+        gw["boost_rate"] = boost_rate
+        if boost_enabled and not gw.get("boost_started_at"):
+            gw["boost_started_at"] = int(time.time())
+        elif not boost_enabled:
+            gw["boost_started_at"] = 0
+        _save_giveaways(gws)
+        return jsonify({"ok": True, "message": "Boost updated"})
+
+    elif action == "reset_boost":
+        gws = _load_giveaways()
+        for g in gws:
+            if g.get("status") in ("active", "paused"):
+                g["public_display_count"] = len([e for e in g.get("entries", []) if not e.get("boost_only")])
+                g["boost_started_at"] = 0
+        _save_giveaways(gws)
+        return jsonify({"ok": True, "message": "Boost reset"})
+
+    return jsonify({"error": "Unknown action"}), 400
+
 
 # ===================== ACTIVITY FEED =====================
 

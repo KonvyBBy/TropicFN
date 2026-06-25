@@ -159,7 +159,8 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--tex
     <button class="sb-item" data-page="blacklist"><i class="ri-forbid-2-line"></i>Blacklist</button>
     <button class="sb-item" data-page="discounts"><i class="ri-percent-line"></i>Discounts</button>
     <button class="sb-item" data-page="referrals"><i class="ri-link-m"></i>Referrals</button>
-    <button class="sb-item" data-page="loyalty"><i class="ri-trophy-line"></i>Loyalty</button>
+    <button class="sb-item" data-page="giveaway"><i class="ri-gift-2-line"></i>Giveaway</button>
+<button class="sb-item" data-page="loyalty"><i class="ri-trophy-line"></i>Loyalty</button>
     <button class="sb-item" data-page="reviews"><i class="ri-star-s-line"></i>Reviews</button>
     <button class="sb-item" data-page="fakereviews"><i class="ri-magic-line"></i>Fake Reviews</button>
     <div class="sb-grp">System</div>
@@ -327,6 +328,47 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--tex
   </div>
 </div>
 
+<!-- ==================== GIVEAWAY ==================== -->
+<div class="page" id="page-giveaway">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="set-card" style="margin:0;">
+      <h3>Create Giveaway</h3>
+      <div class="set-row"><label>Title</label><input id="gw-title" type="text" placeholder="Summer Giveaway" style="flex:1;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:#fff;font-size:12px;outline:none;"></div>
+      <div class="set-row"><label>Prize ($)</label><input id="gw-prize" type="number" min="1" value="100" style="flex:1;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:#fff;font-size:12px;outline:none;max-width:120px;"></div>
+      <div class="set-row"><label>Duration (hours)</label><input id="gw-hours" type="number" min="1" value="48" style="flex:1;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:#fff;font-size:12px;outline:none;max-width:100px;"></div>
+      <div class="set-row"><button class="btn-sv" onclick="gwCreate()">Start Giveaway</button><span id="gw-create-st" style="font-size:11px;color:var(--muted);"></span></div>
+    </div>
+    <div class="set-card" style="margin:0;">
+      <h3>Public Entry Boost</h3>
+      <p style="font-size:11px;color:var(--muted);margin:0 0 10px;">Only changes the public number. Does not affect real entries or winner selection.</p>
+      <div class="set-row"><label>Rate (per min)</label><input id="gw-boost-rate" type="number" min="0" value="10" style="flex:1;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:#fff;font-size:12px;outline:none;max-width:80px;"></div>
+      <div class="set-row" style="gap:4px;">
+        <button class="btn-sv" onclick="gwBoost(true)" style="background:rgba(34,197,94,0.1);color:#4ade80;">Start Boost</button>
+        <button class="btn-sv" onclick="gwBoost(false)" style="background:rgba(239,68,68,0.1);color:#f87171;">Stop Boost</button>
+        <button class="btn-sv" onclick="gwResetBoost()">Reset Count</button>
+        <span id="gw-boost-st" style="font-size:11px;color:var(--muted);"></span>
+      </div>
+    </div>
+  </div>
+  <div class="set-card" style="margin-top:12px;">
+    <h3>Current Giveaway <span id="gw-state" style="font-weight:400;font-size:11px;color:var(--muted);"></span></h3>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin:10px 0;">
+      <div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Real Entries</div><div style="font-size:20px;font-weight:800;color:#fff;" id="gw-real">0</div></div>
+      <div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Public Display</div><div style="font-size:20px;font-weight:800;color:#fff;" id="gw-public">0</div></div>
+      <div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Status</div><div style="font-size:14px;font-weight:700;" id="gw-status">—</div></div>
+      <div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Winner</div><div style="font-size:14px;font-weight:700;color:#4ade80;" id="gw-winner">—</div></div>
+    </div>
+    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px;">
+      <button class="btn-sv" onclick="gwPause()" style="background:rgba(234,179,8,0.1);color:#fbbf24;">Pause</button>
+      <button class="btn-sv" onclick="gwResume()" style="background:rgba(34,197,94,0.1);color:#4ade80;">Resume</button>
+      <button class="btn-sv" onclick="gwEnd()" style="background:rgba(239,68,68,0.1);color:#f87171;">End Now</button>
+      <button class="btn-sv" onclick="gwRoll()" style="background:rgba(124,92,255,0.1);color:#a78bfa;">Roll Winner</button>
+    </div>
+    <div><div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Entries</div><div id="gw-entries-list" style="font-size:11px;color:#d4d4d8;max-height:100px;overflow-y:auto;"></div></div>
+    <span id="gw-act-st" style="font-size:11px;color:var(--muted);margin-top:6px;display:block;"></span>
+  </div>
+</div>
+
 <!-- ==================== ANALYTICS ==================== -->
 <div class="page" id="page-analytics" style="overflow:hidden;">
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;">
@@ -408,6 +450,7 @@ function switchPage(name){
   if(name==='analytics')loadAnalytics();
   if(name==='reviews')loadAdminReviews();
   if(name==='fakereviews')loadFakeReviewsCfg();
+  if(name==='giveaway')loadGiveaway();
 }
 document.querySelectorAll('.sb-item').forEach(b=>b.addEventListener('click',()=>switchPage(b.dataset.page)));
 
@@ -665,6 +708,78 @@ async function loadAnalytics(){
     chartOrders=new Chart(ctx2,{type:'bar',data:{labels:Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);return d.toLocaleDateString([],{weekday:'short'})}),datasets:[{label:'Orders',data:Array.from({length:7},()=>Math.floor(Math.random()*20+2)),backgroundColor:'rgba(124,92,255,0.4)',borderColor:'#7C5CFF',borderWidth:1,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:'#6b7280',font:{size:10}}},y:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'#6b7280',font:{size:10}}}}}});
   }
 }
+
+// ===================== GIVEAWAY =====================
+var gwPollTimer = null;
+async function loadGiveaway(){
+  const r=await api('/api/admin/giveaway');const gws=Array.isArray(r.giveaways)?r.giveaways:[];
+  var active=null;for(var i=gws.length-1;i>=0;i--){if(gws[i].status==='active'||gws[i].status==='paused'){active=gws[i];break}}
+  if(!active&&gws.length>0){active=gws[gws.length-1]}
+  var st=document.getElementById('gw-status');
+  if(!active){
+    st.textContent='No giveaway';st.style.color='var(--muted)';
+    document.getElementById('gw-real').textContent='0';document.getElementById('gw-public').textContent='0';
+    document.getElementById('gw-winner').textContent='—';document.getElementById('gw-state').textContent='';
+    document.getElementById('gw-entries-list').textContent='No entries';
+    return;
+  }
+  var real=active.entries?active.entries.filter(function(e){return !e.boost_only}).length:0;
+  document.getElementById('gw-real').textContent=real;
+  document.getElementById('gw-public').textContent=active.public_display_count||real;
+  if(active.status==='active'){st.textContent='Live';st.style.color='#4ade80'}
+  else if(active.status==='paused'){st.textContent='Paused';st.style.color='#fbbf24'}
+  else{st.textContent='Ended';st.style.color='var(--muted)'}
+  document.getElementById('gw-state').textContent='— '+escapeHtml(active.title||'')+(active.end_time?' ends '+fd(active.end_time):'');
+  document.getElementById('gw-winner').textContent=active.winner_username||'—';
+  var el=document.getElementById('gw-entries-list');
+  var entries=active.entries?active.entries.filter(function(e){return !e.boost_only}):[];
+  if(entries.length){el.innerHTML=entries.map(function(e){return '<span style="margin-right:8px;color:#d4d4d8;">'+escapeHtml(e.username)+'</span>'}).join('')}
+  else{el.innerHTML='<span style="color:var(--muted);">No entries</span>'}
+}
+async function gwCreate(){
+  var title=document.getElementById('gw-title').value.trim();if(!title){adToast('Title required',true);return}
+  var prize=parseFloat(document.getElementById('gw-prize').value)||0;if(prize<=0){adToast('Prize amount required',true);return}
+  var hours=parseFloat(document.getElementById('gw-hours').value)||24;
+  var st=document.getElementById('gw-create-st');st.textContent='Starting...';
+  var r=await api('/api/admin/giveaway',{action:'create',title:title,prize_cents:Math.round(prize*100),end_hours:hours});
+  if(r.ok){adToast('Giveaway started!');st.textContent='';loadGiveaway()}
+  else{st.textContent=r.error||'Error';adToast(r.error||'Error',true)}
+}
+async function gwPause(){
+  var r=await api('/api/admin/giveaway',{action:'pause'});
+  if(r.ok){adToast('Paused');loadGiveaway()}else adToast(r.error||'Error',true);
+}
+async function gwResume(){
+  var r=await api('/api/admin/giveaway',{action:'resume'});
+  if(r.ok){adToast('Resumed');loadGiveaway()}else adToast(r.error||'Error',true);
+}
+async function gwEnd(){
+  if(!confirm('End the current giveaway?'))return;
+  var r=await api('/api/admin/giveaway',{action:'end'});
+  if(r.ok){adToast('Ended');loadGiveaway()}else adToast(r.error||'Error',true);
+}
+async function gwRoll(){
+  var r=await api('/api/admin/giveaway');var gws=Array.isArray(r.giveaways)?r.giveaways:[];
+  var active=null;for(var i=gws.length-1;i>=0;i--){if(gws[i].status==='active'||gws[i].status==='paused'){active=gws[i];break}}
+  if(!active){adToast('No active giveaway',true);return}
+  if(!confirm('Roll winner for '+escapeHtml(active.title)+'?'))return;
+  var r2=await api('/api/admin/giveaway',{action:'roll_winner',id:active.id});
+  if(r2.ok){adToast('Winner: '+r2.winner);loadGiveaway()}else adToast(r2.error||'Error',true);
+}
+async function gwBoost(start){
+  var r=await api('/api/admin/giveaway');var gws=Array.isArray(r.giveaways)?r.giveaways:[];
+  var active=null;for(var i=gws.length-1;i>=0;i--){if(gws[i].status==='active'||gws[i].status==='paused'){active=gws[i];break}}
+  if(!active){adToast('No active giveaway',true);return}
+  var rate=parseInt(document.getElementById('gw-boost-rate').value)||10;
+  var r2=await api('/api/admin/giveaway',{action:'boost',id:active.id,boost_enabled:start,boost_rate:rate});
+  if(r2.ok){adToast(start?'Boost started':'Boost stopped');loadGiveaway()}else adToast(r2.error||'Error',true);
+}
+async function gwResetBoost(){
+  var r=await api('/api/admin/giveaway',{action:'reset_boost'});
+  if(r.ok){adToast('Boost reset');loadGiveaway()}else adToast(r.error||'Error',true);
+}
+if(typeof gwPollTimer!=='undefined'&&gwPollTimer)clearInterval(gwPollTimer);
+gwPollTimer=setInterval(loadGiveaway,10000);
 
 // ===================== REVIEWS =====================
 let adminReviews = [];
