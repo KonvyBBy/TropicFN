@@ -1755,6 +1755,7 @@ def _new_ticket_message(author_type: str, author: str, message: str, attachments
         "message": message,
         "attachments": attachments or [],
         "timestamp": int(time.time()),
+        "read_at": None,
     }
 
 
@@ -6521,6 +6522,29 @@ def api_support_ticket_notes(ticket_id: str):
     })
     _save_support_tickets(_sort_support_tickets(tickets))
     return jsonify({"ok": True, "notes": notes})
+
+
+@app.route("/api/support/tickets/<ticket_id>/read", methods=["POST"])
+@login_required_api
+def api_support_ticket_read(ticket_id: str):
+    username = session["username"]
+    tickets = _load_support_tickets()
+    ticket = _find_ticket(tickets, ticket_id)
+    if not ticket:
+        return jsonify({"error": "Ticket not found"}), 404
+    if ticket.get("username") != username:
+        if not is_admin_user(username):
+            return jsonify({"error": "Not your ticket"}), 403
+    now = int(time.time())
+    changed = False
+    for msg in ticket.get("messages", []):
+        if msg.get("author_type") == "admin" and not msg.get("read_at"):
+            msg["read_at"] = now
+            changed = True
+    if changed:
+        _save_support_tickets(_sort_support_tickets(tickets))
+    return jsonify({"ok": True})
+
 
 @app.route("/api/support/user-info/<username>")
 @login_required_api
