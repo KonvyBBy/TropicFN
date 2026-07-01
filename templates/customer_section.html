@@ -221,14 +221,129 @@
   </div>
 
   <div id="section-secure" style="display:none;">
-    <h2 style="font-size:17px;font-weight:700;color:#fff;margin:0 0 4px;">Secure Your Account</h2>
-    <p style="font-size:12px;color:#6b7280;margin:0 0 14px;">Follow these steps to secure your purchased account.</p>
+    <div style="background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.15);border-radius:14px;padding:16px 18px;margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:700;color:#fbbf24;margin-bottom:4px;">🔐 Important Security Notice</div>
+      <div style="font-size:12px;color:#d4d4d8;line-height:1.6;">
+        <strong>@everyone</strong><br><br>
+        To help keep your account secure, please follow this recovery request process.<br><br>
+        The goal is <strong>NOT</strong> to change the email — this is simply a periodic security check.
+      </div>
+    </div>
     <div id="warranty-container"></div>
     <div id="sec-steps">
-      <div class="sec-step" id="sec-1"><div style="display:flex;align-items:center;"><span class="s-num pending">1</span><div><div style="font-size:13px;font-weight:600;color:#e4e4e7;">Change the Email</div><div style="font-size:11px;color:#6b7280;margin-top:2px;line-height:1.5;">Go to the email provider and change the recovery email and phone number to your own. This prevents the original owner from recovering the account.</div></div></div><div style="margin-top:8px;padding-left:38px;"><button class="btn-sec" onclick="secDone(1)" style="padding:6px 16px;font-size:11px;">Mark Done</button></div></div>
-      <div class="sec-step" id="sec-2"><div style="display:flex;align-items:center;"><span class="s-num pending">2</span><div><div style="font-size:13px;font-weight:600;color:#e4e4e7;">Change the Password</div><div style="font-size:11px;color:#6b7280;margin-top:2px;line-height:1.5;">Log into the Epic Games account and change the password to a strong, unique password. Enable 2FA for extra security.</div></div></div><div style="margin-top:8px;padding-left:38px;"><button class="btn-sec" onclick="secDone(2)" style="padding:6px 16px;font-size:11px;">Mark Done</button></div></div>
-      <div class="sec-step" id="sec-3"><div style="display:flex;align-items:center;"><span class="s-num pending">3</span><div><div style="font-size:13px;font-weight:600;color:#e4e4e7;">Link Your Own Accounts</div><div style="font-size:11px;color:#6b7280;margin-top:2px;line-height:1.5;">Link your own Xbox, PlayStation, or Nintendo account to the Epic account. This makes it much harder to reclaim.</div></div></div><div style="margin-top:8px;padding-left:38px;"><button class="btn-sec" onclick="secDone(3)" style="padding:6px 16px;font-size:11px;">Mark Done</button></div></div>
-      <div class="sec-step" id="sec-4"><div style="display:flex;align-items:center;"><span class="s-num pending">4</span><div><div style="font-size:13px;font-weight:600;color:#e4e4e7;">Save All Login Info</div><div style="font-size:11px;color:#6b7280;margin-top:2px;line-height:1.5;">Save the email, password, and any backup codes in a safe place. We recommend a password manager.</div></div></div><div style="margin-top:8px;padding-left:38px;"><button class="btn-sec" onclick="secDone(4)" style="padding:6px 16px;font-size:11px;">Mark Done</button></div></div>
+      <div class="sec-step" id="sec-1">
+        <div style="display:flex;align-items:flex-start;">
+          <span class="s-num pending">1</span>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:700;color:#e4e4e7;">✅ Update Email Address</div>
+            <div style="font-size:12px;color:#9ca3af;margin-top:4px;line-height:1.6;">
+              Go to: <a href="https://www.epicgames.com/help/wizards/w6?s=0" target="_blank" rel="noopener" style="color:var(--neon-cyan);">https://www.epicgames.com/help/wizards/w6?s=0</a><br>
+              Select <strong>Update Email Address</strong><br>
+              Use a new email you create yourself.
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:10px;padding-left:38px;"><button class="btn-sec" onclick="secDone(1)" style="padding:6px 18px;font-size:11px;">Mark Done</button></div>
+      </div>
+      <div class="sec-step" id="sec-2">
+        <div style="display:flex;align-items:flex-start;">
+          <span class="s-num pending">2</span>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:700;color:#e4e4e7;">✅ Find Account</div>
+            <div style="font-size:12px;color:#9ca3af;margin-top:4px;line-height:1.6;">
+              Choose <strong>Find account using email address</strong><br>
+              Enter the most recently used email connected to the account you purchased.
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:10px;padding-left:38px;"><button class="btn-sec" onclick="secDone(2)" style="padding:6px 18px;font-size:11px;">Mark Done</button></div>
+      </div>
+      <div class="sec-step" id="sec-3">
+        <div style="display:flex;align-items:flex-start;">
+          <span class="s-num pending">3</span>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:700;color:#e4e4e7;">✅ Email Change Question</div>
+            <div style="font-size:12px;color:#9ca3af;margin-top:4px;line-height:1.6;">
+              When asked: <em>Have you ever changed your account email address?</em><br>
+              Select <strong>No</strong> or <strong>Not Sure</strong><br><br>
+              After entering the code, choose <strong>No One / Not Sure</strong> again if prompted.
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:10px;padding-left:38px;"><button class="btn-sec" onclick="secDone(3)" style="padding:6px 18px;font-size:11px;">Mark Done</button></div>
+      </div>
+      <div class="sec-step" id="sec-4">
+        <div style="display:flex;align-items:flex-start;">
+          <span class="s-num pending">4</span>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:700;color:#e4e4e7;">✅ Name & Location</div>
+            <div style="font-size:12px;color:#9ca3af;margin-top:4px;line-height:1.6;">
+              Enter basic info such as:<br>
+              <strong>Name:</strong> John Jones (or any name)<br>
+              <strong>Location:</strong> Your current location
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:10px;padding-left:38px;"><button class="btn-sec" onclick="secDone(4)" style="padding:6px 18px;font-size:11px;">Mark Done</button></div>
+      </div>
+      <div class="sec-step" id="sec-5">
+        <div style="display:flex;align-items:flex-start;">
+          <span class="s-num pending">5</span>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:700;color:#e4e4e7;">✅ Connected Accounts</div>
+            <div style="font-size:12px;color:#9ca3af;margin-top:4px;line-height:1.6;">
+              Select <strong>No</strong> or <strong>Not Sure</strong>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:10px;padding-left:38px;"><button class="btn-sec" onclick="secDone(5)" style="padding:6px 18px;font-size:11px;">Mark Done</button></div>
+      </div>
+      <div class="sec-step" id="sec-6">
+        <div style="display:flex;align-items:flex-start;">
+          <span class="s-num pending">6</span>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:700;color:#e4e4e7;">✅ Payment Information</div>
+            <div style="font-size:12px;color:#9ca3af;margin-top:4px;line-height:1.6;">
+              Select <strong>No</strong> or <strong>Not Sure</strong>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:10px;padding-left:38px;"><button class="btn-sec" onclick="secDone(6)" style="padding:6px 18px;font-size:11px;">Mark Done</button></div>
+      </div>
+      <div class="sec-step" id="sec-7">
+        <div style="display:flex;align-items:flex-start;">
+          <span class="s-num pending">7</span>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:700;color:#e4e4e7;">✅ Reason & Submit</div>
+            <div style="font-size:12px;color:#9ca3af;margin-top:4px;line-height:1.6;">
+              Choose: <strong>I lost access to my email</strong><br>
+              Then submit the request.
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:10px;padding-left:38px;"><button class="btn-sec" onclick="secDone(7)" style="padding:6px 18px;font-size:11px;">Mark Done</button></div>
+      </div>
+    </div>
+    <div style="background:rgba(239,68,68,0.04);border:1px solid rgba(239,68,68,0.1);border-radius:14px;padding:16px 18px;margin-top:14px;">
+      <div style="font-size:13px;font-weight:700;color:#f87171;margin-bottom:8px;">📌 IMPORTANT</div>
+      <div style="font-size:12px;color:#d4d4d8;line-height:1.7;">
+        1. Do <strong>NOT</strong> try to force an email change.<br>
+        2. Simply submit a recovery request.<br>
+        3. Submit a new request every time they email you back that it has been denied.<br>
+        4. Record the date each time you submit it.<br><br>
+        This helps maintain account security over time.
+      </div>
+    </div>
+    <div style="background:rgba(34,211,238,0.03);border:1px solid rgba(34,211,238,0.08);border-radius:14px;padding:16px 18px;margin-top:14px;">
+      <div style="font-size:13px;font-weight:700;color:var(--neon-cyan);margin-bottom:6px;">Change Your Rambler Email Password</div>
+      <div style="font-size:12px;color:#d4d4d8;line-height:1.7;">
+        If your account uses a Rambler.ru email, you should also update that email password for added security.<br><br>
+        1. Go to <a href="https://id.rambler.ru/" target="_blank" rel="noopener" style="color:var(--neon-cyan);">https://id.rambler.ru/</a><br>
+        2. Log in with your Rambler email and current password<br>
+        3. Navigate to Settings / Account Settings<br>
+        4. Select Change Password and set a strong new password<br>
+        Use a unique password you do not use anywhere else.
+      </div>
     </div>
   </div>
 </div>
@@ -249,13 +364,15 @@ function switchSectionTab(tab, btn) {
 }
 function secDone(num){
   var step=document.getElementById('sec-'+num);
+  if(!step)return;
   step.classList.add('done');
   step.querySelector('.s-num').classList.remove('pending');
   step.querySelector('.s-num').classList.add('done');
   step.querySelector('.btn-sec').textContent='✅ Done';
   step.querySelector('.btn-sec').disabled=true;
-  var steps=[1,2,3,4];var all=steps.every(function(n){return document.getElementById('sec-'+n).classList.contains('done')});
-  if(all)showToast('✅ All security steps completed!','');
+  var allDone=true;
+  for(var i=1;i<=7;i++){var s=document.getElementById('sec-'+i);if(s&&!s.classList.contains('done')){allDone=false;break}}
+  if(allDone)showToast('✅ All security steps completed!','');
 }
 function loadWarranty(){
   var container=document.getElementById('warranty-container');
