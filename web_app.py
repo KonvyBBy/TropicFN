@@ -7120,6 +7120,29 @@ def api_release_purchase_lock():
     return jsonify({"message": "No active purchase lock for this item."})
 
 
+@app.route("/api/delivery-request", methods=["POST"])
+@login_required_api
+def api_delivery_request():
+    data = request.json or {}
+    item_id = data.get("item_id")
+    title = (data.get("title") or "").strip()
+    discord = (data.get("discord") or "").strip()
+    username = session.get("username", "Unknown")
+    webhook_url = "https://discord.com/api/webhooks/1522000360896725127/1_S1WDikIq5v9jssfdZnkYmdXpVeH_cz2M5mCYTyLL7b5P6g03wGtTKXUflk6xs8RVnP"
+    payload = {
+        "content": f"@everyone **Manual Delivery Request**\n👤 User: **{username}**\n🆔 Account ID: #{item_id}\n📛 Title: {title}\n💬 Discord: {discord}\n\nThis user has requested manual delivery. Please contact them in Discord to complete the delivery.",
+        "username": "Konvy Delivery",
+        "avatar_url": "https://konvy.vip/static/konvy-logo.png",
+    }
+    try:
+        import requests as http_requests
+        r = http_requests.post(webhook_url, json=payload, timeout=10)
+        app.logger.info("Delivery webhook sent: %s", r.status_code)
+    except Exception as e:
+        app.logger.warning("Delivery webhook failed: %s", e)
+    return jsonify({"ok": True})
+
+
 @app.route("/api/fortnite/my-accounts", methods=["POST"])
 @login_required_api
 def api_fortnite_my_accounts():

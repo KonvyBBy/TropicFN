@@ -585,11 +585,12 @@
 
 </div>
 
-<!-- Purchase Modal -->
+<!-- Purchase Modal Step 1 -->
 <div id="instant-buy-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 p-4">
   <div class="w-full max-w-md rounded-2xl border border-white/10 bg-dark-800 p-5 shadow-2xl">
     <h3 class="font-space text-lg font-semibold text-white">Confirm Purchase</h3>
     <p class="mt-2 text-sm text-zinc-300">By purchasing this account you agree to our <a href="/terms" target="_blank" rel="noopener noreferrer" class="text-cyan-400 hover:text-cyan-300">Terms of Service</a>.</p>
+    <p class="mt-2 text-xs text-amber-400 font-semibold">🎥 Start recording your screen now — record the entire purchase process for your protection.</p>
     <label class="mt-4 flex cursor-pointer items-start gap-2 text-sm text-zinc-200">
       <input id="instant-buy-tos-check" type="checkbox" class="mt-0.5 h-4 w-4 rounded border-zinc-600 bg-zinc-900 text-cyan-500 focus:ring-cyan-500">
       <span>I agree with the Terms of Service</span>
@@ -598,6 +599,44 @@
       <button id="instant-buy-cancel-btn" type="button" class="btn-ghost flex-1 h-11 text-sm">Cancel</button>
       <button id="instant-buy-confirm-btn" type="button" disabled class="btn-primary flex-1 h-11 text-sm disabled:opacity-50 disabled:cursor-not-allowed">Confirm Purchase</button>
     </div>
+  </div>
+</div>
+
+<!-- Delivery Method Modal -->
+<div id="delivery-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 p-4">
+  <div class="w-full max-w-lg rounded-2xl border border-white/10 bg-dark-800 p-5 shadow-2xl" style="max-height:90vh;overflow-y:auto;">
+    <h3 class="font-space text-lg font-semibold text-white">Choose Delivery Method</h3>
+    <p class="mt-1 text-sm text-zinc-400">Select how you want to receive this account.</p>
+
+    <div class="mt-4 flex gap-3">
+      <div id="delivery-auto" class="flex-1 cursor-pointer rounded-xl border-2 p-4 transition-all" style="border-color:rgba(255,255,255,0.08);background:rgba(255,255,255,0.02);" onclick="selectDelivery('auto')">
+        <div style="font-size:13px;font-weight:700;color:#fff;">🤖 Automatic</div>
+        <div style="font-size:11px;color:#6b7280;margin-top:4px;line-height:1.5;">Instant delivery to your account. Warranty covers <strong style="color:#f87171;">pullbacks only</strong>, not invalid on purchase.</div>
+      </div>
+      <div id="delivery-manual" class="flex-1 cursor-pointer rounded-xl border-2 p-4 transition-all" style="border-color:rgba(255,255,255,0.08);background:rgba(255,255,255,0.02);" onclick="selectDelivery('manual')">
+        <div style="font-size:13px;font-weight:700;color:#fff;">👤 Manual</div>
+        <div style="font-size:11px;color:#6b7280;margin-top:4px;line-height:1.5;">Delivery via Discord DMs from <strong style="color:var(--neon-cyan);">Ec0nmics</strong>. Warranty covers <strong style="color:#4ade80;">pullbacks and invalid on purchase</strong>.</div>
+      </div>
+    </div>
+
+    <div id="delivery-manual-form" style="display:none;margin-top:12px;">
+      <div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.12);border-radius:10px;padding:10px 12px;margin-bottom:10px;">
+        <div style="font-size:12px;color:#f87171;font-weight:600;">⚠️ This choice is permanent. The account will be delivered to you manually via Discord. You may need to wait until Ec0nmics is online.</div>
+      </div>
+      <div style="background:rgba(34,211,238,0.04);border:1px solid rgba(34,211,238,0.08);border-radius:10px;padding:10px 12px;margin-bottom:10px;">
+        <div style="font-size:11px;color:#d4d4d8;line-height:1.5;">Make sure you are in the Discord server: <a href="https://discord.gg/fullaccess" target="_blank" rel="noopener" style="color:var(--neon-cyan);font-weight:600;">discord.gg/fullaccess</a></div>
+      </div>
+      <div>
+        <label style="font-size:11px;color:#6b7280;display:block;margin-bottom:4px;">Discord Username</label>
+        <input id="delivery-discord-user" type="text" placeholder="e.g. username#0000" style="width:100%;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);color:#fff;font-size:13px;outline:none;box-sizing:border-box;">
+      </div>
+    </div>
+
+    <div class="mt-5 flex gap-2">
+      <button id="delivery-back-btn" type="button" class="btn-ghost flex-1 h-11 text-sm" onclick="closeDeliveryModal()">Back</button>
+      <button id="delivery-confirm-btn" type="button" disabled class="btn-primary flex-1 h-11 text-sm disabled:opacity-50 disabled:cursor-not-allowed">Confirm & Purchase</button>
+    </div>
+    <span id="delivery-status" style="font-size:11px;color:#6b7280;margin-top:6px;display:block;text-align:center;"></span>
   </div>
 </div>
 {% endblock %}
@@ -784,6 +823,26 @@
       const userBalance = parseFloat('{{ balance|default("0") }}');
       const itemPrice = parseFloat(detail.price || 0);
 
+      var selectedDelivery = '';
+      var selectedDiscord = '';
+
+      function selectDelivery(type) {
+        selectedDelivery = type;
+        document.getElementById('delivery-auto').style.borderColor = type === 'auto' ? 'var(--neon-cyan)' : 'rgba(255,255,255,0.08)';
+        document.getElementById('delivery-manual').style.borderColor = type === 'manual' ? 'var(--neon-cyan)' : 'rgba(255,255,255,0.08)';
+        document.getElementById('delivery-auto').style.background = type === 'auto' ? 'rgba(34,211,238,0.04)' : 'rgba(255,255,255,0.02)';
+        document.getElementById('delivery-manual').style.background = type === 'manual' ? 'rgba(34,211,238,0.04)' : 'rgba(255,255,255,0.02)';
+        document.getElementById('delivery-manual-form').style.display = type === 'manual' ? 'block' : 'none';
+        document.getElementById('delivery-confirm-btn').disabled = false;
+      }
+
+      function closeDeliveryModal() {
+        document.getElementById('delivery-modal').classList.add('hidden');
+        document.getElementById('delivery-modal').classList.remove('flex');
+        selectedDelivery = '';
+        selectedDiscord = '';
+      }
+
       function startBuy() {
         if (inFlight) return;
         const itemId = Number(detail.item_id || 0);
@@ -792,6 +851,13 @@
         const title = String(detail.title || '').trim();
         const params = new URLSearchParams({ item_id: String(itemId) });
         if (title) params.set('title', title);
+        if (selectedDelivery === 'manual') {
+          params.set('delivery', 'manual');
+          var du = document.getElementById('delivery-discord-user').value.trim();
+          if (du) params.set('discord', du);
+          // Send Discord webhook for manual request
+          fetch('/api/delivery-request', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({item_id:itemId, title:title, discord:du, username:'{{ username }}'}) }).catch(function(){});
+        }
         window.location.href = `/purchase-processing?${params.toString()}`;
       }
 
@@ -812,9 +878,37 @@
         cancelBtn.addEventListener('click', closeModal);
         modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
         tosCheck.addEventListener('change', () => { confirmBtn.disabled = !tosCheck.checked; });
-        confirmBtn.addEventListener('click', () => { if (!tosCheck.checked) return; closeModal(); startBuy(); });
+        confirmBtn.addEventListener('click', () => {
+          if (!tosCheck.checked) return;
+          closeModal();
+          selectedDelivery = '';
+          document.getElementById('delivery-auto').style.borderColor = 'rgba(255,255,255,0.08)';
+          document.getElementById('delivery-manual').style.borderColor = 'rgba(255,255,255,0.08)';
+          document.getElementById('delivery-auto').style.background = 'rgba(255,255,255,0.02)';
+          document.getElementById('delivery-manual').style.background = 'rgba(255,255,255,0.02)';
+          document.getElementById('delivery-manual-form').style.display = 'none';
+          document.getElementById('delivery-discord-user').value = '';
+          document.getElementById('delivery-confirm-btn').disabled = true;
+          document.getElementById('delivery-status').textContent = '';
+          document.getElementById('delivery-modal').classList.remove('hidden');
+          document.getElementById('delivery-modal').classList.add('flex');
+        });
         document.addEventListener('keydown', e => { if (e.key === 'Escape' && !modal.classList.contains('hidden')) closeModal(); });
       }
+
+      // Delivery confirm click
+      document.getElementById('delivery-confirm-btn')?.addEventListener('click', function(){
+        var st = document.getElementById('delivery-status');
+        if (!selectedDelivery) { st.textContent = 'Please select a delivery method'; return; }
+        if (selectedDelivery === 'manual') {
+          var du = document.getElementById('delivery-discord-user').value.trim();
+          if (!du) { st.textContent = 'Please enter your Discord username'; return; }
+          selectedDiscord = du;
+        }
+        document.getElementById('delivery-modal').classList.add('hidden');
+        document.getElementById('delivery-modal').classList.remove('flex');
+        startBuy();
+      });
     }
     const isOg = {{ 'true' if account_detail.is_og else 'false' }};
     const isSold = {{ 'true' if account_detail.is_sold else 'false' }};
