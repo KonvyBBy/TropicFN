@@ -401,13 +401,22 @@ function fmtTime(s){
   return String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');
 }
 async function buyWarranty(accountPrice,cost){
-  if(!confirm('Buy warranty for $'+cost+' on this account?'))return;
+  var costNum=parseFloat(cost);
+  if(isNaN(costNum)||costNum<=0){showToast('Invalid warranty price',true);return}
+  // Fetch balance first
+  try{
+    var br=await fetch('/api/balance',{method:'POST',headers:{'Content-Type':'application/json'}});
+    var bd=await br.json();
+    var bal=parseFloat(bd.balance||'0');
+    if(bal<costNum){showToast('Insufficient balance. You have $'+bal.toFixed(2)+' but need $'+costNum.toFixed(2),true);return}
+  }catch(e){}
+  if(!confirm('Buy warranty for $'+costNum.toFixed(2)+' on this account?\nYour balance: $'+bal.toFixed(2)))return;
   try{
     var r=await fetch('/api/buy-warranty',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({account_price_cents:Math.round(accountPrice*100)})});
     var d=await r.json();
     if(d.ok){showToast('✅ Warranty purchased! Balance: $'+d.balance);document.getElementById('warranty-container').innerHTML='<div style="text-align:center;padding:12px;color:#4ade80;font-size:13px;font-weight:600;">✅ Warranty Active — 30 days coverage</div>';}
-    else{showToast(d.error||'Error',true);}
-  }catch(e){showToast('Error',true);}
+    else{showToast(d.error||'Purchase failed',true);}
+  }catch(e){showToast('Error processing warranty',true);}
 }
 
 function toggleCreds(btn) {
