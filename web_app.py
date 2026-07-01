@@ -7551,6 +7551,38 @@ def api_customer_news():
 
 @app.route("/api/customer-news/delete", methods=["POST"])
 @login_required_api
+@app.route("/api/buy-warranty", methods=["POST"])
+@login_required_api
+def api_buy_warranty():
+    username = session["username"]
+    data = request.json or {}
+    account_price_cents = int(float(data.get("account_price_cents", 0)))
+    if account_price_cents <= 0:
+        return jsonify({"error": "Invalid account price"}), 400
+    warranty_cost = int(account_price_cents / 2.3)
+    if warranty_cost < 100:
+        warranty_cost = 100  # minimum $1
+    balance = get_balance(username)
+    if balance < warranty_cost:
+        return jsonify({"error": "Insufficient balance"}), 400
+    add_balance(username, -warranty_cost)
+    purchases = get_purchases(username)
+    if purchases:
+        purchases[-1]["warranty"] = True
+        purchases[-1]["warranty_cost"] = warranty_cost
+        purchases[-1]["warranty_purchased_at"] = int(time.time())
+        from balances_file import _load_balances, _save_balances
+        # Save warranty info to purchases file
+        all_purchases = _load_purchases()
+        user_purchases = all_purchases.get(username, [])
+        if user_purchases and len(user_purchases) > 0:
+            user_purchases[-1]["warranty"] = True
+            user_purchases[-1]["warranty_cost"] = warranty_cost
+            user_purchases[-1]["warranty_purchased_at"] = int(time.time())
+        _save_purchases(all_purchases)
+    new_balance = get_balance(username) / 100
+    return jsonify({"ok": True, "balance": f"${new_balance:.2f}", "message": f"Warranty purchased for ${warranty_cost/100:.2f}"})
+
 def api_customer_news_delete():
     username = session["username"]
     users = _load_users()

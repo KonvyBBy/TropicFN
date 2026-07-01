@@ -50,7 +50,22 @@
   <div class="section-tabs">
     <button class="section-tab active" onclick="switchSectionTab('news',this)">📢 News</button>
     <button class="section-tab" onclick="switchSectionTab('orders',this)">📦 My Orders</button>
+    <button class="section-tab" id="secure-tab" onclick="switchSectionTab('secure',this)" style="color:#22D3EE;animation:secPulse 1.5s ease-in-out infinite;">🛡️ Secure My Account</button>
   </div>
+  <style>
+  @keyframes secPulse{0%,100%{opacity:1}50%{opacity:.4}}
+  .sec-step{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:18px;margin-bottom:10px;transition:all .15s}
+  .sec-step.done{border-color:rgba(34,197,94,0.2);background:rgba(34,197,94,0.03)}
+  .sec-step .s-num{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;margin-right:10px;flex-shrink:0}
+  .sec-step .s-num.pending{background:rgba(255,255,255,0.04);color:#6b7280;border:1px solid rgba(255,255,255,0.06)}
+  .sec-step .s-num.done{background:rgba(34,197,94,0.1);color:#4ade80;border:1px solid rgba(34,197,94,0.15)}
+  .warranty-card{background:rgba(34,211,238,0.03);border:1px solid rgba(34,211,238,0.1);border-radius:14px;padding:18px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .warranty-timer{font-size:22px;font-weight:800;color:#22D3EE;font-family:monospace}
+  .warranty-price{font-size:18px;font-weight:800;color:#fff}
+  .btn-sec{display:inline-flex;align-items:center;gap:6px;padding:10px 22px;border-radius:10px;border:none;background:linear-gradient(135deg,#22D3EE,#3B82F6);color:#fff;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s}
+  .btn-sec:hover{transform:scale(1.03);box-shadow:0 4px 20px rgba(34,211,238,0.15)}
+  .btn-sec:disabled{opacity:.4;cursor:default;transform:none}
+  </style>
 
   <div id="section-news">
     {% if is_konvy_vip %}
@@ -204,6 +219,18 @@
     </div>
     {% endif %}
   </div>
+
+  <div id="section-secure" style="display:none;">
+    <h2 style="font-size:17px;font-weight:700;color:#fff;margin:0 0 4px;">Secure Your Account</h2>
+    <p style="font-size:12px;color:#6b7280;margin:0 0 14px;">Follow these steps to secure your purchased account.</p>
+    <div id="warranty-container"></div>
+    <div id="sec-steps">
+      <div class="sec-step" id="sec-1"><div style="display:flex;align-items:center;"><span class="s-num pending">1</span><div><div style="font-size:13px;font-weight:600;color:#e4e4e7;">Change the Email</div><div style="font-size:11px;color:#6b7280;margin-top:2px;line-height:1.5;">Go to the email provider and change the recovery email and phone number to your own. This prevents the original owner from recovering the account.</div></div></div><div style="margin-top:8px;padding-left:38px;"><button class="btn-sec" onclick="secDone(1)" style="padding:6px 16px;font-size:11px;">Mark Done</button></div></div>
+      <div class="sec-step" id="sec-2"><div style="display:flex;align-items:center;"><span class="s-num pending">2</span><div><div style="font-size:13px;font-weight:600;color:#e4e4e7;">Change the Password</div><div style="font-size:11px;color:#6b7280;margin-top:2px;line-height:1.5;">Log into the Epic Games account and change the password to a strong, unique password. Enable 2FA for extra security.</div></div></div><div style="margin-top:8px;padding-left:38px;"><button class="btn-sec" onclick="secDone(2)" style="padding:6px 16px;font-size:11px;">Mark Done</button></div></div>
+      <div class="sec-step" id="sec-3"><div style="display:flex;align-items:center;"><span class="s-num pending">3</span><div><div style="font-size:13px;font-weight:600;color:#e4e4e7;">Link Your Own Accounts</div><div style="font-size:11px;color:#6b7280;margin-top:2px;line-height:1.5;">Link your own Xbox, PlayStation, or Nintendo account to the Epic account. This makes it much harder to reclaim.</div></div></div><div style="margin-top:8px;padding-left:38px;"><button class="btn-sec" onclick="secDone(3)" style="padding:6px 16px;font-size:11px;">Mark Done</button></div></div>
+      <div class="sec-step" id="sec-4"><div style="display:flex;align-items:center;"><span class="s-num pending">4</span><div><div style="font-size:13px;font-weight:600;color:#e4e4e7;">Save All Login Info</div><div style="font-size:11px;color:#6b7280;margin-top:2px;line-height:1.5;">Save the email, password, and any backup codes in a safe place. We recommend a password manager.</div></div></div><div style="margin-top:8px;padding-left:38px;"><button class="btn-sec" onclick="secDone(4)" style="padding:6px 16px;font-size:11px;">Mark Done</button></div></div>
+    </div>
+  </div>
 </div>
 {% endif %}
 
@@ -217,6 +244,53 @@ function switchSectionTab(tab, btn) {
   btn.classList.add('active');
   document.getElementById('section-news').style.display = tab === 'news' ? 'block' : 'none';
   document.getElementById('section-orders').style.display = tab === 'orders' ? 'block' : 'none';
+  document.getElementById('section-secure').style.display = tab === 'secure' ? 'block' : 'none';
+  if(tab==='secure')loadWarranty();
+}
+function secDone(num){
+  var step=document.getElementById('sec-'+num);
+  step.classList.add('done');
+  step.querySelector('.s-num').classList.remove('pending');
+  step.querySelector('.s-num').classList.add('done');
+  step.querySelector('.btn-sec').textContent='✅ Done';
+  step.querySelector('.btn-sec').disabled=true;
+  var steps=[1,2,3,4];var all=steps.every(function(n){return document.getElementById('sec-'+n).classList.contains('done')});
+  if(all)showToast('✅ All security steps completed!','');
+}
+function loadWarranty(){
+  var container=document.getElementById('warranty-container');
+  {% if purchases %}
+  var lastPurchase={{ (purchases[-1].get('timestamp', 0) if purchases else 0) }};
+  var now=Math.floor(Date.now()/1000);
+  var elapsed=now-lastPurchase;
+  var remaining=Math.max(0,1500-elapsed); // 25 min = 1500 seconds
+  var lastPrice={{ (purchases[-1].get('amount_cents', 0) / 100 if purchases else 0) }};
+  var warrantyCost=(lastPrice/2.3).toFixed(2);
+  if(remaining>0&&lastPrice>0){
+    container.innerHTML='<div class="warranty-card"><div><div style="font-size:12px;color:#6b7280;margin-bottom:2px;">Warranty Available</div><div class="warranty-price">$'+warrantyCost+'</div><div style="font-size:10px;color:#52525b;margin-top:2px;">for account worth $'+lastPrice.toFixed(2)+'</div></div><div style="text-align:right;"><div class="warranty-timer" id="warranty-timer">'+fmtTime(remaining)+'</div><div style="font-size:10px;color:#52525b;margin-bottom:6px;">remaining to buy</div><button class="btn-sec" onclick="buyWarranty('+lastPrice+','+warrantyCost+')">Buy Warranty — $'+warrantyCost+'</button></div></div>';
+    if(window.warrantyInterval)clearInterval(window.warrantyInterval);
+    window.warrantyInterval=setInterval(function(){
+      var r=Math.max(0,1500-(Math.floor(Date.now()/1000)-lastPurchase));
+      document.getElementById('warranty-timer').textContent=fmtTime(r);
+      if(r<=0){clearInterval(window.warrantyInterval);document.getElementById('warranty-container').innerHTML='';}
+    },1000);
+  }else{
+    container.innerHTML='';
+  }
+  {% endif %}
+}
+function fmtTime(s){
+  var m=Math.floor(s/60);var sec=s%60;
+  return String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');
+}
+async function buyWarranty(accountPrice,cost){
+  if(!confirm('Buy warranty for $'+cost+' on this account?'))return;
+  try{
+    var r=await fetch('/api/buy-warranty',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({account_price_cents:Math.round(accountPrice*100)})});
+    var d=await r.json();
+    if(d.ok){showToast('✅ Warranty purchased! Balance: $'+d.balance);document.getElementById('warranty-container').innerHTML='<div style="text-align:center;padding:12px;color:#4ade80;font-size:13px;font-weight:600;">✅ Warranty Active — 30 days coverage</div>';}
+    else{showToast(d.error||'Error',true);}
+  }catch(e){showToast('Error',true);}
 }
 
 function toggleCreds(btn) {
