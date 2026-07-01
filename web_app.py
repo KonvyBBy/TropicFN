@@ -7549,8 +7549,6 @@ def api_customer_news():
     _save_customer_news(news)
     return jsonify({"ok": True, "news": news})
 
-@app.route("/api/customer-news/delete", methods=["POST"])
-@login_required_api
 @app.route("/api/buy-warranty", methods=["POST"])
 @login_required_api
 def api_buy_warranty():
@@ -7583,6 +7581,8 @@ def api_buy_warranty():
     new_balance = get_balance(username) / 100
     return jsonify({"ok": True, "balance": f"${new_balance:.2f}", "message": f"Warranty purchased for ${warranty_cost/100:.2f}"})
 
+@app.route("/api/customer-news/delete", methods=["POST"])
+@login_required_api
 def api_customer_news_delete():
     username = session["username"]
     users = _load_users()
