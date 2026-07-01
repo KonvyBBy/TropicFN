@@ -825,23 +825,26 @@
 
       var selectedDelivery = '';
       var selectedDiscord = '';
+      window.selectedDelivery = selectedDelivery;
 
-      function selectDelivery(type) {
+      window.selectDelivery = function(type) {
         selectedDelivery = type;
-        document.getElementById('delivery-auto').style.borderColor = type === 'auto' ? 'var(--neon-cyan)' : 'rgba(255,255,255,0.08)';
-        document.getElementById('delivery-manual').style.borderColor = type === 'manual' ? 'var(--neon-cyan)' : 'rgba(255,255,255,0.08)';
+        window.selectedDelivery = type;
+        document.getElementById('delivery-auto').style.borderColor = type === 'auto' ? '#22D3EE' : 'rgba(255,255,255,0.08)';
+        document.getElementById('delivery-manual').style.borderColor = type === 'manual' ? '#22D3EE' : 'rgba(255,255,255,0.08)';
         document.getElementById('delivery-auto').style.background = type === 'auto' ? 'rgba(34,211,238,0.04)' : 'rgba(255,255,255,0.02)';
         document.getElementById('delivery-manual').style.background = type === 'manual' ? 'rgba(34,211,238,0.04)' : 'rgba(255,255,255,0.02)';
         document.getElementById('delivery-manual-form').style.display = type === 'manual' ? 'block' : 'none';
         document.getElementById('delivery-confirm-btn').disabled = false;
-      }
+      };
 
-      function closeDeliveryModal() {
+      window.closeDeliveryModal = function() {
         document.getElementById('delivery-modal').classList.add('hidden');
         document.getElementById('delivery-modal').classList.remove('flex');
         selectedDelivery = '';
+        window.selectedDelivery = '';
         selectedDiscord = '';
-      }
+      };
 
       function startBuy() {
         if (inFlight) return;
@@ -851,11 +854,10 @@
         const title = String(detail.title || '').trim();
         const params = new URLSearchParams({ item_id: String(itemId) });
         if (title) params.set('title', title);
-        if (selectedDelivery === 'manual') {
+        if (window.selectedDelivery === 'manual') {
           params.set('delivery', 'manual');
           var du = document.getElementById('delivery-discord-user').value.trim();
           if (du) params.set('discord', du);
-          // Send Discord webhook for manual request
           fetch('/api/delivery-request', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({item_id:itemId, title:title, discord:du, username:'{{ username }}'}) }).catch(function(){});
         }
         window.location.href = `/purchase-processing?${params.toString()}`;
@@ -899,8 +901,8 @@
       // Delivery confirm click
       document.getElementById('delivery-confirm-btn')?.addEventListener('click', function(){
         var st = document.getElementById('delivery-status');
-        if (!selectedDelivery) { st.textContent = 'Please select a delivery method'; return; }
-        if (selectedDelivery === 'manual') {
+        if (!window.selectedDelivery) { st.textContent = 'Please select a delivery method'; return; }
+        if (window.selectedDelivery === 'manual') {
           var du = document.getElementById('delivery-discord-user').value.trim();
           if (!du) { st.textContent = 'Please enter your Discord username'; return; }
           selectedDiscord = du;
