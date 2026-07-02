@@ -154,9 +154,10 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--tex
     <button class="sb-item" data-page="support"><i class="ri-customer-service-2-line"></i>Support</button>
     <button class="sb-item" data-page="topups"><i class="ri-funds-line"></i>Topups</button>
     <button class="sb-item" data-page="users"><i class="ri-group-2-line"></i>Users</button>
-    <button class="sb-item" data-page="orders"><i class="ri-shopping-bag-3-line"></i>Orders</button>
-    <div class="sb-grp">Manage</div>
-    <button class="sb-item" data-page="blacklist"><i class="ri-forbid-2-line"></i>Blacklist</button>
+<button class="sb-item" data-page="orders"><i class="ri-shopping-bag-3-line"></i>Orders</button>
+            <div class="sb-grp">Manage</div>
+            <button class="sb-item" data-page="refunds"><i class="ri-refund-2-line"></i>Refunds</button>
+            <button class="sb-item" data-page="blacklist"><i class="ri-forbid-2-line"></i>Blacklist</button>
     <button class="sb-item" data-page="discounts"><i class="ri-percent-line"></i>Discounts</button>
     <button class="sb-item" data-page="referrals"><i class="ri-link-m"></i>Referrals</button>
     <button class="sb-item" data-page="giveaway"><i class="ri-gift-2-line"></i>Giveaway</button>
@@ -276,6 +277,14 @@ body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--tex
       <thead><tr style="background:rgba(255,255,255,0.02);"><th style="padding:10px 14px;text-align:left;color:var(--muted);font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.04em;">Customer</th><th style="padding:10px 14px;text-align:left;color:var(--muted);font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.04em;">Item</th><th style="padding:10px 14px;text-align:left;color:var(--muted);font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.04em;">Amount</th><th style="padding:10px 14px;text-align:left;color:var(--muted);font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.04em;">Date</th></tr></thead>
       <tbody id="ad-orders-tbody"><tr><td colspan="4" style="padding:24px;text-align:center;color:var(--muted);">Loading...</td></tr></tbody>
     </table></div>
+  </div>
+</div>
+
+<!-- ==================== REFUNDS ==================== -->
+<div class="page" id="page-refunds">
+  <div style="background:var(--bg3);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+    <div style="padding:14px 16px;border-bottom:1px solid var(--border);font-size:13px;font-weight:700;color:#e4e4e7;">Pending Refunds</div>
+    <div id="ad-refunds-list" style="padding:8px 0;"><div style="padding:24px;text-align:center;font-size:12px;color:var(--muted);">Loading...</div></div>
   </div>
 </div>
 
@@ -443,6 +452,7 @@ function switchPage(name){
   if(name==='topups')loadTopups();
   if(name==='users')loadUsers();
   if(name==='orders')loadOrders();
+  if(name==='refunds')loadRefunds();
   if(name==='blacklist')loadBlacklist();
   if(name==='discounts')loadDiscount();
   if(name==='referrals')loadReferral();
@@ -618,6 +628,17 @@ async function loadOrders(){
 }
 
 // ===================== BLACKLIST =====================
+async function loadRefunds(){
+  const data=await api('/api/admin/pending-refunds');
+  const list=Array.isArray(data.refunds)?data.refunds.filter(r=>r.status==='pending'):[];
+  const el=document.getElementById('ad-refunds-list');
+  if(!list.length){el.innerHTML='<div style="padding:24px;text-align:center;font-size:12px;color:var(--muted);">No pending refunds</div>';return}
+  el.innerHTML=list.map(r=>'<div style="padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.03);"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;"><div><div style="font-size:13px;font-weight:600;color:#e4e4e7;">'+escapeHtml(r.username||'')+'</div><div style="font-size:12px;color:#4ade80;font-weight:700;">$'+(r.amount_cents/100).toFixed(2)+'</div><div style="font-size:10px;color:#52525b;">Item #'+r.item_id+' — '+escapeHtml(r.reason||'')+'</div></div><div style="display:flex;gap:4px;"><button class="btn-ap" onclick="refundAction(\''+r.id+'\',\'approve\')">Release Refund</button><button class="btn-dn" onclick="refundAction(\''+r.id+'\',\'deny\')">Deny</button></div></div></div>').join('');
+}
+async function refundAction(id,action){
+  const res=await api('/api/admin/pending-refunds',{action,id});
+  if(res.ok){adToast(res.message||'Done');loadRefunds()}else adToast(res.error||'Error',true);
+}
 async function loadBlacklist(){
   const data=await api('/api/admin/blacklist');
   const list=Array.isArray(data.blacklist)?data.blacklist:[];

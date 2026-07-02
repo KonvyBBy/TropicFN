@@ -670,6 +670,36 @@ def _pick_winner(entries: list) -> Optional[str]:
         return None
     return random.choice(real)["username"]
 
+# --- Pending refunds (balance held from failed purchases) ---
+PENDING_REFUNDS_FILE = os.path.join(DATA_DIR, "pending_refunds.json")
+
+def _load_pending_refunds() -> list:
+    if not os.path.exists(PENDING_REFUNDS_FILE):
+        return []
+    try:
+        with open(PENDING_REFUNDS_FILE, "r", encoding="utf-8") as f:
+            return json.load(f) or []
+    except Exception:
+        return []
+
+def _save_pending_refunds(refunds: list) -> None:
+    with open(PENDING_REFUNDS_FILE, "w", encoding="utf-8") as f:
+        json.dump(refunds, f, indent=2)
+
+def _add_pending_refund(username: str, amount_cents: int, item_id: int, reason: str) -> None:
+    refunds = _load_pending_refunds()
+    refunds.append({
+        "id": f"ref_{secrets.token_hex(6)}",
+        "username": username,
+        "amount_cents": amount_cents,
+        "item_id": item_id,
+        "reason": reason,
+        "status": "pending",
+        "created_at": int(time.time()),
+        "resolved_at": 0,
+    })
+    _save_pending_refunds(refunds)
+
 # --- Customer news ---
 CUSTOMER_NEWS_FILE = os.path.join(DATA_DIR, "customer_news.json")
 
@@ -5580,6 +5610,7 @@ def purchase_processing_page():
     balance = f"{balance_cents / 100:.2f}"
     has_topup = user_has_any_topup(username)
 
+    delivery = (request.args.get("delivery") or "").strip()
     locked_purchase = get_purchase_lock()
     raw_item_id = request.args.get("item_id", "").strip()
     item_title = request.args.get("title", "").strip() or ""
@@ -5617,6 +5648,7 @@ def purchase_processing_page():
         username=username,
         balance=balance,
         logged_in=True,
+        delivery=delivery,
         has_topup=has_topup,
         active_page="home",
         item_id=item_id,
@@ -6966,9 +6998,35 @@ def api_fortnite_buy():
     data = request.json or {}
     username = session["username"]
     item_id = int(data.get("item_id") or 0)
+    delivery = (data.get("delivery") or "").strip()
 
     if not item_id:
         return jsonify({"error": "item_id required"}), 400
+
+    # Manual delivery: just deduct balance, send webhook, don't buy on marketplace
+    if delivery == "manual":
+        try:
+            _, user_price, cost_cents = get_live_purchase_costs(item_id)
+        except PurchaseFlowError as e:
+            return jsonify({"error": e.code, "message": e.message}), e.status_code
+        balance_cents = get_balance(username)
+        if balance_cents < cost_cents:
+            return _not_enough_balance_response(balance_cents, cost_cents)
+        add_balance(username, -cost_cents)
+        purchase_result = {"item_id": item_id, "title": f"Manual Delivery #{item_id}", "delivery": "manual"}
+        purchase_entry, owned_accounts, purchase_index = save_purchase_record(
+            username, purchase_result, None, amount_cents=cost_cents,
+        )
+        item_title = (data.get("title") or f"Account #{item_id}")
+        _push_activity("purchase", username, {"item_id": item_id, "title": item_title, "price": user_price})
+        clear_purchase_lock()
+        return jsonify({
+            "message": f"Manual delivery requested for ${user_price:.2f}. Ec0nmics will contact you on Discord.",
+            "purchase_result": purchase_result,
+            "owned_accounts": owned_accounts,
+            "purchase_index": purchase_index,
+            "saved_entry": purchase_entry,
+        })
 
     # If already purchased by this user, return success immediately (handles retry after success)
     user_purchases = get_purchases(username)
@@ -7001,14 +7059,24 @@ def api_fortnite_buy():
     if starting_balance < cost_cents:
         return _not_enough_balance_response(starting_balance, cost_cents)
 
+    balance_held = False
+    # Hold balance immediately (pending refund if purchase fails)
+    if starting_balance >= cost_cents:
+        add_balance(username, -cost_cents)
+        balance_held = True
+
     # STEP 1: fast-buy on market
     try:
         purchase_result = confirm_buy_account(item_id)
     except PurchaseFlowError as e:
         app.logger.warning("Purchase blocked for item %s: %s", item_id, e.message)
+        if balance_held:
+            _add_pending_refund(username, cost_cents, item_id, f"market_error: {e.code}")
         return jsonify({"error": e.code, "message": e.message}), e.status_code
     except Exception as e:
         app.logger.error("confirm_buy_account failed for item %s: %s", item_id, e)
+        if balance_held:
+            _add_pending_refund(username, cost_cents, item_id, "server_error")
         return jsonify(
             {
                 "error": "confirm_buy_failed",
@@ -7606,6 +7674,33 @@ def api_buy_warranty():
 
 @app.route("/api/customer-news/delete", methods=["POST"])
 @login_required_api
+@app.route("/api/admin/pending-refunds", methods=["GET", "POST"])
+def api_admin_pending_refunds():
+    if not is_admin_user(session.get("username", "")):
+        return jsonify({"error": "Unauthorized"}), 403
+    if request.method == "GET":
+        return jsonify({"refunds": _load_pending_refunds()})
+    data = request.json or {}
+    action = data.get("action")
+    refund_id = data.get("id")
+    refunds = _load_pending_refunds()
+    refund = next((r for r in refunds if r["id"] == refund_id), None)
+    if not refund:
+        return jsonify({"error": "Refund not found"}), 404
+    if action == "approve":
+        add_balance(refund["username"], refund["amount_cents"])
+        add_topup_notification(refund["username"], refund["amount_cents"], refund["id"])
+        refund["status"] = "approved"
+        refund["resolved_at"] = int(time.time())
+        _save_pending_refunds(refunds)
+        return jsonify({"ok": True, "message": f"Refunded ${refund['amount_cents']/100:.2f} to {refund['username']}"})
+    elif action == "deny":
+        refund["status"] = "denied"
+        refund["resolved_at"] = int(time.time())
+        _save_pending_refunds(refunds)
+        return jsonify({"ok": True, "message": "Refund denied"})
+    return jsonify({"error": "Unknown action"}), 400
+
 def api_customer_news_delete():
     username = session["username"]
     users = _load_users()

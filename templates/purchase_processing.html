@@ -148,6 +148,7 @@
     const actionsEl = document.getElementById('purchase-actions');
     const itemId = Number({{ item_id|tojson }});
     const itemTitle = {{ item_title|tojson }};
+    const delivery = {{ delivery|tojson }};
 
     // Check if already purchased before retrying
     try {
@@ -168,6 +169,29 @@
         return;
       }
     } catch(e) {}
+
+    // Manual delivery: call once with delivery param, no retries needed
+    if (delivery === 'manual') {
+      try {
+        const buyResult = await postJSON('/api/fortnite/buy', { item_id: itemId, delivery: 'manual' });
+        try { await postJSON('/api/fortnite/purchase-lock/release', { item_id: itemId }); } catch(e) {}
+        iconEl.className = 'purchase-success-ring mx-auto';
+        iconEl.innerHTML = '<i class="ri-check-line text-4xl text-cyan-300"></i>';
+        titleEl.textContent = 'Manual delivery requested';
+        subtitleEl.textContent = 'Ec0nmics will contact you on Discord.';
+        messageEl.innerHTML = `Your balance has been charged. <strong class="text-zinc-200">${itemTitle}</strong> will be delivered to you via Discord by <strong class="text-cyan-300">Ec0nmics</strong>. Please wait for them to contact you.`;
+        actionsEl.classList.remove('hidden');
+        return;
+      } catch (error) {
+        iconEl.className = 'purchase-error-ring mx-auto';
+        iconEl.innerHTML = '<i class="ri-close-line text-4xl text-red-300"></i>';
+        titleEl.textContent = 'Request failed';
+        subtitleEl.textContent = 'Could not process manual delivery.';
+        messageEl.textContent = error?.message || 'An error occurred. Your balance has not been charged.';
+        actionsEl.classList.remove('hidden');
+        return;
+      }
+    }
 
     for (let attempt = 1; attempt <= AUTO_RETRY_MAX_ATTEMPTS; attempt += 1) {
       try {
@@ -200,11 +224,30 @@
         } catch (releaseError) {
           console.warn('Failed to release purchase lock:', releaseError);
         }
-        titleEl.textContent = 'Purchase could not be completed';
-        subtitleEl.textContent = 'Automatic retries were exhausted.';
-        messageEl.textContent = 'Automatic retries ended. Check My Accounts in a moment; if the account is still missing, contact support.';
-        actionsEl.classList.remove('hidden');
-        actionsEl.innerHTML = `<a href="/my-accounts" class="btn-primary inline-flex h-11 items-center justify-center rounded-xl px-6 text-sm font-bold">Go to My Accounts</a>`;
+        // Double-check if purchase actually succeeded despite errors
+        let actuallyOwned = false;
+        try {
+          const checkRes = await fetch('/api/fortnite/my-accounts', { method:'POST', headers:{'Content-Type':'application/json'} });
+          const checkData = await checkRes.json();
+          actuallyOwned = Array.isArray(checkData.accounts) && checkData.accounts.some(a => {
+            const pr = a.purchase_result || {};
+            return (pr.item_id || pr.fortnite_item_id) == itemId;
+          });
+        } catch(e) {}
+        if (actuallyOwned) {
+          iconEl.className = 'purchase-success-ring mx-auto';
+          iconEl.innerHTML = '<i class="ri-check-line text-4xl text-cyan-300"></i>';
+          titleEl.textContent = 'Purchase complete';
+          subtitleEl.textContent = 'The account was delivered successfully.';
+          messageEl.innerHTML = `<strong class="text-zinc-200">${itemTitle}</strong> is yours. Go to My Accounts to view login details.`;
+          actionsEl.classList.remove('hidden');
+        } else {
+          titleEl.textContent = 'Purchase could not be completed';
+          subtitleEl.textContent = 'Your payment is pending admin review.';
+          messageEl.textContent = 'The account was not purchased. Your balance has been held and is pending admin approval for refund. Our team will review and release it shortly.';
+          actionsEl.classList.remove('hidden');
+          actionsEl.innerHTML = `<a href="/support" class="btn-primary inline-flex h-11 items-center justify-center rounded-xl px-6 text-sm font-bold">Contact Support</a> <a href="/dashboard" style="margin-left:8px;padding:11px 22px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:#9ca3af;font-size:13px;font-weight:600;text-decoration:none;display:inline-flex;">Back to Marketplace</a>`;
+        }
       }
     }
   });
